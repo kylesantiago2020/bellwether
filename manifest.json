@@ -1,0 +1,27 @@
+	
+name	"Bellwether"
+short_name	"Bellwether"
+description	"Time-based sales pipeline. Who deserves your attention today so your future stays full?"
+start_url	"./"
+scope	"./"
+display	"standalone"
+orientation	"portrait-primary"
+theme_color	"#15171C"
+background_color	"#FAF8F4"
+icons	
+0	
+src	"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234B4FD6' width='192' height='192'/><text x='96' y='128' font-size='120' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>∑</text></svg>"
+sizes	"192x192"
+type	"image/svg+xml"
+purpose	"any"
+1	
+src	"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%234B4FD6' width='512' height='512'/><text x='256' y='400' font-size='320' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>∑</text></svg>"
+sizes	"512x512"
+type	"image/svg+xml"
+purpose	"any maskable"
+screenshots	
+0	
+src	"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23FAF8F4' width='540' height='720'/></svg>"
+sizes	"540x720"
+type	"image/svg+xml"
+form_factor	"narrow"
