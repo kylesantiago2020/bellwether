@@ -4,10 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bellwether">
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234B4FD6' width='192' height='192'/><text x='96' y='128' font-size='120' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>∑</text></svg>">
+<meta name="theme-color" content="#4B4FD6">
+<meta name="description" content="Know your year before it happens.">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Bellwether</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,11 +97,7 @@ button{font-family:inherit;cursor:pointer}
 .read{margin-top:22px;font-size:14px;line-height:1.65;color:var(--ink2)}
 .read b{color:var(--ink);font-weight:500}
 .wall{margin-top:20px;background:var(--ambsoft);border-radius:11px;padding:15px 17px;font-size:13.5px;color:var(--amb);line-height:1.6}
-.lever{margin-top:20px;background:var(--grnsoft);border-radius:11px;padding:15px 17px;font-size:13.5px;color:var(--grn);line-height:1.6}
-.sync-status{position:fixed;bottom:20px;right:20px;font-size:11px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;opacity:0;transition:opacity .2s;pointer-events:none}
-.sync-status.show{opacity:1}
-.sync-status.syncing{color:var(--ac)}
-.sync-status.error{color:var(--amb)}
+.lever{margin-top:16px;background:var(--grnsoft);border-radius:11px;padding:15px 17px;font-size:13.5px;color:var(--grn);line-height:1.6}
 .hero{margin-top:22px;background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 17px}
 .hero .n{font-family:'IBM Plex Mono',monospace;font-size:34px;letter-spacing:-1.5px;line-height:1.1}
 .hero .l{font-size:12px;color:var(--ink3)}
@@ -114,349 +113,763 @@ button{font-family:inherit;cursor:pointer}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .chip{font-size:12.5px;padding:6px 11px;border-radius:20px;border:1px solid var(--rule2);background:var(--card)}
 .chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
-.est{margin-top:16px;background:var(--acs);border-radius:9px;padding:14px;border-left:3px solid var(--ac)}
-.est .n{font-family:'IBM Plex Mono',monospace;font-size:26px;letter-spacing:-.5px}
-.est .l{font-size:12px;color:var(--ink3);margin-top:5px}
-.imp{position:relative}
-.imp.drag{background:var(--indsoft)}
-.imp.drag .imp-hover{display:block}
-.imp-hover{display:none;position:absolute;inset:0;background:rgba(75,79,214,.1);border-radius:11px;pointer-events:none;border:2px dashed var(--ac)}
-.bk{cursor:pointer;padding:11px;background:var(--card);border-radius:9px;border:1px solid var(--rule);transition:.15s}
-.bk:hover{border-color:var(--rule2)}
-.bk .nm{font-weight:500}
-.bk .og{display:block;font-size:12.5px;color:var(--ink2);margin-top:3px}
-.bk .hist{display:block;font-size:11.5px;color:var(--ink3);margin-top:6px}
-.hist{color:var(--ink3);font-size:12px;line-height:1.5;margin-top:14px}
-.sheet{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--rule);border-radius:16px 16px 0 0;padding:20px 18px 30px;max-height:90vh;overflow-y:auto;animation:slide .35s cubic-bezier(.16,.1,.3,1);z-index:999}
-@keyframes slide{from{transform:translateY(100%)}to{transform:none}}
-.sheet.hide{animation:slide .3s cubic-bezier(.7,.0,.84,.0) reverse}
-.sheet h3{font-size:20px;font-weight:400;margin-bottom:6px}
-.sheet .sub{font-size:12.5px;color:var(--ink2)}
-.sheet .f{margin-top:16px}
-.sheet .sa{margin-top:20px;display:flex;gap:8px;justify-content:flex-end}
-.pr{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:14px 17px;margin-top:11px;cursor:pointer;transition:.15s}
-.pr:hover{border-color:var(--rule2);box-shadow:0 4px 12px -8px rgba(20,20,30,.2)}
-.pr .ph{display:flex;align-items:baseline;justify-content:space-between}
-.pr .nm{font-weight:500;letter-spacing:-.1px}
-.pr .org{font-size:12.5px;color:var(--ink2);margin-top:3px}
-.pr [data-do]{font-size:12px;color:var(--ac);flex:none;cursor:pointer}
-.pr [data-do]:hover{text-decoration:underline}
+.est{margin-top:14px;background:var(--grnsoft);border-radius:9px;padding:12px 14px}
+.est .n{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--grn);letter-spacing:-.5px}
+.est .l{font-size:11.5px;color:var(--grn);opacity:.85}
+input[type=range]{width:100%;margin-top:10px;accent-color:var(--ac)}
+.ptab{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;align-items:center;margin-top:8px}
+.ptab input{font-family:inherit;font-size:14px;padding:8px 9px;border:1px solid var(--rule2);border-radius:7px;background:var(--card);width:100%}
+.ptabhead{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-top:14px;font-size:11px;color:var(--ink3)}
+.veil{position:fixed;inset:0;background:rgba(23,25,29,.35);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.veil.on{display:flex;animation:f .16s ease both}
+.sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;animation:up .26s cubic-bezier(.2,.8,.3,1) both}
+@keyframes up{from{transform:translateY(24px)}to{transform:none}}
+@media(min-width:700px){.veil{align-items:center}.sheet{border-radius:14px;max-width:480px;padding:24px 26px 22px;max-height:86vh;animation:pop .24s cubic-bezier(.2,.8,.3,1) both}}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.danger{color:var(--amb)}
+.plan{margin-top:26px}
+.planh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--rule);padding-bottom:8px}
+.planh span{font-size:12.5px;color:var(--ink2)}
+.planh b{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);font-weight:400}
+.pr{display:flex;align-items:center;gap:11px;padding:12px 2px;border-bottom:1px solid var(--rule)}
+.pr:last-child{border-bottom:none}
+.tick{width:21px;height:21px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);flex:none;padding:0}
+.tick:active{transform:scale(.9)}
+.pr .i{min-width:0;flex:1}
+.pr .i .n{font-size:14.5px;font-weight:500;letter-spacing:-.1px}
+.pr .i .s{font-size:12px;color:var(--ink3);margin-top:1px}
+.pr .x{background:none;border:none;color:var(--ink3);font-size:12px;padding:4px 6px;flex:none}
+.why{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:1px 5px;border-radius:3px;background:var(--indsoft);color:var(--ind);margin-right:5px}
+.why.peo{background:var(--grnsoft);color:var(--grn)}
+.why.up{background:var(--ambsoft);color:var(--amb)}
+.cov{margin-top:20px;background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:15px 17px}
+.imp{margin-top:16px;background:var(--sunk);border-radius:11px;padding:15px 17px;border:1px solid transparent;transition:border-color .15s,background .15s}
+.imp.drag{border:1px dashed var(--ac);background:var(--indsoft)}
+.imp.drag .scan{opacity:.35}
+textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--rule2);border-radius:8px;padding:10px;min-height:110px;background:var(--card)}
+.bk{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--rule);cursor:pointer}
+.ahead{margin-top:26px}
+.ad{display:flex;gap:12px;padding:10px 2px;border-bottom:1px solid var(--rule);align-items:flex-start}
+.ad:last-child{border-bottom:none}
+.ad.we{opacity:.5}
+.ad .dd{width:52px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);padding-top:1px}
+.ad .dd b{display:block;color:var(--ink);font-weight:400;font-size:13px}
+.ad .db{min-width:0;flex:1;font-size:13px;color:var(--ink2);line-height:1.55}
+.ad .db .who{color:var(--ink)}
+.ad .load{display:inline-block;height:4px;border-radius:2px;background:var(--ac);vertical-align:2px;margin-right:7px;min-width:3px}
+.ad.heavy .load{background:var(--amb)}
+.scan{margin-top:12px;padding:13px 15px;border:1px dashed var(--rule2);border-radius:9px;text-align:center}
+.scan p{font-size:12px;color:var(--ink3);margin-top:6px}
+.prog{margin-top:10px;height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;display:none}
+.prog div{height:100%;width:0;background:var(--ac);transition:width .3s}
+.bk:last-child{border-bottom:none}
+.sheet h3{font-size:16px;font-weight:500}
+.sheet .sub{font-size:13px;color:var(--ink3);margin-top:2px}
+.hist{margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink3);line-height:1.8}
+.nudge{margin-top:13px;padding:11px 13px;background:var(--ambsoft);border-radius:8px;font-size:13px;color:var(--amb);line-height:1.55}
+.sa{margin-top:19px;display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(247,246,243,.94);backdrop-filter:blur(12px);border-top:1px solid var(--rule);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
+.nb{flex:1;background:none;border:none;padding:7px 0;font-size:10px;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+.nb.on{color:var(--ac)}
+.ni{width:19px;height:19px}
+.badge{position:absolute;transform:translate(13px,-4px);background:var(--ac);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:25px;background:var(--ac);color:#fff;border:none;font-size:26px;line-height:0;box-shadow:0 8px 20px -8px currentColor;z-index:41;transition:background .3s}
+.toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:60;pointer-events:none;max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.spark{position:fixed;width:8px;height:8px;border-radius:2px;background:var(--ac);z-index:70;pointer-events:none}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
-<body data-s="today">
+<body>
 <div class="wrap">
-  <div class="hdr">
-    <div class="mark">📊</div>
-    <div class="wm"><b>Bellwether</b><span id="syncstat">ready</span></div>
-  </div>
-  <div id="today" class="screen on">
-    <h1>Today</h1>
-    <div id="plan" class="stack"></div>
-    <div id="cheer"></div>
-  </div>
-  <div id="year" class="screen">
-    <h1>Year</h1>
-    <div id="pace"></div>
-    <div id="chart"></div>
-  </div>
-  <div id="money" class="screen">
-    <h1>Money</h1>
-    <div id="hero"></div>
-    <div id="figs"></div>
-    <div id="read"></div>
-  </div>
-  <div id="book" class="screen">
-    <h1>Book</h1>
-    <div id="imp" class="imp">
-      <div class="imp-hover"></div>
-      <div style="margin-top:16px;padding:14px 17px;background:var(--sunk);border-radius:9px;font-size:13.5px;line-height:1.6">
-        Drag files here, or <button class="b quiet" id="pickfile" style="padding:2px 6px">pick a file</button>. Supports <code style="font-family:'IBM Plex Mono';font-size:12px">.csv</code>, <code style="font-family:'IBM Plex Mono';font-size:12px">.txt</code>, images.
-      </div>
-    </div>
-    <h2>or paste</h2>
-    <textarea class="t" id="pastebox" placeholder="Name,Employees,Bundle,City&#10;Acme Corp,45,Essentials,Boston&#10;Tech Inc,120,Premier,Cambridge" rows="4"></textarea>
-    <div style="margin-top:11px;display:flex;gap:8px">
-      <button class="b" id="doimp">Paste</button>
-      <button class="b" id="scan">Scan image</button>
-    </div>
-    <h2>type</h2>
-    <div class="chips" id="ityp">
-      <button class="chip on" data-t="client">Client</button>
-      <button class="chip" data-t="prospect">Prospect</button>
-      <button class="chip" data-t="partner">Partner</button>
-    </div>
-    <h2>your book</h2>
-    <div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap" id="bfilters">
-      <button class="b" data-b="">All</button>
-      <button class="b" data-b="client">Clients</button>
-      <button class="b" data-b="prospect">Prospects</button>
-      <button class="b" data-b="partner">Partners</button>
-    </div>
-    <div id="booklist" class="stack" style="margin-top:16px"></div>
+
+<header class="hdr"><div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.5a5.8 5.8 0 015.8 5.8v4.4l1.9 2.8H4.3l1.9-2.8V9.3A5.8 5.8 0 0112 3.5z"/><path d="M10.1 19.6a2 2 0 003.8 0"/></svg></div><div class="wm"><b>Bellwether</b><span>metrowest territory</span></div></header>
+
+<section class="screen on" id="s-today">
+  <div class="eyebrow" id="datestr"></div>
+  <h1 id="hd">Loading…</h1>
+  <div class="stack" id="stack"></div>
+  <div class="cheer" id="mt" style="display:none"><svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.5a5.8 5.8 0 015.8 5.8v4.4l1.9 2.8H4.3l1.9-2.8V9.3A5.8 5.8 0 0112 3.5z"/><path d="M10.1 19.6a2 2 0 003.8 0"/></svg><p class="said" id="mtsaid"></p><p id="mtsub"></p></div>
+  <div class="plan" id="plan"></div>
+  <div class="ahead" id="ahead"></div>
+  <div class="pace" id="pace"></div>
+</section>
+
+<section class="screen" id="s-year">
+  <div class="eyebrow">next 12 months</div>
+  <h1>Your horizon</h1>
+  <div id="chart"></div>
+  <div class="figs" id="figs"></div>
+  <div class="wall" id="wall"></div>
+  <p class="read" id="yr"></p>
+</section>
+
+<section class="screen" id="s-money">
+  <div class="eyebrow">weighted pipeline</div>
+  <h1>What's out there</h1>
+  <div class="hero" id="hero"></div>
+  <div id="mchart"></div>
+  <p class="read" id="mnote"></p>
+  <div class="lever" id="lever"></div>
+  <div class="figs two" id="clubfigs"></div>
+</section>
+
+<section class="screen" id="s-book">
+  <div class="eyebrow">your territory</div>
+  <h1>The book</h1>
+  <div class="cov" id="cov"></div>
+  <div class="chips" style="margin-top:16px" id="bfilters"></div>
+  <div id="booklist" style="margin-top:4px"></div>
+  <div class="imp">
+    <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
+    <p style="font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.6">Run your list view, export, then paste the rows below — or pick the file. First row must be headers. Drag files straight onto this box, or import clients, CPAs, and competitor accounts as three separate batches.</p>
     <div id="batches"></div>
-    <button class="b quiet" id="clearbook" style="margin-top:16px">Clear book</button>
-  </div>
-  <div id="all" class="screen">
-    <h1>All</h1>
-    <div style="margin-top:16px;display:flex;gap:8px" id="filters">
-      <button class="b" data-f="">All</button>
-      <button class="b" data-f="waiting">Waiting</button>
-      <button class="b" data-f="done">Done</button>
+    <div class="chips" id="ityp"><button class="chip on" data-t="client">Clients</button><button class="chip" data-t="prospect">Competitor accts</button><button class="chip" data-t="partner">CPAs / partners</button></div>
+    <textarea class="paste" id="pastebox" placeholder="Account Name	Employees	Product	Pay Frequency	City"></textarea>
+    <div class="scan">
+      <button class="b" id="scan">Scan a photo</button>
+      <p>Point at a printed list. Text lands in the box above for you to fix before importing.</p>
+      <div class="prog" id="prog"><div></div></div>
     </div>
-    <div id="alllist" class="stack" style="margin-top:16px"></div>
-  </div>
-  <div id="set" class="screen">
-    <h1>Settings</h1>
-    <h2>fiscal year starts</h2>
-    <input id="fy" type="month" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px">
-    <h2>quarter ends</h2>
-    <input id="qEnd" type="date" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px">
-    <h2>your quota this year</h2>
-    <input id="fy" type="month" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px">
-    <h2>work week length</h2>
-    <input id="wk" type="number" min="1" max="7" value="5" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px">
-    <h2>your quota (annual revenue)</h2>
-    <input id="fy" type="number" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums" placeholder="100000">
-    <h2>President's Club goal</h2>
-    <input id="goal" type="number" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums" placeholder="130000">
-    <h2>President's Club (revenue %)</h2>
-    <input id="rgoal" type="number" min="0" max="100" value="30" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums">
-    <h2>deals won this year</h2>
-    <input id="won" type="number" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums" placeholder="0">
-    <h2>revenue won this year</h2>
-    <input id="rwon" type="number" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums" placeholder="0">
-    <h2>bundles</h2>
-    <div id="bundles" class="stack" style="margin-top:11px"></div>
-    <button class="b" id="addb" style="margin-top:11px">Add bundle</button>
-    <h2>add-ons</h2>
-    <div id="addons" class="stack" style="margin-top:11px"></div>
-    <button class="b" id="adda" style="margin-top:11px">Add add-on</button>
-    <h2>Q forecast</h2>
-    <div class="two">
-      <div><label class="f" for="o1">O1</label><input id="o1" type="number" style="width:100%;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums"></div>
-      <div><label class="f" for="o2">O2</label><input id="o2" type="number" style="width:100%;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums"></div>
-      <div><label class="f" for="o3">O3</label><input id="o3" type="number" style="width:100%;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums"></div>
-    </div>
-    <h2>ACV cap</h2>
-    <input id="cap" type="number" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px;font-variant-numeric:tabular-nums" placeholder="0">
-    <div style="margin-top:20px;display:flex;gap:8px">
-      <button class="b pri" id="save">Save</button>
-      <button class="b" id="exp">Export</button>
-      <button class="b" id="imp">Import</button>
+    <div class="sa" style="justify-content:flex-start;margin-top:12px">
+      <button class="b pri" id="doimp">Import</button>
+      <button class="b" id="pickfile">Choose file</button>
+      <button class="b quiet danger" id="clearbook">Clear book</button>
     </div>
   </div>
-  <div style="position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--rule);display:flex;gap:2px;padding:8px">
-    <button class="nb" data-go="today">📍 Today</button>
-    <button class="nb on" data-go="today">📍 Today</button>
-    <button class="nb" data-go="year">📈 Year</button>
-    <button class="nb" data-go="money">💰 Money</button>
-    <button class="nb" data-go="book">📖 Book</button>
-    <button class="nb" data-go="all">📋 All</button>
-    <button class="nb" data-go="set">⚙️ Set</button>
+</section>
+
+<section class="screen" id="s-all">
+  <div class="eyebrow">everything standing</div>
+  <h1>Promises</h1>
+  <div class="chips" style="margin-top:14px" id="filters"></div>
+  <div id="alllist" style="margin-top:6px"></div>
+</section>
+
+<section class="screen" id="s-set">
+  <div class="eyebrow">setup</div>
+  <h1>Settings</h1>
+
+  <h2>Your year</h2>
+  <div class="two">
+    <label class="f">New promises / week<input class="t mono" id="wk" type="number" min="0"></label>
+    <label class="f">Sales year ends<input class="t" id="fy" type="date"></label>
   </div>
+  <div class="two">
+    <label class="f">Deals for club<input class="t mono" id="goal" type="number" min="0"></label>
+    <label class="f">Revenue for club<input class="t mono" id="rgoal" type="number" min="0"></label>
+  </div>
+  <div class="two">
+    <label class="f">Deals closed<input class="t mono" id="won" type="number" min="0"></label>
+    <label class="f">Revenue closed<input class="t mono" id="rwon" type="number" min="0"></label>
+  </div>
+
+  <h2>Your book</h2>
+  <div class="two">
+    <label class="f">Meet everyone by<input class="t" id="qEnd" type="date"></label>
+    <label class="f">Max plan items / day<input class="t mono" id="cap" type="number" min="1"></label>
+  </div>
+
+  <h2>Bundles — per payroll run</h2>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">Type your own numbers from your book. Nothing leaves this device.</p>
+  <div class="ptabhead"><span>Bundle</span><span>Base / run</span><span>Per emp / run</span></div>
+  <div id="bundles"></div>
+  <button class="b quiet" id="addb" style="margin-top:10px">+ bundle</button>
+
+  <h2>Add-ons — per payroll run</h2>
+  <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per emp / run</span></div>
+  <div id="addons"></div>
+  <button class="b quiet" id="adda" style="margin-top:10px">+ add-on</button>
+
+  <h2>Your close rates</h2>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">What fraction of each actually becomes a deal. Adjust as you learn your own numbers.</p>
+  <div class="two">
+    <label class="f">Quoted %<input class="t mono" id="o1" type="number" min="0" max="100"></label>
+    <label class="f">Interested %<input class="t mono" id="o2" type="number" min="0" max="100"></label>
+  </div>
+  <label class="f">Just a callback %<input class="t mono" id="o3" type="number" min="0" max="100"></label>
+
+  <div class="sa" style="justify-content:flex-start;margin-top:24px">
+    <button class="b pri" id="save">Save</button>
+    <button class="b" id="exp">Export backup</button>
+    <button class="b quiet" id="imp">Import</button>
+  </div>
+  <p class="read" style="font-size:12px">Everything lives in this browser. Export before you clear it or switch phones.</p>
+</section>
 </div>
-<div class="sheet" id="sheet" style="display:none"></div>
-<div class="sync-status" id="syncstatus"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<button class="fab" id="fab" aria-label="New promise">+</button>
+<nav class="nav">
+  <button class="nb on" data-go="today"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Today</span><span class="badge" id="bdg" style="display:none">0</span></button>
+  <button class="nb" data-go="year"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-3"/></svg><span>Horizon</span></button>
+  <button class="nb" data-go="money"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M16 7.5c0-1.7-1.8-2.5-4-2.5s-4 .8-4 2.5S9.8 10 12 10s4 1 4 2.8-1.8 2.7-4 2.7-4-.9-4-2.7"/></svg><span>Value</span></button>
+  <button class="nb" data-go="book"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h7M8 11h7"/></svg><span>Book</span></button>
+  <button class="nb" data-go="all"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>All</span></button>
+  <button class="nb" data-go="set"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Setup</span></button>
+</nav>
+<div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
 <script>
-/* ========== SUPABASE CONFIG ========== */
-const SUPABASE_URL="https://pjubfgpcxwrowuppikam.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqdWJmZ3BjeHdyb3d1cHBpa2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzOTQyNjAsImV4cCI6MjA5OTk3MDI2MH0.fTQST3NkY1Jgtg44rT3UFHFW0ApE8-xavwRzqg3h2-k";
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let syncQueue=[],isSyncing=false,lastSync=0;const SYNC_DEBOUNCE=1000;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const KEY="horizon-v2";
+const FREQ={Weekly:52,Biweekly:26,Semimonthly:24,Monthly:12};
+let D={promises:[],cfg:{},log:[]},openId=null,filter="all";
 
-async function initSync(){
-  await loadFromDB();
-  window.addEventListener("online",()=>flushQueue());
-  window.addEventListener("offline",()=>updateSyncStatus());
-  setInterval(()=>!isSyncing&&navigator.onLine&&flushQueue(),5000);
+const DEF={wk:12,fy:"",goal:0,rgoal:0,won:0,rwon:0,o1:40,o2:20,o3:8,qEnd:"",cap:12,
+ bundles:[{n:"Essential",b:0,p:0},{n:"Enhanced",b:0,p:0},{n:"Complete",b:0,p:0},{n:"HR Pro",b:0,p:0}],
+ addons:[{n:"Time & Attendance",b:0,p:0},{n:"Retirement 401(k)",b:0,p:0},{n:"Workers' Comp",b:0,p:0},{n:"Hiring / ATS",b:0,p:0}]};
+
+async function load(){
+  try{ if(window.storage){const r=await window.storage.get(KEY);if(r&&r.value)D=JSON.parse(r.value)}
+       else{const r=localStorage.getItem(KEY);if(r)D=JSON.parse(r)} }catch(e){}
+  D.promises=D.promises||[];D.accts=D.accts||[];D.batches=D.batches||[];D.cfg=Object.assign({},DEF,D.cfg||{});
+  if(!D.cfg.qEnd){const n=new Date();D.cfg.qEnd=new Date(n.getFullYear(),n.getMonth()<9?8:11,30).toISOString().slice(0,10)}
+  if(!D.cfg.fy){const n=new Date();D.cfg.fy=new Date(n.getFullYear()+(n.getMonth()>=6?1:0),5,30).toISOString().slice(0,10)}
+}
+async function save(){const s=JSON.stringify(D);try{if(window.storage)await window.storage.set(KEY,s);else localStorage.setItem(KEY,s)}catch(e){}}
+
+const DAY=864e5,today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const iso=d=>d.toISOString().slice(0,10),parseD=s=>{const[y,m,dd]=s.split("-").map(Number);return new Date(y,m-1,dd)};
+const fmt=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const days=(a,b)=>Math.round((b-a)/DAY);
+const $$$=n=>"$"+Math.round(n).toLocaleString();
+const k=n=>n>=1000?"$"+(n/1000).toFixed(n>=10000?0:1)+"k":"$"+Math.round(n);
+function esc(s){return(s||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]))}
+
+function nlp(txt){
+  const t=(txt||"").toLowerCase().trim(),n=today();let d=null,prec="day";
+  const add=(v,u)=>{const x=new Date(n);u=="d"?x.setDate(x.getDate()+v):u=="w"?x.setDate(x.getDate()+v*7):x.setMonth(x.getMonth()+v);return x};
+  const M=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];let m;
+  if(/^tomorrow/.test(t))d=add(1,"d");
+  else if(/^next week/.test(t))d=add(1,"w"),prec="week";
+  else if(m=t.match(/(\d+)\s*(day|week|month|year)/))d=add(+m[1]*(m[2]=="year"?12:1),m[2][0]=="d"?"d":m[2][0]=="w"?"w":"m"),prec=m[2][0]=="m"||m[2][0]=="y"?"month":"day";
+  else if(/jan(uary)?\s*1|new year|first of the year|start of the year/.test(t)){d=new Date(n.getFullYear(),0,1);if(d<n)d.setFullYear(d.getFullYear()+1)}
+  else if(m=t.match(/q([1-4])/)){d=new Date(n.getFullYear(),(+m[1]-1)*3,1);if(d<n)d.setFullYear(d.getFullYear()+1);prec="month"}
+  else if(/renewal|anniversar/.test(t)&&!/month|week|day/.test(t))d=add(12,"m"),prec="month";
+  else for(let i=0;i<12;i++)if(t.includes(M[i])){d=new Date(n.getFullYear(),i,1);if(d<n)d.setFullYear(d.getFullYear()+1);prec="month";break}
+  if(/spring/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>2?1:0),3,1),prec="month";
+  if(/summer/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>5?1:0),6,1),prec="month";
+  if(/fall|autumn/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>8?1:0),9,1),prec="month";
+  if(/end of (the )?year|year.?end/.test(t))d=new Date(n.getFullYear(),11,1),prec="month";
+  if(!d)return null;d.setHours(0,0,0,0);return{date:iso(d),prec};
 }
 
-function updateSyncStatus(){
-  const st=$("#syncstatus");
-  if(!navigator.onLine){
-    st.textContent="offline — queued";st.className="sync-status show error";
-    $("#syncstat").textContent="offline";
-  } else if(isSyncing){
-    st.textContent="syncing…";st.className="sync-status show syncing";
-  } else if(lastSync){
-    st.textContent=`synced ${new Date(lastSync).toLocaleTimeString()}`;st.className="sync-status show";
-    $("#syncstat").textContent="synced";
-    setTimeout(()=>st.classList.remove("show"),3000);
+/* ---------- valuation ---------- */
+function annual(v){
+  if(!v||!v.emps)return 0;
+  const B=D.cfg.bundles.find(x=>x.n==v.bundle)||{b:0,p:0};
+  let perRun=(+B.b||0)+(+B.p||0)*v.emps;
+  (v.addons||[]).forEach(nm=>{const a=D.cfg.addons.find(x=>x.n==nm);if(a)perRun+=(+a.b||0)+(+a.p||0)*v.emps});
+  return perRun*(FREQ[v.freq]||26)*(1-(v.disc||0)/100);
+}
+function odds(p){
+  const base={quoted:D.cfg.o1,interested:D.cfg.o2,callback:D.cfg.o3}[p.stage||"callback"]/100;
+  const out=days(today(),parseD(p.date));
+  const tf=out<=90?1:out<=180?.8:.6;
+  return base*tf;
+}
+const valued=()=>D.promises.filter(p=>p.state=="waiting"&&p.val&&p.val.emps);
+const due=()=>D.promises.filter(p=>p.state=="waiting"&&parseD(p.date)<=today()).sort((a,b)=>a.date<b.date?-1:1);
+const standing=()=>D.promises.filter(p=>p.state=="waiting");
+function madeThisWeek(){const n=today(),dow=(n.getDay()+6)%7,mon=new Date(n-dow*DAY);return D.promises.filter(p=>new Date(p.created)>=mon).length}
+
+/* ---------- today ---------- */
+function renderToday(){
+  const list=due(),shown=list.slice(0,7),st=$("#stack"),n=new Date();
+  $("#datestr").textContent=n.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  $("#hd").textContent=!list.length?(standing().length?"Nothing due today.":"Nothing here yet."):shown.length==1?"One person is waiting on you.":`${shown.length} people are waiting on you.`;
+  $("#bdg").style.display=list.length?"flex":"none";$("#bdg").textContent=list.length;
+  st.innerHTML="";if(openId===null&&shown.length)openId=shown[0].id;
+  shown.forEach(p=>{
+    const late=days(parseD(p.date),today()),v=annual(p.val);
+    const c=document.createElement("div");c.className="pc"+(p.id==openId?" open":"");c.dataset.id=p.id;
+    c.innerHTML=`<div class="ph"><span class="nm">${p.kind=="partner"?'<span class="tag p">partner</span>':""}${esc(p.name)}${v?`<span class="tag v">${k(v)}/yr</span>`:""}</span><span class="og">${esc(p.org||"")}</span></div>
+    <div class="pl">${esc(p.said||"—")}</div>
+    <div class="pb"><p class="said">${p.said?"&ldquo;"+esc(p.said)+"&rdquo;":"<span style='color:var(--ink3)'>No note.</span>"}</p>
+    <div class="mt">promised ${fmt(new Date(p.created))} · ${days(new Date(p.created),today())} days ago${late>0?` · <span class="od">${late}d past due</span>`:""}${v?`<br>${p.val.emps} emp · ${esc(p.val.bundle)} · ${p.val.freq}${p.val.disc?` · ${p.val.disc}% off`:""} → ${$$$(v)}/yr`:""}${p.moves.length?`<br>moved ${p.moves.length}×`:""}</div>
+    <div class="acts"><button class="b pri" data-a="talk">Talked</button><button class="b" data-a="move">Move</button>
+    <button class="b" data-a="val">${v?"Edit value":"Add value"}</button><button class="b quiet" data-a="let">Let go</button></div></div>`;
+    st.appendChild(c);
+  });
+  $("#mt").style.display=list.length?"none":"block";
+  if(!list.length){$("#mtsaid").textContent=standing().length?"Bell rung. That's everyone today.":"Nothing here yet.";
+    $("#mtsub").textContent=standing().length?`${standing().length} promises standing · ${madeThisWeek()} made this week`:"Tap + and put your first callback on a date."}
+  renderPace(list.length-shown.length);
+}
+function renderPace(extra){
+  const made=madeThisWeek(),tgt=+D.cfg.wk||0,pct=tgt?Math.min(100,made/tgt*100):0;
+  let pacing="";
+  if(D.cfg.fy&&+D.cfg.goal){
+    const wks=Math.max(1,Math.round(Math.max(0,days(today(),parseD(D.cfg.fy)))/7));
+    const need=Math.max(0,D.cfg.goal-D.cfg.won);
+    pacing=`<div class="pacesub"><b>${need}</b> deals in <b>${wks}</b> weeks — about <b>${(need/wks).toFixed(1)}</b> a week to hit club.</div>`;
   }
+  $("#pace").innerHTML=`<div class="pacetop"><span style="font-size:12.5px;color:var(--ink2)">New promises this week</span>
+  <span class="pacen">${made}<span style="font-size:14px;color:var(--ink3)"> / ${tgt}</span></span></div>
+  <div class="track"><div class="fill${made>=tgt&&tgt?" ok":""}" style="width:${pct}%"></div></div>
+  ${extra>0?`<div class="pacesub">${extra} more were due today. They're first tomorrow.</div>`:""}${pacing}`;
 }
 
-async function save(){
-  syncQueue.push({type:"save",data:JSON.parse(JSON.stringify(D)),ts:Date.now()});
-  clearTimeout(window.saveTimer);window.saveTimer=setTimeout(flushQueue,SYNC_DEBOUNCE);
-  updateSyncStatus();
+/* ---------- buckets shared by both charts ---------- */
+function buckets(){
+  const n=today(),weeks=[],months=[];
+  for(let i=0;i<8;i++){const s=new Date(n.getTime()+i*7*DAY);weeks.push({s,e:new Date(s.getTime()+7*DAY)})}
+  let cur=new Date(n.getTime()+8*7*DAY);
+  for(let i=0;i<11;i++){
+    const nx=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+    months.push({s:new Date(cur),e:nx});cur=nx;
+  }
+  return{weeks,months};
+}
+function drawChart(host,agg,cls,lab){
+  const{weeks,months}=buckets();
+  const wv=weeks.map(agg),mv=months.map(agg),mx=Math.max(1,...wv,...mv);
+  const bar=(v,b,i)=>`<div class="bar ${v?cls(v,b):"z"}" style="height:${Math.max(3,v/mx*104)}px;animation-delay:${i*14}ms" title="${fmt(b.s)} — ${lab(v)}"></div>`;
+  host.innerHTML=`<div class="chart">
+    <div class="zone" style="flex:8">
+      <div class="bars">${weeks.map((b,i)=>bar(wv[i],b,i)).join("")}</div>
+      <div class="axis">${weeks.map((b,i)=>`<span>${i%2?"":(b.s.getMonth()+1)+"/"+b.s.getDate()}</span>`).join("")}</div>
+      <div class="zcap">by week</div>
+    </div>
+    <div class="sep"></div>
+    <div class="zone" style="flex:11">
+      <div class="bars">${months.map((b,i)=>bar(mv[i],b,i+8)).join("")}</div>
+      <div class="axis">${months.map(b=>`<span>${b.s.toLocaleDateString(undefined,{month:"short"})}</span>`).join("")}</div>
+      <div class="zcap">by month</div>
+    </div></div>`;
 }
 
-async function flushQueue(){
-  if(isSyncing||!navigator.onLine||!syncQueue.length)return;
-  isSyncing=true;updateSyncStatus();
+function renderYear(){
+  const cnt=b=>standing().filter(p=>{const d=parseD(p.date);return d>=b.s&&d<b.e}).length;
+  drawChart($("#chart"),cnt,(v,b)=>b.s.getMonth()==0&&b.e-b.s>8*DAY?"jan":"",v=>v+" promise"+(v==1?"":"s"));
+  const{weeks,months}=buckets(),all=[...weeks,...months].map(cnt);
+  const jan=new Date(today().getFullYear(),0,1);if(jan<today())jan.setFullYear(jan.getFullYear()+1);
+  const wave=standing().filter(p=>{const d=parseD(p.date);return d>=new Date(jan.getFullYear()-1,8,1)&&d<new Date(jan.getFullYear(),1,1)}).length;
+  $("#figs").innerHTML=`<div class="fig"><em>standing</em><strong>${standing().length}</strong></div>
+    <div class="fig"><em>valued</em><strong>${valued().length}</strong></div>
+    <div class="fig"><em>this week</em><strong>${madeThisWeek()}</strong></div>`;
+  $("#wall").innerHTML=`<b>January 1 is ${days(today(),jan)} days out.</b> Small business payroll converts at the tax-year boundary more than any other date. You have <b>${wave}</b> promises landing between September and January. The calls that win a Jan 1 start happen in the fall, not in December.`;
+  const e=all.filter(x=>!x).length;
+  $("#yr").innerHTML=e?`<b>${e} of ${all.length} stretches are empty</b> — weeks or months where nobody owes you a conversation.`:"Every stretch has something in it.";
+}
+
+/* ---------- money ---------- */
+function renderMoney(){
+  const V=valued();
+  const gross=V.reduce((s,p)=>s+annual(p.val),0);
+  const exp=V.reduce((s,p)=>s+annual(p.val)*odds(p),0);
+  const noval=standing().length-V.length;
+  $("#hero").innerHTML=`<div class="l">expected annual revenue in pipeline</div><div class="n">${$$$(exp)}</div>
+    <div class="s">${$$$(gross)} if every one closed · ${V.length} valued${noval?` · ${noval} without a value yet`:""}</div>`;
+  const agg=b=>V.filter(p=>{const d=parseD(p.date);return d>=b.s&&d<b.e}).reduce((s,p)=>s+annual(p.val)*odds(p),0);
+  drawChart($("#mchart"),agg,()=>"money",v=>k(v));
+
+  const withD=V.filter(p=>p.val.disc!=null);
+  const avg=withD.length?withD.reduce((s,p)=>s+ +p.val.disc,0)/withD.length:0;
+  if(avg>0){
+    const lift=exp/(1-avg/100)*(1-(Math.max(0,avg-10))/100)-exp;
+    $("#lever").innerHTML=`<b>Your average discount is ${avg.toFixed(0)}%.</b> Holding ten points more across the same pipeline is worth about <b>${$$$(lift)}</b> a year — no extra prospecting required. It's the cheapest revenue on this screen.`;
+  } else $("#lever").innerHTML=`Add discounts as you quote and this will show what your discounting is costing you.`;
+
+  const needR=Math.max(0,(+D.cfg.rgoal||0)-(+D.cfg.rwon||0));
+  const needD=Math.max(0,(+D.cfg.goal||0)-(+D.cfg.won||0));
+  const cover=needR?Math.round(exp/needR*100):0;
+  $("#clubfigs").innerHTML=`<div class="fig"><em>revenue to club</em><strong>${$$$(needR)}</strong></div>
+    <div class="fig"><em>pipeline covers</em><strong>${cover}%</strong></div>`;
+  $("#mnote").innerHTML=needR?(cover>=100
+    ?`<b>Your weighted pipeline covers the revenue you still need.</b> The risk now is conversion, not volume. ${needD} deals still to close.`
+    :`<b>Your pipeline covers ${cover}% of the revenue you still need.</b> At your current close rates you'd need roughly ${$$$(needR-exp)} more in weighted pipeline — about ${gross&&V.length?Math.ceil((needR-exp)/(exp/V.length||1)):"—"} more prospects like the ones you have.`)
+    :`Set your club numbers in Setup and this becomes a gap calculation.`;
+}
+
+/* ---------- all ---------- */
+function renderAll(){
+  $("#filters").innerHTML=["all","prospect","partner","valued","released"].map(f=>`<button class="chip${filter==f?" on":""}" data-f="${f}">${f}</button>`).join("");
+  let l=D.promises.filter(p=>filter=="released"?p.state=="released":p.state=="waiting"&&(filter=="all"||(filter=="valued"?p.val&&p.val.emps:p.kind==filter)));
+  l.sort((a,b)=>a.date<b.date?-1:1);
+  $("#alllist").innerHTML=l.length?l.map(p=>{const v=annual(p.val);
+    return `<div class="row" data-id="${p.id}"><div style="min-width:0"><div class="nm" style="font-size:14px">${esc(p.name)}</div>
+    <div class="pl">${esc(p.org||p.said||"")}</div></div>
+    <div class="rd">${fmt(parseD(p.date))}${v?`<br><span style="color:var(--grn)">${k(v)}</span>`:""}</div></div>`}).join(""):`<p class="read">Nothing here.</p>`;
+}
+
+/* ---------- sheets ---------- */
+function open(h){$("#sheet").innerHTML=h;$("#veil").classList.add("on");setTimeout(()=>{const f=$("#sheet input,#sheet textarea");f&&f.focus()},80)}
+function closeSheet(){$("#veil").classList.remove("on")}
+$("#veil").onclick=e=>{if(e.target.id=="veil")closeSheet()};
+document.addEventListener("keydown",e=>{if(e.key=="Escape"&&$("#veil").classList.contains("on"))closeSheet()});
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2800)}
+function whenF(id,v){return`<label class="f">When<input class="t" id="${id}" value="${v||""}" placeholder="3 weeks / January 1 / the fall" autocomplete="off"></label><div class="parse" id="${id}p">—</div>`}
+function bindW(id){const i=$("#"+id),p=$("#"+id+"p");const r=()=>{const x=nlp(i.value);p.textContent=x?"→ "+parseD(x.date).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}):"→ can't read that — try \"3 weeks\" or \"January 1\"";i.dataset.iso=x?x.date:""};i.oninput=r;r()}
+
+function valBlock(v){
+  v=v||{emps:"",bundle:D.cfg.bundles[0]?.n||"",freq:"Biweekly",addons:[],disc:0};
+  return `<div class="two"><label class="f">Employees<input class="t mono" id="ve" type="number" min="1" value="${v.emps||""}" placeholder="14"></label>
+  <label class="f">Pay frequency<select class="t" id="vf">${Object.keys(FREQ).map(f=>`<option${f==v.freq?" selected":""}>${f}</option>`).join("")}</select></label></div>
+  <label class="f">Bundle</label><div class="chips" id="vb">${D.cfg.bundles.map(b=>`<button class="chip${b.n==v.bundle?" on":""}" data-b="${esc(b.n)}">${esc(b.n)}</button>`).join("")}</div>
+  <label class="f">Add-ons</label><div class="chips" id="va">${D.cfg.addons.map(a=>`<button class="chip${(v.addons||[]).includes(a.n)?" on":""}" data-a="${esc(a.n)}">${esc(a.n)}</button>`).join("")}</div>
+  <label class="f">Discount <span class="mono" id="vdl">${v.disc||0}%</span><input type="range" id="vd" min="0" max="59" value="${v.disc||0}"></label>
+  <div class="est"><div class="n" id="vn">$0</div><div class="l" id="vl">annual revenue</div></div>`;
+}
+function bindVal(){
+  const g=()=>({emps:+$("#ve").value||0,bundle:$("#vb .chip.on")?.dataset.b||"",freq:$("#vf").value,
+    addons:$$("#va .chip.on").map(c=>c.dataset.a),disc:+$("#vd").value});
+  const up=()=>{const v=g(),a=annual(v);$("#vn").textContent=$$$(a);
+    $("#vl").textContent=v.emps?`${v.emps} emp · ${v.freq.toLowerCase()} · ${FREQ[v.freq]} runs/yr`:"annual revenue";$("#vdl").textContent=v.disc+"%"};
+  $("#ve").oninput=up;$("#vf").onchange=up;$("#vd").oninput=up;
+  $("#vb").onclick=e=>{if(e.target.dataset.b){$$("#vb .chip").forEach(c=>c.classList.toggle("on",c==e.target));up()}};
+  $("#va").onclick=e=>{if(e.target.dataset.a){e.target.classList.toggle("on");up()}};
+  up();return g;
+}
+function sheetVal(p,card){
+  open(`<h3>${esc(p.name)}</h3><div class="sub">What's this worth if it closes?</div>${valBlock(p.val)}
+  <label class="f">How real is it?</label><div class="chips" id="vs">
+  ${[["quoted","Quoted"],["interested","Interested"],["callback","Just a callback"]].map(s=>`<button class="chip${(p.stage||"callback")==s[0]?" on":""}" data-s="${s[0]}">${s[1]}</button>`).join("")}</div>
+  <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="ok">Save</button></div>`);
+  const g=bindVal();let stage=p.stage||"callback";
+  $("#vs").onclick=e=>{if(e.target.dataset.s){stage=e.target.dataset.s;$$("#vs .chip").forEach(c=>c.classList.toggle("on",c==e.target))}};
+  $("#ok").onclick=async()=>{p.val=g();p.stage=stage;await save();closeSheet();renderToday();renderAll();toast(`${$$$(annual(p.val))} a year.`)};
+}
+function sheetNew(){
+  open(`<h3>New promise</h3><div class="sub">Who owes you a conversation, and when.</div>
+  <div class="chips" style="margin-top:14px" id="nk"><button class="chip on" data-k="prospect">Prospect</button><button class="chip" data-k="partner">Referral partner</button></div>
+  <label class="f">Who<input class="t" id="nn" placeholder="Ray Okonjo" autocomplete="off"></label>
+  <label class="f">Company<input class="t" id="no" placeholder="Fairview Landscaping" autocomplete="off"></label>
+  <label class="f">What did they say?<textarea class="t" id="ns" rows="2" placeholder="locked in with Paychex through year end, call me in the fall"></textarea></label>
+  ${whenF("nw","")}
+  <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b" id="okv">Promise + value</button><button class="b pri" id="ok">Promise</button></div>`);
+  bindW("nw");let kind="prospect";
+  $("#nk").onclick=e=>{if(e.target.dataset.k){kind=e.target.dataset.k;$$("#nk .chip").forEach(c=>c.classList.toggle("on",c==e.target))}};
+  const mk=async()=>{const n=$("#nn").value.trim(),d=$("#nw").dataset.iso;
+    if(!n){toast("Needs a name.");return null}if(!d){toast("Needs a date it can read.");return null}
+    const p={id:Date.now(),kind,name:n,org:$("#no").value.trim(),said:$("#ns").value.trim(),why:"",date:d,
+      created:iso(today()),moves:[],state:"waiting",stage:"callback",val:null};
+    D.promises.push(p);await save();return p};
+  $("#ok").onclick=async()=>{const p=await mk();if(p){closeSheet();render();toast(`Promised. Lands ${fmt(parseD(p.date))}.`)}};
+  $("#okv").onclick=async()=>{const p=await mk();if(p){render();sheetVal(p,null)}};
+}
+function sheetTalk(p,card){
+  open(`<h3>You talked to ${esc(p.name.split(" ")[0])}</h3><div class="sub">When do you owe them the next one?</div>
+  <label class="f">What did they say?<textarea class="t" id="ts" rows="2"></textarea></label>${whenF("tw","")}
+  <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b" id="done">Nothing further</button><button class="b pri" id="ok">Promise</button></div>`);
+  bindW("tw");
+  $("#done").onclick=async()=>{p.state="released";await save();closeSheet();keep(card,"Marked done.")};
+  $("#ok").onclick=async()=>{const d=$("#tw").dataset.iso;if(!d)return toast("Needs a date it can read.");
+    p.state="kept";D.promises.push({id:Date.now(),kind:p.kind,name:p.name,org:p.org,said:$("#ts").value.trim(),why:"",
+      date:d,created:iso(today()),moves:[],state:"waiting",stage:p.stage||"callback",val:p.val||null});
+    await save();closeSheet();keep(card,`Kept. Back ${fmt(parseD(d))}.`)};
+}
+function sheetMove(p,card){
+  const h=p.moves.length?`<div class="hist">Move #${p.moves.length+1}.<br>${p.moves.map(m=>`${m.from} → ${m.to} — ${esc(m.why)}`).join("<br>")}</div>`:"";
+  const n=p.moves.length>=2?`<div class="nudge">Moved ${p.moves.length} times already. It may not be real. Letting go isn't losing — it's making room.</div>`:"";
+  open(`<h3>Move ${esc(p.name)}</h3><div class="sub">Due ${fmt(parseD(p.date))}</div>${whenF("mw","")}
+  <label class="f">What changed?<textarea class="t" id="mr" rows="2"></textarea></label>${h}${n}
+  <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="ok">Move</button></div>`);
+  bindW("mw");
+  $("#ok").onclick=async()=>{const d=$("#mw").dataset.iso,w=$("#mr").value.trim();
+    if(!d)return toast("Needs a date it can read.");if(!w)return toast("Say what changed. That's the point.");
+    p.moves.push({from:fmt(parseD(p.date)),to:fmt(parseD(d)),why:w});p.date=d;await save();closeSheet();keep(card,`Moved to ${fmt(parseD(d))}.`)};
+}
+function sheetLet(p,card){
+  open(`<h3>Let go of ${esc(p.name)}</h3><div class="sub">Leaves your horizon. Kept in Released.</div>
+  <label class="f">Why<textarea class="t" id="lr" rows="2" placeholder="signed with Gusto in May"></textarea></label>
+  <div class="sa"><button class="b quiet danger" id="del">Delete instead</button>
+  <button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="ok">Let go</button></div>`);
+  $("#ok").onclick=async()=>{p.state="released";p.why=$("#lr").value.trim();await save();closeSheet();keep(card,"Released.")};
+  $("#del").onclick=()=>del(p.id,card);
+}
+async function del(id,card){
+  const p=D.promises.find(x=>x.id==id);if(!p)return;
+  if(!confirm(`Delete ${p.name} permanently? This can't be undone.`))return;
+  D.promises=D.promises.filter(x=>x.id!=id);await save();closeSheet();
+  if(card){openId=null;render()}else{render();renderAll()}
+  toast("Deleted.");
+}
+function keep(card,msg){
+  if(card){const r=card.getBoundingClientRect(),t=$('[data-go="year"]').getBoundingClientRect();
+    const s=document.createElement("div");s.className="spark";s.style.left=(r.left+24)+"px";s.style.top=(r.top+20)+"px";
+    document.body.appendChild(s);
+    s.animate([{transform:"translate(0,0)",opacity:1},{transform:`translate(${t.left+t.width/2-r.left-24}px,${t.top+10-r.top-20}px) scale(.4)`,opacity:0}],
+      {duration:540,easing:"cubic-bezier(.4,.05,.2,1)"}).onfinish=()=>s.remove();
+    card.classList.add("lift")}
+  setTimeout(()=>{openId=null;render();toast(msg)},240);
+}
+
+/* ---------- setup tables ---------- */
+function rows(id,arr){
+  $("#"+id).innerHTML=arr.map((r,i)=>`<div class="ptab"><input value="${esc(r.n)}" data-i="${i}" data-f="n">
+    <input class="mono" type="number" step="0.01" value="${r.b||""}" data-i="${i}" data-f="b" placeholder="0">
+    <input class="mono" type="number" step="0.01" value="${r.p||""}" data-i="${i}" data-f="p" placeholder="0"></div>`).join("");
+  $("#"+id).oninput=e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;arr[i][f]=f=="n"?e.target.value:+e.target.value||0};
+}
+
+/* ---------- the next few days ---------- */
+function renderAhead(){
+  const host=$("#ahead"),n=today();
+  const rows=[];
+  for(let i=1;i<=6;i++){
+    const d=new Date(n.getTime()+i*DAY),w=d.getDay(),we=(w==0||w==6);
+    const due=D.promises.filter(p=>p.state=="waiting"&&p.date==iso(d));
+    rows.push({d,we,due});
+  }
+  if(!D.promises.length&&!ACC().length){host.innerHTML="";return}
+  const per=ACC().length?Math.min(+D.cfg.cap||12,Math.max(1,Math.ceil(perDay()))):0;
+  const nothing=!rows.some(r=>r.due.length)&&!per;
+  const mx=Math.max(1,...rows.map(r=>r.due.length+(r.we?0:per)));
+  host.innerHTML=`<div class="planh"><span>The next few days</span><b>how it's shaping up</b></div>`+
+  rows.map(r=>{
+    const book=r.we?0:per,tot=r.due.length+book,heavy=r.due.length>=5;
+    const names=r.due.slice(0,3).map(p=>esc(p.name.split(" ")[0])).join(", ");
+    return `<div class="ad${r.we?" we":""}${heavy?" heavy":""}">
+      <div class="dd">${r.d.toLocaleDateString(undefined,{weekday:"short"})}<b>${r.d.getDate()}</b></div>
+      <div class="db"><span class="load" style="width:${tot/mx*70}px"></span>${
+        r.we?"weekend"
+        :tot?`${r.due.length?`<span class="who">${r.due.length} promise${r.due.length>1?"s":""}</span>${names?" — "+names+(r.due.length>3?` +${r.due.length-3}`:""):""}`:""}${r.due.length&&book?" · ":""}${book?`${book} from book`:""}`
+        :"clear"}</div></div>`}).join("")+
+  (rows.some(r=>r.due.length>=5)?`<p class="read" style="font-size:12.5px">A day with five or more promises is a day you'll fall behind on. Move something now while it's cheap.</p>`:"")+
+  (nothing?`<p class="read" style="font-size:12.5px">Nothing lands in the next six days. That's a quiet week — which is either earned, or a sign your near horizon needs filling.</p>`:"");
+}
+
+/* ---------- scan ---------- */
+function loadJS(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+async function scanFiles(files){
+  const p=$("#prog"),bar=p.firstElementChild;
+  p.style.display="block";bar.style.width="4%";
   try{
-    const {data:userData,error:uerr}=await supabase.auth.getSession();
-    if(uerr||!userData.session){
-      const {data,error}=await supabase.auth.signInAnonymously();
-      if(error)throw error;
-    }
-    for(const op of syncQueue){
-      const {data,error}=await supabase.from("bellwether_data").upsert([{
-        id:"config",data:op.data,updated_at:new Date()
-      }],{onConflict:"id"});
-      if(error)throw error;
-    }
-    syncQueue=[];lastSync=Date.now();updateSyncStatus();
-  } catch(e){
-    console.error("Sync error:",e);updateSyncStatus();
-  } finally{
-    isSyncing=false;
+    if(!window.Tesseract)await loadJS("https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js");
+  }catch(e){p.style.display="none";return toast("Needs internet the first time to load the reader.")}
+  let out=[];
+  for(let i=0;i<files.length;i++){
+    try{
+      const w=await Tesseract.createWorker("eng",1,{logger:m=>{
+        if(m.status=="recognizing text")bar.style.width=((i+m.progress)/files.length*100).toFixed(0)+"%"}});
+      const{data:{text}}=await w.recognize(files[i]);await w.terminate();
+      out.push(text.trim());
+    }catch(e){}
   }
+  p.style.display="none";bar.style.width="0";
+  const txt=out.join("\n").split(/\r?\n/).map(l=>l.replace(/\s{2,}/g,"\t").trim()).filter(l=>l).join("\n");
+  if(!txt)return toast("Couldn't read anything. Try more light and hold it square.");
+  const box=$("#pastebox");
+  box.value=(box.value?box.value+"\n":"")+txt;
+  box.scrollIntoView({behavior:"smooth",block:"center"});
+  toast("Read it. Check the columns, then Import.");
 }
 
-async function loadFromDB(){
-  try{
-    const {data:userData,error:uerr}=await supabase.auth.getSession();
-    if(uerr||!userData.session){
-      const {data,error}=await supabase.auth.signInAnonymously();
-      if(error)throw error;
-    }
-    const {data,error}=await supabase.from("bellwether_data").select("*").eq("id","config").single();
-    if(error&&error.code!=="PGRST116"){
-      throw error;
-    }
-    if(data?.data){
-      D=data.data;
-      D.cfg=Object.assign({},DEF,D.cfg);
-      lastSync=new Date(data.updated_at).getTime();
-    } else {
-      loadLocal();
-    }
-  } catch(e){
-    console.error("DB load error:",e);
-    loadLocal();
+/* ---------- the book ---------- */
+let bfilter="all",impType="client";
+const ACC=()=>D.accts||(D.accts=[]);
+const unmet=()=>ACC().filter(a=>!a.lastMet);
+function workdays(a,b){let n=0,d=new Date(a);while(d<b){const w=d.getDay();if(w&&w<6)n++;d=new Date(d.getTime()+DAY)}return n}
+function perDay(){
+  const end=D.cfg.qEnd?parseD(D.cfg.qEnd):null;if(!end)return 0;
+  const wd=Math.max(1,workdays(today(),end));
+  return unmet().length/wd;
+}
+function why(a){
+  const w=[];
+  if(!a.lastMet)w.push(['new','never met']);
+  if(a.type=="client"&&a.emps>=10&&a.emps<=150)w.push(['peo','PEO fit']);
+  if(a.type=="client"&&a.emps>=10&&/essential|basic|enhanced/i.test(a.bundle||""))w.push(['up','upgrade fit']);
+  if(a.type=="partner")w.push(['','referral source']);
+  return w;
+}
+function score(a){
+  if(a.skip==iso(today()))return -1;
+  let s=a.lastMet?Math.min(60,days(parseD(a.lastMet),today())/3):100;
+  if(a.type=="partner")s+=14;
+  if(a.type=="client"&&a.emps>=10&&a.emps<=150)s+=22;
+  if(a.type=="client"&&a.emps>=10&&/essential|basic|enhanced/i.test(a.bundle||""))s+=14;
+  if(a.type=="prospect"&&a.emps>=5)s+=8;
+  return s;
+}
+function renderPlan(){
+  const host=$("#plan");
+  if(!ACC().length){host.innerHTML="";return}
+  const need=Math.min(+D.cfg.cap||12,Math.max(1,Math.ceil(perDay())));
+  const pick=ACC().filter(a=>score(a)>=0).sort((a,b)=>score(b)-score(a)).slice(0,need);
+  host.innerHTML=`<div class="planh"><span>Then work your book</span><b>${pick.length} today · ${perDay().toFixed(1)}/day to finish</b></div>`+
+    (pick.length?pick.map(a=>`<div class="pr" data-a="${a.id}">
+      <button class="tick" data-do="met" aria-label="Mark met"></button>
+      <div class="i"><div class="n">${esc(a.name)}</div>
+      <div class="s">${why(a).map(w=>`<span class="why ${w[0]}">${w[1]}</span>`).join("")}${a.emps?a.emps+" emp":""}${a.bundle?" · "+esc(a.bundle):""}${a.lastMet?" · last "+fmt(parseD(a.lastMet)):""}</div></div>
+      <button class="x" data-do="skip">later</button></div>`).join("")
+    :`<p class="read">Nothing left to work today.</p>`);
+}
+function renderBook(){
+  renderBatches();
+  const A=ACC(),met=A.filter(a=>a.lastMet).length;
+  const end=D.cfg.qEnd?parseD(D.cfg.qEnd):null;
+  const wd=end?workdays(today(),end):0;
+  $("#cov").innerHTML=A.length?`<div class="pacetop"><span style="font-size:12.5px;color:var(--ink2)">Met at least once</span>
+    <span class="pacen">${met}<span style="font-size:14px;color:var(--ink3)"> / ${A.length}</span></span></div>
+    <div class="track"><div class="fill${met>=A.length?" ok":""}" style="width:${A.length?met/A.length*100:0}%"></div></div>
+    <div class="pacesub">${end?`<b>${unmet().length}</b> to go in <b>${wd}</b> working days — <b>${perDay().toFixed(1)}</b> a day.`:"Set a date in Setup to get a daily number."}</div>`
+    :`<p style="font-size:13.5px;color:var(--ink2)">Nothing imported yet. Paste your territory below and the daily plan starts building itself.</p>`;
+  const T={all:A,client:A.filter(a=>a.type=="client"),prospect:A.filter(a=>a.type=="prospect"),partner:A.filter(a=>a.type=="partner"),unmet:unmet()};
+  $("#bfilters").innerHTML=Object.keys(T).map(f=>`<button class="chip${bfilter==f?" on":""}" data-b="${f}">${f} ${T[f].length}</button>`).join("");
+  const l=[...T[bfilter]].sort((a,b)=>score(b)-score(a)).slice(0,120);
+  $("#booklist").innerHTML=l.length?l.map(a=>`<div class="bk" data-a="${a.id}"><div style="min-width:0">
+    <div style="font-size:14px;font-weight:500">${esc(a.name)}</div>
+    <div class="s" style="font-size:12px;color:var(--ink3)">${a.emps?a.emps+" emp":""}${a.bundle?" · "+esc(a.bundle):""}${a.city?" · "+esc(a.city):""}</div></div>
+    <div class="rd">${a.lastMet?fmt(parseD(a.lastMet)):"—"}</div></div>`).join("")+
+    (T[bfilter].length>120?`<p class="read" style="font-size:12px">showing 120 of ${T[bfilter].length}</p>`:"")
+    :`<p class="read">None.</p>`;
+}
+function parseRows(txt,type){
+  const lines=txt.trim().split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const del=lines[0].includes("\t")?"\t":",";
+  const cut=l=>{const o=[];let c="",q=0;for(const ch of l){if(ch=='"')q=!q;else if(ch==del&&!q){o.push(c);c=""}else c+=ch}o.push(c);return o.map(s=>s.trim().replace(/^"|"$/g,""))};
+  const H=cut(lines[0]).map(h=>h.toLowerCase());
+  const find=(...k)=>H.findIndex(h=>k.some(x=>h.includes(x)));
+  const iN=find("account name","company","client name","name","dba"),
+        iE=find("employee","headcount","ee count","emp"),
+        iB=find("product","bundle","platform","package","plan"),
+        iF=find("frequency","pay cycle","payroll freq"),
+        iC=find("city","town"),
+        iL=find("last activity","last meeting","last contact","last touch");
+  const out=[];
+  lines.slice(1).forEach((l,i)=>{
+    const r=cut(l);const nm=(iN>=0?r[iN]:r[0])||"";
+    if(!nm)return;
+    let lm="";if(iL>=0&&r[iL]){const d=new Date(r[iL]);if(!isNaN(d))lm=iso(d)}
+    out.push({id:Date.now()+i,type,name:nm,emps:iE>=0?parseInt(String(r[iE]).replace(/\D/g,""))||0:0,
+      bundle:iB>=0?r[iB]:"",freq:iF>=0?r[iF]:"",city:iC>=0?r[iC]:"",lastMet:lm,skip:""});
+  });
+  return out;
+}
+async function doImport(txt,label,type){
+  const rows=parseRows(txt,type||impType);
+  if(!rows.length)return toast("Couldn't read that. Needs a header row.");
+  const have=new Set(ACC().map(a=>a.name.toLowerCase()));
+  const add=rows.filter(r=>!have.has(r.name.toLowerCase()));
+  if(!add.length){$("#pastebox").value="";return toast("All of those are already in your book.")}
+  const bid="b"+Date.now();
+  add.forEach(a=>a.batch=bid);
+  D.batches=(D.batches||[]).concat([{id:bid,label:label||"Pasted rows",type:type||impType,when:iso(today()),n:add.length}]);
+  D.accts=ACC().concat(add);await save();
+  $("#pastebox").value="";renderBook();renderToday();renderAhead();
+  toast(`${add.length} added${rows.length-add.length?`, ${rows.length-add.length} already there`:""}.`);
+}
+function renderBatches(){
+  const B=D.batches||[],loose=ACC().filter(a=>!a.batch).length;
+  const host=$("#batches");if(!host)return;
+  if(!B.length&&!loose){host.innerHTML="";return}
+  host.innerHTML=`<div style="margin-top:14px;font-size:12px;color:var(--ink3)">Imported so far</div>`+
+    B.map(b=>`<div class="bk" data-batch="${b.id}"><div style="min-width:0">
+      <div style="font-size:13.5px;font-weight:500">${esc(b.label)}</div>
+      <div style="font-size:11.5px;color:var(--ink3)">${b.n} ${b.type}${b.n>1?"s":""} · ${fmt(parseD(b.when))}</div></div>
+      <button class="b quiet danger" data-del="${b.id}" style="flex:none">Remove</button></div>`).join("")+
+    (loose?`<div class="bk"><div style="min-width:0"><div style="font-size:13.5px;font-weight:500">Earlier import</div>
+      <div style="font-size:11.5px;color:var(--ink3)">${loose} accounts · added before imports were tracked</div></div>
+      <button class="b quiet danger" data-del="loose" style="flex:none">Remove</button></div>`:"");
+}
+async function delBatch(id){
+  const b=(D.batches||[]).find(x=>x.id==id);
+  const n=id=="loose"?ACC().filter(a=>!a.batch).length:(b?b.n:0);
+  if(!confirm(`Remove ${n} accounts from "${id=="loose"?"Earlier import":b.label}"? Promises you already made are kept.`))return;
+  D.accts=ACC().filter(a=>id=="loose"?a.batch:a.batch!=id);
+  D.batches=(D.batches||[]).filter(x=>x.id!=id);
+  await save();renderBook();renderToday();renderAhead();toast(`Removed ${n}.`);
+}
+
+/* ---------- events ---------- */
+$("#plan").onclick=async e=>{
+  const row=e.target.closest(".pr");if(!row)return;
+  const a=ACC().find(x=>x.id==row.dataset.a),d=e.target.dataset.do;
+  if(d=="skip"){a.skip=iso(today());await save();renderPlan();renderAhead();return}
+  if(d=="met"){
+    a.lastMet=iso(today());await save();
+    open(`<h3>${esc(a.name)}</h3><div class="sub">Met today. When do you owe them the next conversation?</div>
+    <label class="f">What did they say?<textarea class="t" id="bs" rows="2"></textarea></label>${whenF("bw","")}
+    <div class="sa"><button class="b quiet" id="none">Nothing to schedule</button><button class="b pri" id="ok">Promise</button></div>`);
+    bindW("bw");
+    $("#none").onclick=()=>{closeSheet();renderPlan();renderBook();toast("Marked met.")};
+    $("#ok").onclick=async()=>{const dt=$("#bw").dataset.iso;if(!dt)return toast("Needs a date it can read.");
+      D.promises.push({id:Date.now(),kind:a.type=="partner"?"partner":"prospect",name:a.name,org:a.city||"",
+        said:$("#bs").value.trim(),why:"",date:dt,created:iso(today()),moves:[],state:"waiting",stage:"callback",
+        val:a.emps?{emps:a.emps,bundle:D.cfg.bundles[0]?.n||"",freq:"Biweekly",addons:[],disc:0}:null});
+      await save();closeSheet();render();renderBook();toast(`Promised. Back ${fmt(parseD(dt))}.`)};
   }
-  updateSyncStatus();
+};
+$("#bfilters").onclick=e=>{if(e.target.dataset.b){bfilter=e.target.dataset.b;renderBook()}};
+$("#batches").onclick=e=>{const id=e.target.dataset.del;if(id)delBatch(id)};
+function guessType(n){n=(n||"").toLowerCase();
+  if(/cpa|partner|referral|accountant|banker|broker/.test(n))return"partner";
+  if(/competitor|prospect|target|non.?client|cold/.test(n))return"prospect";
+  if(/client|book|territory|install/.test(n))return"client";
+  return impType}
+async function takeFiles(files){
+  const csv=[...files].filter(f=>/\.(csv|tsv|txt)$/i.test(f.name)||/text/.test(f.type));
+  const img=[...files].filter(f=>/^image\//.test(f.type));
+  if(img.length)return scanFiles(img);
+  if(!csv.length)return toast("Drop a .csv, .tsv or .txt — or an image to scan.");
+  for(const f of csv){const t=guessType(f.name);await doImport(await f.text(),f.name,t)}
 }
+["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{
+  if(!e.dataTransfer||![...e.dataTransfer.types].includes("Files"))return;
+  e.preventDefault();
+  if($("#s-book").classList.contains("on"))$(".imp").classList.add("drag")}));
+["dragleave","dragend"].forEach(ev=>document.addEventListener(ev,e=>{
+  if(e.relatedTarget)return;$(".imp").classList.remove("drag")}));
+document.addEventListener("drop",e=>{
+  e.preventDefault();$(".imp").classList.remove("drag");
+  if(!e.dataTransfer.files.length)return;
+  if(!$("#s-book").classList.contains("on")){
+    $$(".nb").forEach(b=>{if(b.dataset.go=="book")b.click()});
+  }
+  takeFiles(e.dataTransfer.files)});
+$("#ityp").onclick=e=>{if(e.target.dataset.t){impType=e.target.dataset.t;$$("#ityp .chip").forEach(c=>c.classList.toggle("on",c==e.target))}};
+$("#doimp").onclick=()=>doImport($("#pastebox").value,"Pasted "+new Date().toLocaleDateString());
+$("#scan").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";i.multiple=true;i.onchange=()=>{if(i.files.length)scanFiles([...i.files])};i.click()};
+$("#pickfile").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".csv,.txt,.tsv";
+  i.onchange=async()=>{const f=i.files[0];if(f)doImport(await f.text(),f.name)};i.click()};
+$("#clearbook").onclick=async()=>{if(!confirm("Remove every account from your book? Promises are unaffected."))return;
+  D.accts=[];D.batches=[];await save();renderBook();renderToday();renderAhead();toast("Book cleared.")};
+$("#booklist").onclick=e=>{const r=e.target.closest(".bk");if(!r)return;
+  const a=ACC().find(x=>x.id==r.dataset.a);
+  open(`<h3>${esc(a.name)}</h3><div class="sub">${[a.emps?a.emps+" employees":"",a.bundle,a.city].filter(Boolean).join(" · ")}</div>
+  <div class="hist">${why(a).map(w=>w[1]).join(" · ")||"—"}<br>${a.lastMet?"last met "+fmt(parseD(a.lastMet)):"never met"}</div>
+  <div class="sa"><button class="b quiet" onclick="closeSheet()">Close</button></div>`)};
 
-function loadLocal(){
-  const stored=localStorage.getItem("bellwether");
-  D=stored?JSON.parse(stored):{promises:[],accts:[],cfg:{}};
-  D.cfg=Object.assign({},DEF,D.cfg);
-}
+$("#stack").onclick=e=>{const c=e.target.closest(".pc");if(!c)return;
+  const p=D.promises.find(x=>x.id==c.dataset.id),a=e.target.dataset.a;
+  if(a=="talk")return sheetTalk(p,c);if(a=="move")return sheetMove(p,c);
+  if(a=="val")return sheetVal(p,c);if(a=="let")return sheetLet(p,c);
+  openId=p.id;renderToday()};
+$("#alllist").onclick=e=>{const r=e.target.closest(".row");if(!r)return;
+  const p=D.promises.find(x=>x.id==r.dataset.id),v=annual(p.val);
+  open(`<h3>${esc(p.name)}</h3><div class="sub">${esc(p.org||"")} · due ${fmt(parseD(p.date))}</div>
+  ${p.said?`<p class="said" style="font-size:19px;margin-top:14px">&ldquo;${esc(p.said)}&rdquo;</p>`:""}
+  ${v?`<div class="est"><div class="n">${$$$(v)}</div><div class="l">${p.val.emps} emp · ${esc(p.val.bundle)} · ${p.val.freq} · ${p.val.disc}% off · ${Math.round(odds(p)*100)}% odds</div></div>`:""}
+  <div class="hist">promised ${fmt(new Date(p.created))}${p.moves.length?"<br>"+p.moves.map(m=>`${m.from} → ${m.to} — ${esc(m.why)}`).join("<br>"):""}</div>
+  <div class="sa"><button class="b quiet danger" onclick="del(${p.id})">Delete</button>
+  <button class="b quiet" onclick="closeSheet()">Close</button></div>`)};
+$("#filters").onclick=e=>{if(e.target.dataset.f){filter=e.target.dataset.f;renderAll()}};
+$("#fab").onclick=sheetNew;
+$("#addb").onclick=()=>{D.cfg.bundles.push({n:"New bundle",b:0,p:0});rows("bundles",D.cfg.bundles)};
+$("#adda").onclick=()=>{D.cfg.addons.push({n:"New add-on",b:0,p:0});rows("addons",D.cfg.addons)};
+$$(".nb").forEach(b=>b.onclick=()=>{const g=b.dataset.go;document.body.dataset.s=g;
+  $$(".screen").forEach(s=>s.classList.toggle("on",s.id=="s-"+g));
+  $$(".nb").forEach(x=>x.classList.toggle("on",x==b));
+  if(g=="year")renderYear();if(g=="money")renderMoney();if(g=="all")renderAll();if(g=="book")renderBook();window.scrollTo(0,0)});
+$("#save").onclick=async()=>{["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{
+  D.cfg[f]=(f=="fy"||f=="qEnd")?$("#"+f).value:+$("#"+f).value||0});await save();render();toast("Saved.")};
+$("#exp").onclick=()=>{const b=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="horizon-"+iso(today())+".json";a.click()};
+$("#imp").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json";
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;D=JSON.parse(await f.text());D.cfg=Object.assign({},DEF,D.cfg);await save();render();toast("Imported.")};i.click()};
 
-/* ========== ORIGINAL CODE (unchanged) ========== */
-const $=(s,p=document)=>p.querySelector(s);
-const $$=(s,p=document)=>p.querySelectorAll(s);
-const $$$=(s,p=document)=>[...p.querySelectorAll(s)];
-const $$$$=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
-const today=()=>new Date;
-const iso=d=>d.toISOString().split("T")[0];
-const parseD=s=>new Date(s+"T00:00:00");
-const fmt=d=>d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-const esc=h=>(new DOMParser).parseFromString("<p>"+h,"text/html").body.textContent;
-let D={promises:[],accts:[],cfg:{}},openId=null,bfilter="",impType="client",filter="";
-const DEF={fy:"2025-01",qEnd:"2025-03-31",wk:5,fy:125000,goal:160000,rgoal:30,won:0,rwon:0,o1:0,o2:0,o3:0,cap:150000,bundles:[{n:"Essentials",b:30,p:50},{n:"Premier",b:60,p:100}],addons:[{n:"Time & Attendance",b:5,p:15},{n:"HCM+",b:10,p:30}]};
-function ACC(){return D.accts}
-function chk(nm){return D.promises.filter(p=>p.date===iso(today())&&p.kind===nm)}
-function open(html){$("#sheet").innerHTML=html;$("#sheet").style.display="block";$("#sheet").classList.remove("hide")}
-function closeSheet(){$("#sheet").classList.add("hide");setTimeout(()=>$("#sheet").style.display="none",300)}
-async function del(id){const p=D.promises.find(x=>x.id==id);
-  if(!confirm(`Delete "${esc(p.name)}" — promised for ${fmt(parseD(p.date))}?`))return;
-  D.promises=D.promises.filter(x=>x.id!=id);await save();render();closeSheet();toast(`Deleted.`)}
-function odd(p){const d=parseD(p.date)-today();return Math.max(0,1-Math.max(0,d)/(60*24*60*1e3*365))}
-function odds(p){return odd(p)*(p.moves?.length?1-.1*p.moves.length:1)}
-function annual(v){if(!v)return 0;const f=v.freq||"Biweekly";let py;if(f==="Monthly")py=v.b*12;else if(f==="Biweekly")py=v.b*26;else py=v.b*52;
-  return Math.round(py*(1-v.disc/100)+(v.addons||[]).reduce((a,x)=>a+x.b*(f==="Monthly"?12:f==="Biweekly"?26:52),0))}
-function why(a){const w=[];if(a.tags?.length)a.tags.forEach(t=>{const b=D.cfg.bundles.find(x=>x.n===t);if(b)w.push([b.n,b.p])});if(!w.length&&a.bundle){const b=D.cfg.bundles.find(x=>x.n===a.bundle);if(b)w.push([b.n,b.p])}return w}
-function toast(m){const t=document.createElement("div");t.textContent=m;t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;font-family:'IBM Plex Mono',monospace;z-index:9999";document.body.appendChild(t);setTimeout(()=>t.remove(),2000)}
-function renderToday(){const c=chk("prospect"),p=chk("partner");
-  let h="";if(c.length||p.length){
-    const m=[...c,...p].sort((a,b)=>parseD(a.date)-parseD(b.date));
-    h+='<div class="stack">';m.forEach(x=>{
-      const v=annual(x.val),odd=odds(x),stat=x.state==="done"?"✓":x.state==="waiting"?x.stage==="callback"?"📞":"📧":"";
-      h+=`<div class="pc" data-id="${x.id}"><div class="ph"><div><div class="nm">${esc(x.name)}</div><div class="pl">${esc(x.org)}</div></div><div style="flex:none;text-align:right"><div class="og">${stat}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${v?$$$$​(v):"—"}</div></div></div><div class="pb"><p class="said">"${esc(x.said)}"</p><div class="mt">${x.moves?.length?x.moves.map(m=>`${m.from} → ${m.to}: ${esc(m.why)}`).join("<br>"):"No moves yet"}</div><div class="acts"><button class="b quiet" data-a="talk">Notes</button><button class="b quiet" data-a="move">Move</button>${v?'<button class="b quiet" data-a="val">Value</button>':""}${x.state==="waiting"?'<button class="b quiet" data-a="let">Close</button>':""}</div></div></div>`;
-    });h+="</div>"}else h='<div class="empty"><p class="said">Nothing on today's plate.</p><p>You're ahead of schedule.</p></div>';
-  const today=chk("client");if(today.length){h+="<h2>Territory</h2>";h+='<div class="stack">';today.forEach(x=>{const v=annual(x.val);h+=`<div class="pr" data-a="${x.id}"><div class="ph"><div class="nm">${esc(x.name)}</div><button data-do="met" style="text-decoration:underline;border:none;background:none;padding:0;color:var(--ac)">met</button></div><div class="org">${esc(x.org)}</div></div>`;});h+='</div>';h+='<button id="fab" class="b pri" style="margin-top:16px;width:100%">+ New promise</button>';}else h+='<div style="margin-top:20px"><button id="fab" class="b pri" style="width:100%">+ New promise</button></div>';
-  $("#plan").innerHTML=h;let cheerHtml='<div class="cheer"><svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><p class="said">You keep your word.</p><p>That's how you stay ahead.</p></div>';$("#cheer").innerHTML=cheerHtml}
-function renderPlan(){const all=D.promises.filter(x=>x.kind==="prospect"||x.kind==="partner");
-  if(!all.length)return;const weeks=52,today_iso=iso(today()),ahead=[];
-  for(let w=0;w<weeks;w++){const d=new Date(today());d.setDate(d.getDate()+w*7);const wk_iso=iso(d);const promises=all.filter(x=>x.date===wk_iso);
-    if(promises.length)ahead.push({week:w+1,date:fmt(d),count:promises.length,val:promises.reduce((a,p)=>a+annual(p.val),0)});}
-  let h='<div class="stack">';ahead.slice(0,12).forEach(w=>{h+=`<div class="pc" style="cursor:default"><div class="ph"><div class="nm">Week ${w.week}</div><div class="og">${w.count} promise${w.count>1?"s":""}</div></div><div class="pl">${w.date} · ${$$$$​(w.val)}</div></div>`});h+="</div>";$("#ahead").innerHTML=h;renderAhead()}
-function renderAhead(){const all=D.promises.filter(x=>x.kind==="prospect"||x.kind==="partner"||x.kind==="client");
-  const s_dates={};all.forEach(p=>{if(!s_dates[p.date])s_dates[p.date]=0;s_dates[p.date]+=annual(p.val)});
-  const sorted_dates=Object.keys(s_dates).sort();let total_val=0;
-  const d_vals=sorted_dates.map((d,i)=>{total_val+=s_dates[d];return{date:d,val:s_dates[d],cum:total_val,iso_d:parseD(d)}});
-  const today_ms=today().getTime(),min_d=Math.min(...d_vals.map(x=>Math.max(0,x.iso_d-today_ms))),max_d=Math.max(...d_vals.map(x=>x.iso_d-today_ms));
-  const rng=Math.max(max_d-min_d,7*24*60*60*1e3);let h='<div id="ahead"></div>';$("#stack").innerHTML=h;renderPlan()}
-function renderYear(){const fy_start=parseD(D.cfg.fy+"-01");const target_date=parseD(D.cfg.qEnd);
-  const q1_start=fy_start;const q1_end=new Date(fy_start);q1_end.setMonth(q1_end.getMonth()+3);q1_end.setDate(q1_end.getDate()-1);
-  const q2_start=new Date(q1_end);q2_start.setDate(q2_start.getDate()+1);const q2_end=new Date(q2_start);q2_end.setMonth(q2_end.getMonth()+3);q2_end.setDate(q2_end.getDate()-1);
-  const q3_start=new Date(q2_end);q3_start.setDate(q3_start.getDate()+1);const q3_end=new Date(q3_start);q3_end.setMonth(q3_end.getMonth()+3);q3_end.setDate(q3_end.getDate()-1);
-  const q4_start=new Date(q3_end);q4_start.setDate(q4_start.getDate()+1);const q4_end=new Date(fy_start);q4_end.setFullYear(q4_end.getFullYear()+1);q4_end.setDate(q4_end.getDate()-1);
-  const counts=[
-    {q:"Q1",start:q1_start,end:q1_end,promises:D.promises.filter(x=>parseD(x.date)>=q1_start&&parseD(x.date)<=q1_end&&x.state==="done").length},
-    {q:"Q2",start:q2_start,end:q2_end,promises:D.promises.filter(x=>parseD(x.date)>=q2_start&&parseD(x.date)<=q2_end&&x.state==="done").length},
-    {q:"Q3",start:q3_start,end:q3_end,promises:D.promises.filter(x=>parseD(x.date)>=q3_start&&parseD(x.date)<=q3_end&&x.state==="done").length},
-    {q:"Q4",start:q4_start,end:q4_end,promises:D.promises.filter(x=>parseD(x.date)>=q4_start&&parseD(x.date)<=q4_end&&x.state==="done").length}
-  ];
-  const total_promised=D.promises.filter(x=>x.state==="done").reduce((a,p)=>a+annual(p.val),0);
-  const pace_pct=D.cfg.fy?Math.round((total_promised/D.cfg.fy)*100):0;
-  let h=`<div class="pace"><div class="pacetop"><div class="pacen">${pace_pct}%</div><div style="font-size:12.5px;color:var(--ink2)">of ${$$$$​(D.cfg.fy)}</div></div><div class="track"><div class="fill ${pace_pct>=100?"ok":""}" style="width:${Math.min(100,pace_pct)}%"></div></div><div class="pacesub">Closed ${D.promises.filter(x=>x.state==="done").length} of ${D.promises.length} promises</div></div>`;
-  h+=`<h2 style="margin-top:24px">Distribution</h2><div class="chart"><div class="zone"><div style="height:104px;display:flex;flex-direction:column;justify-content:space-between;padding-right:8px"><div style="font-size:10px;color:var(--ink3)">${$$$$​(D.cfg.fy)}</div><div style="font-size:10px;color:var(--ink3)">0</div></div></div>`;
-  const max_q=Math.max(...counts.map(x=>x.promises||1));const heights=counts.map(x=>((x.promises||0)/Math.max(1,max_q))*100);
-  h+=`<div class="bars">${counts.map((c,i)=>`<div class="bar jan" style="height:${Math.max(3,heights[i])}%"></div>`).join("")}</div><div class="sep"></div>`;
-  h+=`<div class="zone"><div class="bars">${counts.map((c,i)=>`<div class="bar" style="height:${Math.min(100,Math.max(3,(c.promises||0)*100/Math.max(1,D.cfg.fy/4)))}%"></div>`).join("")}</div><div class="axis">${counts.map(c=>`<span>${c.q}</span>`).join("")}</div></div></div>`;
-  $("#pace").innerHTML=h;$("#chart").innerHTML=""}
-function renderMoney(){const total_promised=D.promises.filter(x=>x.state==="done").reduce((a,p)=>a+annual(p.val),0);
-  const total_pipeline=D.promises.filter(x=>x.state==="waiting").reduce((a,p)=>a+annual(p.val),0);const total_all=total_promised+total_pipeline;
-  const goal_progress=Math.round((total_promised/(D.cfg.goal||1))*100);const pct_complete=Math.min(100,goal_progress);
-  let h=`<div class="hero"><div class="n">${$$$$​(total_promised)}</div><div class="l">closed revenue</div><div class="s"><b>${goal_progress}%</b> of ${$$$$​(D.cfg.goal)} goal</div></div>`;
-  h+=`<div class="figs three"><div class="fig"><em>Pipeline</em><strong>${$$$$​(total_pipeline)}</strong></div><div class="fig"><em>Next 3mo.</em><strong>${$$$$​(D.cfg.o1+D.cfg.o2+D.cfg.o3)}</strong></div><div class="fig"><em>All Promises</em><strong>${$$$$​(total_all)}</strong></div></div>`;
-  const rec=D.cfg.fy?D.cfg.fy/52:0;const wks_left=Math.ceil((today().getDay()===6?52:52-Math.floor((today()-parseD(D.cfg.fy+"-01"))/(7*24*60*60*1e3))));
-  h+=`<p class="read"><b>Weekly pace:</b> ${$$$$​(Math.round(rec))}/wk needed to hit ${$$$$​(D.cfg.fy)}</p>`;
-  h+=`<p class="read"><b>Weeks left:</b> ${wks_left} weeks in fiscal year</p>`;
-  if(total_promised<D.cfg.goal)h+=`<div class="wall"><b>Gap:</b> ${$$$$​(D.cfg.goal-total_promised)} to President's Club</div>`;
-  else h+=`<div class="lever"><b>🎉 Made it!</b> You're ${$$$$​(total_promised-D.cfg.goal)} over President's Club</div>`;
-  $("#hero").innerHTML=h;$("#figs").innerHTML="";$("#read").innerHTML=""}
-function renderBook(){const f=bfilter?ACC().filter(a=>a.type===bfilter):ACC();
-  let h='<div class="stack">';f.forEach(a=>{const b=D.batches?.find(x=>x.id===a.batch);h+=`<div class="bk" data-a="${a.id}"><div class="nm">${esc(a.name)}</div><div class="og">${a.emps?a.emps+" employees":""}</div><div class="hist">${a.city||"—"} ${a.lastMet?"· last met "+fmt(parseD(a.lastMet)):"· never met"}</div></div>`});
-  h+="</div>";h+=renderBatches();$("#booklist").innerHTML=h}
-function renderBatches(){return(D.batches||[]).length?`<h2 style="margin-top:22px">Imports</h2><div id="batches" class="stack" style="margin-top:11px">${(D.batches||[]).map(b=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:13px;background:var(--card);border-radius:9px;border:1px solid var(--rule)"><div><div style="font-weight:500">${esc(b.label)}</div><div style="font-size:11.5px;color:var(--ink3)">${b.n} accounts</div></div><button class="b quiet danger" data-del="${b.id}" style="flex:none">Remove</button></div>`).join("")}${D.accts.filter(a=>!a.batch).length?`<div style="display:flex;align-items:center;justify-content:space-between;padding:13px;background:var(--card);border-radius:9px;border:1px solid var(--rule)"><div><div style="font-weight:500">Earlier import</div><div style="font-size:11.5px;color:var(--ink3)">${D.accts.filter(a=>!a.batch).length} accounts · added before imports were tracked</div></div><button class="b quiet danger" data-del="loose" style="flex:none">Remove</button></div>`:""}</div>`:"";}
-async function delBatch(id){const b=(D.batches||[]).find(x=>x.id==id);const n=id=="loose"?ACC().filter(a=>!a.batch).length:(b?b.n:0);if(!confirm(`Remove ${n} accounts from "${id=="loose"?"Earlier import":b.label}"? Promises you already made are kept.`))return;D.accts=ACC().filter(a=>id=="loose"?a.batch:a.batch!=id);D.batches=(D.batches||[]).filter(x=>x.id!=id);await save();renderBook();renderToday();renderAhead();toast(`Removed ${n}.`)}
-function renderAll(){const p=D.promises.filter(x=>filter?x.state===filter:true).sort((a,b)=>parseD(b.date)-parseD(a.date));
-  let h='<div class="stack">';p.forEach(x=>{const v=annual(x.val);h+=`<div class="row" data-id="${x.id}"><div><div style="font-weight:500">${esc(x.name)}</div><div style="font-size:12.5px;color:var(--ink2)">${esc(x.org)}</div></div><div style="text-align:right"><div style="font-weight:500">${v?$$$$​(v):"—"}</div><div class="rd">${fmt(parseD(x.date))}</div></div></div>`});h+="</div>";$("#alllist").innerHTML=h}
-function sheetNew(){open(`<h3>New promise</h3><div class="sub">Who are you promising to call back?</div><label class="f">Name<input class="t" id="pname" type="text" placeholder="Sarah Chen"></label><label class="f">Company<input class="t" id="porg" type="text" placeholder="Acme Corp"></label><label class="f">Type<div class="chips" id="pkind" style="margin-top:8px"><button class="chip on" data-k="prospect">Prospect</button><button class="chip" data-k="partner">Partner</button></label><label class="f">What did they say?<textarea class="t" id="psaid" rows="2" placeholder="Wants to see the Premier bundle for their new Boston office"></textarea></label>${whenF("pd","")} <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="pok">Promise</button></div>`);
-  bindW("pd");$("#pkind").onclick=e=>{if(e.target.dataset.k)$$("#pkind .chip").forEach(c=>c.classList.toggle("on",c==e.target))};$("#pok").onclick=async()=>{const kind=$$("#pkind .chip.on")[0]?.dataset.k||"prospect";if(!$("#pname").value)return toast("Needs a name.");const dt=$("#pd").dataset.iso;if(!dt)return toast("Needs a date.");D.promises.push({id:Date.now(),kind,name:$("#pname").value.trim(),org:$("#porg").value.trim(),said:$("#psaid").value.trim(),why:"",date:dt,created:iso(today()),moves:[],state:"waiting",stage:"callback",val:null});await save();closeSheet();render();toast("Promised.")};}
-function whenF(id,initVal){return`<label class="f">When<div style="display:flex;gap:8px;margin-top:8px"><input class="t" id="${id}" type="date" style="flex:1" value="${initVal}"><button class="b quiet" data-when="today">Today</button><button class="b quiet" data-when="1w">1 week</button><button class="b quiet" data-when="2w">2 weeks</button><button class="b quiet" data-when="1m">1 month</button></div></label>`}
-function bindW(id){const el=$("#"+id);$$$("[data-when]").forEach(b=>{b.onclick=()=>{const w=b.dataset.when;let d=new Date();if(w==="today")d=new Date();else if(w==="1w")d.setDate(d.getDate()+7);else if(w==="2w")d.setDate(d.getDate()+14);else if(w==="1m")d.setMonth(d.getMonth()+1);el.value=iso(d);el.dataset.iso=iso(d)}})}
-function sheetTalk(p,c){open(`<h3>${esc(p.name)}</h3><div class="sub">Update your notes</div><textarea class="t" id="talk" rows="3">${p.said||""}</textarea><div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="tsave">Save</button></div>`);$("#tsave").onclick=async()=>{p.said=$("#talk").value.trim();await save();closeSheet();render();toast("Updated.")}}
-function sheetMove(p,c){const stages=["callback","meeting","proposal","close"];const idx=stages.indexOf(p.stage);open(`<h3>${esc(p.name)}</h3><div class="sub">Move forward?</div><label class="f">Stage<div class="chips" id="pstage" style="margin-top:8px">${stages.map(s=>`<button class="chip ${s===p.stage?"on":""}" data-s="${s}">${s}</button>`).join("")}</div></label><label class="f">Why<input class="t" id="swhy" type="text" placeholder="Sent proposal"></label><div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="msave">Move</button></div>`);
-  $$("#pstage .chip").forEach(b=>{b.onclick=()=>{const s=b.dataset.s;$$("#pstage .chip").forEach(x=>x.classList.toggle("on",x==b))}});$("#msave").onclick=async()=>{const newStage=$$("#pstage .chip.on")[0]?.dataset.s;const why=$("#swhy").value.trim();if(!newStage)return;p.moves=p.moves||[];p.moves.push({from:p.stage,to:newStage,why});p.stage=newStage;if(newStage==="close"||newStage==="won")p.state="done";await save();closeSheet();render();toast("Moved.")}}
-function sheetVal(p,c){const b=D.cfg.bundles[0];const a=D.cfg.addons||[];open(`<h3>${esc(p.name)}</h3><div class="sub">Estimate revenue</div><div class="two"><div><label class="f">Employees<input class="t" id="vemp" type="number" value="${p.val?.emps||""}" placeholder="45"></label></div><div><label class="f">Frequency<select class="t" id="vfreq"><option ${p.val?.freq==="Monthly"?"selected":""}>Monthly</option><option ${p.val?.freq==="Biweekly"?"selected":""}>Biweekly</option><option ${!p.val||p.val?.freq==="Weekly"?"selected":""}>Weekly</option></select></label></div></div><label class="f">Bundle<select class="t" id="vbundle">${D.cfg.bundles.map(b=>`<option ${p.val?.bundle===b.n?"selected":""}>${esc(b.n)}</option>`).join("")}</select></label><label class="f">Add-ons<div class="chips" id="vaddons" style="margin-top:8px">${a.map(x=>`<button class="chip ${p.val?.addons?.find(y=>y.n===x.n)?"on":""}" data-a="${x.n}">${esc(x.n)}</button>`).join("")}</div></label><label class="f">Discount (%)<input class="t" id="vdisc" type="number" min="0" max="100" value="${p.val?.disc||0}"></label><div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="vsave">Save</button></div>`);
-  $$("#vaddons .chip").forEach(b=>{b.onclick=()=>b.classList.toggle("on")});$("#vsave").onclick=async()=>{const emps=+$("#vemp").value;if(!emps||emps<1)return toast("Needs employee count.");const bundle=$("#vbundle").value;const freq=$("#vfreq").value;const disc=Math.min(100,Math.max(0,+$("#vdisc").value));const sel_addons=$$("#vaddons .chip.on").map(c=>({n:c.dataset.a,b:a.find(x=>x.n===c.dataset.a).b,p:a.find(x=>x.n===c.dataset.a).p}));p.val={emps,bundle,freq,addons:sel_addons,disc};await save();closeSheet();render();toast("Estimated.")}}
-function sheetLet(p,c){open(`<h3>${esc(p.name)}</h3><div class="sub">Mark as done</div><p style="font-size:13.5px;line-height:1.6;color:var(--ink2);margin-top:14px">You've made your promise and kept it. Good work.</p><div class="sa"><button class="b quiet" onclick="closeSheet()">Keep waiting</button><button class="b pri" id="done">Done</button></div>`);$("#done").onclick=async()=>{p.state="done";await save();closeSheet();render();toast("Done.")};}
-function doImport(csv_text,fname,t){const lines=(csv_text||"").split(/[\r\n]+/).map(x=>x.trim()).filter(x=>x);
-  if(!lines.length)return toast("Empty file.");const header=lines[0].toLowerCase().split(/[,\t]/);const name_col=["name","account","company","contact"].findIndex(x=>header.includes(x));const emp_col=header.findIndex(x=>["employees","emps","headcount","size"].some(s=>x.includes(s)));const bundle_col=header.findIndex(x=>["bundle","package","tier","plan"].some(s=>x.includes(s)));const city_col=header.findIndex(x=>["city","location","territory"].some(s=>x.includes(s)));
-  const batch_id="batch_"+Date.now(),batch_label=fname.replace(/\.[^/.]+$/,"").substring(0,30);let imported=0;
-  for(let i=1;i<lines.length;i++){const cells=lines[i].split(/[,\t]/);const nm=(cells[name_col]||"").trim();if(!nm)continue;
-    const a={id:nm+"_"+i,type:t||impType,name:nm,emps:emp_col>-1?Math.max(0,parseInt(cells[emp_col])||0):0,bundle:bundle_col>-1?(cells[bundle_col]||"").trim():"",city:city_col>-1?(cells[city_col]||"").trim():"",batch:batch_id};
-    if(!D.accts.find(x=>x.id===a.id)){D.accts.push(a);imported++}}
-  if(imported){D.batches=D.batches||[];if(!D.batches.find(x=>x.id===batch_id))D.batches.push({id:batch_id,label:batch_label,n:imported});save().then(()=>{renderBook();renderToday();renderAhead();toast(`Imported ${imported}.`)})}}
-function scanFiles(files){const img=[...files].filter(f=>/^image\//.test(f.type));
-  if(!img.length)return toast("No images found.");Promise.all(img.map(f=>{const fd=new FormData();fd.append("file",f);return fetch("https://api.ocr.space/parse",{method:"POST",body:fd}).then(r=>r.json()).then(data=>{if(data.IsErroredOnProcessing)return toast("OCR error");doImport(data.ParsedText,f.name,impType);return data}).catch(e=>{toast("OCR unavailable");console.error("OCR:",e)})})).catch(e=>console.error(e))}
-$("#plan").onclick=async e=>{const row=e.target.closest(".pr");if(!row)return;const a=ACC().find(x=>x.id==row.dataset.a),d=e.target.dataset.do;if(d=="skip"){a.skip=iso(today());await save();renderPlan();renderAhead();return}if(d=="met"){a.lastMet=iso(today());await save();open(`<h3>${esc(a.name)}</h3><div class="sub">Met today. When do you owe them the next conversation?</div><label class="f">What did they say?<textarea class="t" id="bs" rows="2"></textarea></label>${whenF("bw","")} <div class="sa"><button class="b quiet" id="none">Nothing to schedule</button><button class="b pri" id="ok">Promise</button></div>`);bindW("bw");$("#none").onclick=()=>{closeSheet();renderPlan();renderBook();toast("Marked met.")};$("#ok").onclick=async()=>{const dt=$("#bw").dataset.iso;if(!dt)return toast("Needs a date it can read.");D.promises.push({id:Date.now(),kind:a.type=="partner"?"partner":"prospect",name:a.name,org:a.city||"",said:$("#bs").value.trim(),why:"",date:dt,created:iso(today()),moves:[],state:"waiting",stage:"callback",val:a.emps?{emps:a.emps,bundle:D.cfg.bundles[0]?.n||"",freq:"Biweekly",addons:[],disc:0}:null});await save();closeSheet();render();renderBook();toast(`Promised. Back ${fmt(parseD(dt))}.`)}}};$("#bfilters").onclick=e=>{if(e.target.dataset.b){bfilter=e.target.dataset.b;renderBook()}};$("#batches").onclick=e=>{const id=e.target.dataset.del;if(id)delBatch(id)};
-function guessType(n){n=(n||"").toLowerCase();if(/cpa|partner|referral|accountant|banker|broker/.test(n))return"partner";if(/competitor|prospect|target|non.?client|cold/.test(n))return"prospect";if(/client|book|territory|install/.test(n))return"client";return impType}
-async function takeFiles(files){const csv=[...files].filter(f=>/\.(csv|tsv|txt)$/i.test(f.name)||/text/.test(f.type));const img=[...files].filter(f=>/^image\//.test(f.type));if(img.length)return scanFiles(img);if(!csv.length)return toast("Drop a .csv, .tsv or .txt — or an image to scan.");for(const f of csv){const t=guessType(f.name);await doImport(await f.text(),f.name,t)}}
-["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{if(!e.dataTransfer||![...e.dataTransfer.types].includes("Files"))return;e.preventDefault();if($("#s-book").classList.contains("on"))$(".imp").classList.add("drag")}));["dragleave","dragend"].forEach(ev=>document.addEventListener(ev,e=>{if(e.relatedTarget)return;$(".imp").classList.remove("drag")}));document.addEventListener("drop",e=>{e.preventDefault();$(".imp").classList.remove("drag");if(!e.dataTransfer.files.length)return;if(!$("#s-book").classList.contains("on")){$$(".nb").forEach(b=>{if(b.dataset.go=="book")b.click()})}takeFiles(e.dataTransfer.files)});
-$("#ityp").onclick=e=>{if(e.target.dataset.t){impType=e.target.dataset.t;$$("#ityp .chip").forEach(c=>c.classList.toggle("on",c==e.target))}};$("#doimp").onclick=()=>doImport($("#pastebox").value,"Pasted "+new Date().toLocaleDateString());$("#scan").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";i.multiple=true;i.onchange=()=>{if(i.files.length)scanFiles([...i.files])};i.click()};$("#pickfile").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".csv,.txt,.tsv";i.onchange=async()=>{const f=i.files[0];if(f)doImport(await f.text(),f.name)};i.click()};$("#clearbook").onclick=async()=>{if(!confirm("Remove every account from your book? Promises are unaffected."))return;D.accts=[];D.batches=[];await save();renderBook();renderToday();renderAhead();toast("Book cleared.")};$("#booklist").onclick=e=>{const r=e.target.closest(".bk");if(!r)return;const a=ACC().find(x=>x.id==r.dataset.a);open(`<h3>${esc(a.name)}</h3><div class="sub">${[a.emps?a.emps+" employees":"",a.bundle,a.city].filter(Boolean).join(" · ")}</div><div class="hist">${why(a).map(w=>w[1]).join(" · ")||"—"}<br>${a.lastMet?"last met "+fmt(parseD(a.lastMet)):"never met"}</div><div class="sa"><button class="b quiet" onclick="closeSheet()">Close</button></div>`)};$("#stack").onclick=e=>{const c=e.target.closest(".pc");if(!c)return;const p=D.promises.find(x=>x.id==c.dataset.id),a=e.target.dataset.a;if(a=="talk")return sheetTalk(p,c);if(a=="move")return sheetMove(p,c);if(a=="val")return sheetVal(p,c);if(a=="let")return sheetLet(p,c);openId=p.id;renderToday()};$("#alllist").onclick=e=>{const r=e.target.closest(".row");if(!r)return;const p=D.promises.find(x=>x.id==r.dataset.id),v=annual(p.val);open(`<h3>${esc(p.name)}</h3><div class="sub">${esc(p.org||"")} · due ${fmt(parseD(p.date))}</div>${p.said?`<p class="said" style="font-size:19px;margin-top:14px">&ldquo;${esc(p.said)}&rdquo;</p>`:""} ${v?`<div class="est"><div class="n">${$$$$​(v)}</div><div class="l">${p.val.emps} emp · ${esc(p.val.bundle)} · ${p.val.freq} · ${p.val.disc}% off · ${Math.round(odds(p)*100)}% odds</div></div>`:""}<div class="hist">promised ${fmt(new Date(p.created))}${p.moves.length?"<br>"+p.moves.map(m=>`${m.from} → ${m.to} — ${esc(m.why)}`).join("<br>"):""}</div><div class="sa"><button class="b quiet danger" onclick="del(${p.id})">Delete</button><button class="b quiet" onclick="closeSheet()">Close</button></div>`)};$("#filters").onclick=e=>{if(e.target.dataset.f){filter=e.target.dataset.f;renderAll()}};$("#fab").onclick=sheetNew;$("#addb").onclick=()=>{D.cfg.bundles.push({n:"New bundle",b:0,p:0});rows("bundles",D.cfg.bundles)};$("#adda").onclick=()=>{D.cfg.addons.push({n:"New add-on",b:0,p:0});rows("addons",D.cfg.addons)};
-$$(".nb").forEach(b=>b.onclick=()=>{const g=b.dataset.go;document.body.dataset.s=g;$$(".screen").forEach(s=>s.classList.toggle("on",s.id=="s-"+g));$$(".nb").forEach(x=>x.classList.toggle("on",x==b));if(g=="year")renderYear();if(g=="money")renderMoney();if(g=="all")renderAll();if(g=="book")renderBook();window.scrollTo(0,0)});$("#save").onclick=async()=>{["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{D.cfg[f]=(f=="fy"||f=="qEnd")?$("#"+f).value:+$("#"+f).value||0});await save();render();toast("Saved.")};$("#exp").onclick=()=>{const b=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="horizon-"+iso(today())+".json";a.click()};$("#imp").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=async()=>{const f=i.files[0];if(!f)return;D=JSON.parse(await f.text());D.cfg=Object.assign({},DEF,D.cfg);await save();render();toast("Imported.")};i.click()};
-function rows(id,data){const h=data.map((r,i)=>`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:11px;background:var(--card);border-radius:9px;border:1px solid var(--rule)"><div><input type="text" value="${esc(r.n)}" placeholder="Name" style="width:100%;padding:8px 10px;border:1px solid var(--rule2);border-radius:7px;font-family:inherit;font-size:15px" onchange="D.cfg.${id}[${i}].n=this.value;save();rows('${id}',D.cfg.${id})"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"><div><label style="font-size:11.5px;color:var(--ink3);display:block">Base</label><input type="number" value="${r.b}" placeholder="$0" style="width:100%;padding:6px 8px;border:1px solid var(--rule2);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:13px" onchange="D.cfg.${id}[${i}].b=+this.value;save()"></div><div><label style="font-size:11.5px;color:var(--ink3);display:block">Premium</label><input type="number" value="${r.p}" placeholder="$0" style="width:100%;padding:6px 8px;border:1px solid var(--rule2);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:13px" onchange="D.cfg.${id}[${i}].p=+this.value;save()"></div></div></div><button class="b quiet" onclick="D.cfg.${id}.splice(${i},1);rows('${id}',D.cfg.${id})" style="flex:none">✕</button></div>`).join("");$("#"+id).innerHTML=h}
-function render(){renderToday();renderPlan();renderAhead();["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{const el=$("#"+f);if(el)el.value=D.cfg[f]});rows("bundles",D.cfg.bundles);rows("addons",D.cfg.addons)}
-document.body.dataset.s="today";initSync().then(render);
+function render(){renderToday();renderPlan();renderAhead();
+  ["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{const el=$("#"+f);if(el)el.value=D.cfg[f]});
+  rows("bundles",D.cfg.bundles);rows("addons",D.cfg.addons)}
+document.body.dataset.s="today";
+/* The UI must render no matter what. Any failure in load() falls back to a
+   blank-but-working app rather than a white screen. */
+load().then(render).catch(e=>{console.error("load failed, rendering anyway:",e);try{render()}catch(_){}});
+window.addEventListener("error",e=>console.error("Bellwether:",e.message));
 </script>
 </body>
 </html>
