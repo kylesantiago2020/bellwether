@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bellwether">
 <meta name="theme-color" content="#4B4FD6">
-<meta name="description" content="Know your year before it happens.">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -18,13 +17,24 @@
 <style>
 :root{--paper:#FAF8F4;--card:#FFF;--sunk:#F2EFE9;--ink:#15171C;--ink2:#5E626C;--ink3:#9B9DA6;
 --rule:#E7E3DA;--rule2:#D5D0C5;--amb:#B06A0F;--ambsoft:#FBEEDA;--grn:#227A4B;--grnsoft:#E3F2E8;
---ac:#4B4FD6;--acs:#ECECFC;--ind:var(--ac);--indsoft:var(--acs)}
+--ac:#4B4FD6;--acs:#ECECFC;--ind:var(--ac);--indsoft:var(--acs);--navbg:rgba(247,246,243,.94)}
 body[data-s="today"]{--ac:#4B4FD6;--acs:#ECECFC}
 body[data-s="year"]{--ac:#0C8C86;--acs:#E1F3F1}
 body[data-s="money"]{--ac:#227A4B;--acs:#E3F2E8}
 body[data-s="book"]{--ac:#CD5F2C;--acs:#FCEBE1}
+body[data-s="probe"]{--ac:#B03E6E;--acs:#FBE9F0}
 body[data-s="all"]{--ac:#7141C8;--acs:#F1EAFC}
 body[data-s="set"]{--ac:#4A5160;--acs:#EDEFF3}
+body.dark{--paper:#15171C;--card:#1E212A;--sunk:#20232C;--ink:#F1F0EC;--ink2:#A7AAB4;--ink3:#6B6E78;
+--rule:#2B2E37;--rule2:#383B45;--amb:#E0972F;--ambsoft:#3A2E17;--grn:#3FBE82;--grnsoft:#153426;
+--navbg:rgba(21,23,28,.94)}
+body.dark[data-s="today"]{--ac:#6F73E8;--acs:#252A50}
+body.dark[data-s="year"]{--ac:#2BB0A9;--acs:#0F332F}
+body.dark[data-s="money"]{--ac:#3FBE82;--acs:#12301F}
+body.dark[data-s="book"]{--ac:#E08150;--acs:#3A2317}
+body.dark[data-s="probe"]{--ac:#D5719B;--acs:#3A1E29}
+body.dark[data-s="all"]{--ac:#9B7BE0;--acs:#2A2140}
+body.dark[data-s="set"]{--ac:#9098A8;--acs:#262A33}
 body{transition:background .3s}
 .hdr{display:flex;align-items:center;gap:10px;padding-bottom:20px}
 .mark{width:32px;height:32px;border-radius:9px;background:var(--ac);display:flex;align-items:center;justify-content:center;flex:none;transition:background .3s}
@@ -32,6 +42,33 @@ body{transition:background .3s}
 .wm{line-height:1.15}
 .wm b{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.3px}
 .wm span{display:block;font-size:10.5px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;letter-spacing:.03em}
+.barwrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.barval{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink3);line-height:1;margin-bottom:3px;white-space:nowrap}
+.barwrap .bar{width:100%;flex:none}
+.gl{position:absolute;left:0;right:0;height:1px;background:var(--rule);pointer-events:none}
+.ymax{display:flex;justify-content:space-between;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3)}
+.ymax span:last-child{opacity:.55}
+.peakline{margin-top:9px;font-size:12px;color:var(--ink2);line-height:1.5}
+.peakline b{color:var(--ink);font-weight:500}
+.qc{margin-top:18px;padding:15px 17px;background:var(--card);border:1px solid var(--rule);border-radius:11px}
+.qc .qt{font-size:14.5px;font-weight:500;letter-spacing:-.1px;line-height:1.4}
+.qc .opts{display:flex;flex-direction:column;gap:7px;margin-top:11px}
+.opt{text-align:left;font-family:inherit;font-size:13.5px;line-height:1.45;padding:9px 12px;border:1px solid var(--rule2);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;transition:.15s}
+.opt.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.recbox{margin-top:24px;padding:20px 18px;border-radius:13px;background:var(--acs);border:1px solid var(--ac)}
+.recbox .lab{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ac)}
+.recbox .big{font-size:24px;font-weight:500;letter-spacing:-.5px;margin-top:5px}
+.recbox .amt{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ink2);margin-top:3px}
+.recbox ul{margin:14px 0 0 0;padding:0;list-style:none}
+.recbox li{font-size:13px;line-height:1.6;padding-left:15px;position:relative}
+.recbox li:before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:var(--ac)}
+.recbox .down{margin-top:14px;padding-top:12px;border-top:1px solid var(--ac);font-size:12.5px;color:var(--ink2);line-height:1.6}
+.peo{margin-top:14px;padding:13px 15px;border-radius:10px;background:var(--ambsoft);color:var(--amb);font-size:13px;line-height:1.6}
+.ladder{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.rung{background:var(--card);padding:12px 11px;text-align:center}
+.rung em{font-style:normal;display:block;font-size:10.5px;color:var(--ink3);line-height:1.3;min-height:26px}
+.rung strong{display:block;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:400;margin-top:5px}
+.rung.pick{background:var(--acs)}
 .cheer{margin-top:34px;padding:34px 22px;text-align:center;background:var(--acs);border-radius:14px}
 .cheer .bell{width:34px;height:34px;color:var(--ac);margin-bottom:10px}
 .cheer .said{font-size:21px;max-width:360px;margin:0 auto;color:var(--ink)}
@@ -78,12 +115,12 @@ button{font-family:inherit;cursor:pointer}
 .fill{height:100%;background:var(--ac);border-radius:3px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
 .fill.ok{background:var(--grn)}
 .pacesub{margin-top:9px;font-size:12.5px;color:var(--ink2);line-height:1.6}
-.chart{display:flex;gap:11px;align-items:flex-end;margin-top:20px}
+.chart{display:flex;gap:11px;align-items:flex-end;margin-top:6px}
 .zone{display:flex;flex-direction:column;min-width:0}
 .chart .bars{margin-top:0}
 .sep{width:1px;background:var(--rule);height:104px;flex:none;align-self:flex-start}
 .zcap{margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
-.bars{display:flex;align-items:flex-end;gap:2px;height:104px;margin-top:20px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:0;position:relative}
 .bar{flex:1;border-radius:2px;min-height:3px;background:var(--ac);transform-origin:bottom;animation:g .45s cubic-bezier(.2,.8,.3,1) both}
 .bar.z{background:var(--rule2)}.bar.jan{background:var(--amb)}.bar.money{background:var(--ac)}
 @keyframes g{from{transform:scaleY(0)}to{transform:scaleY(1)}}
@@ -168,8 +205,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .hist{margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink3);line-height:1.8}
 .nudge{margin-top:13px;padding:11px 13px;background:var(--ambsoft);border-radius:8px;font-size:13px;color:var(--amb);line-height:1.55}
 .sa{margin-top:19px;display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}
-.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(247,246,243,.94);backdrop-filter:blur(12px);border-top:1px solid var(--rule);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
-.nb{flex:1;background:none;border:none;padding:7px 0;font-size:10px;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--navbg);backdrop-filter:blur(12px);border-top:1px solid var(--rule);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
+.daynav{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dnbtn{width:34px;height:34px;border-radius:50%;border:none;background:var(--sunk);color:var(--ink2);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none;font-family:inherit}
+.dnbtn:active{transform:scale(.92)}
+.dncenter{flex:1;text-align:center}
+.qsdivider{margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.themepick{display:flex;gap:6px;margin-top:8px}
+.nb{flex:1;background:none;border:none;padding:7px 0;font-size:9.5px;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
 .nb.on{color:var(--ac)}
 .ni{width:19px;height:19px}
 .badge{position:absolute;transform:translate(13px,-4px);background:var(--ac);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
@@ -186,8 +229,13 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <header class="hdr"><div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.5a5.8 5.8 0 015.8 5.8v4.4l1.9 2.8H4.3l1.9-2.8V9.3A5.8 5.8 0 0112 3.5z"/><path d="M10.1 19.6a2 2 0 003.8 0"/></svg></div><div class="wm"><b>Bellwether</b><span>metrowest territory</span></div></header>
 
 <section class="screen on" id="s-today">
-  <div class="eyebrow" id="datestr"></div>
+  <div class="daynav">
+    <button class="dnbtn" id="dnPrev" aria-label="Previous day">&lsaquo;</button>
+    <div class="dncenter"><div class="eyebrow" id="datestr"></div></div>
+    <button class="dnbtn" id="dnNext" aria-label="Next day">&rsaquo;</button>
+  </div>
   <h1 id="hd">Loading…</h1>
+  <button class="b quiet" id="dnToday" style="display:none;margin-top:4px">Jump to today</button>
   <div class="stack" id="stack"></div>
   <div class="cheer" id="mt" style="display:none"><svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.5a5.8 5.8 0 015.8 5.8v4.4l1.9 2.8H4.3l1.9-2.8V9.3A5.8 5.8 0 0112 3.5z"/><path d="M10.1 19.6a2 2 0 003.8 0"/></svg><p class="said" id="mtsaid"></p><p id="mtsub"></p></div>
   <div class="plan" id="plan"></div>
@@ -212,6 +260,32 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <p class="read" id="mnote"></p>
   <div class="lever" id="lever"></div>
   <div class="figs two" id="clubfigs"></div>
+</section>
+
+<section class="screen" id="s-probe">
+  <div class="eyebrow">discovery</div>
+  <h1>What do they actually need?</h1>
+  <p style="font-size:13.5px;color:var(--ink2);margin-top:8px;line-height:1.6">Ask these on a net new. Every answer points at a bundle. Skip anything that doesn't come up naturally.</p>
+  <div class="two" style="margin-top:16px">
+    <label class="f">Company<input class="t" id="pbco" placeholder="Doyle Landscaping"></label>
+    <label class="f">Contact<input class="t" id="pbct" placeholder="Maria, owner"></label>
+  </div>
+  <div class="two">
+    <label class="f">Their email<input class="t" id="pbem" type="email" placeholder="maria@..."></label>
+    <label class="f">Industry<select class="t" id="pbin"></select></label>
+  </div>
+  <div class="two">
+    <label class="f">Current provider<input class="t" id="pbpp" placeholder="Paychex, in-house, none"></label>
+    <label class="f">Their CPA<input class="t" id="pbcpa" placeholder="who signs off"></label>
+  </div>
+  <div class="two">
+    <label class="f">Employees<input class="t mono" id="pbe" type="number" min="1" placeholder="14"></label>
+    <label class="f">Pay frequency<select class="t" id="pbf"></select></label>
+  </div>
+  <label class="f">Discount for the quote <span class="mono" id="pbdl">0%</span><input type="range" id="pbd" min="0" max="59" value="0"></label>
+  <div id="qs"></div>
+  <div id="rec"></div>
+  <div class="sa" style="justify-content:flex-start;margin-top:18px"><button class="b quiet" id="preset">Start over</button></div>
 </section>
 
 <section class="screen" id="s-book">
@@ -264,20 +338,35 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Revenue closed<input class="t mono" id="rwon" type="number" min="0"></label>
   </div>
 
+  <h2>You — used on emails</h2>
+  <div class="two">
+    <label class="f">Your name<input class="t" id="meName" placeholder="Kyle"></label>
+    <label class="f">Your email<input class="t" id="meEmail" type="email" placeholder="you@adp.com"></label>
+  </div>
+  <div class="two">
+    <label class="f">Title<input class="t" id="meTitle" placeholder="ADP Small Business"></label>
+    <label class="f">Phone<input class="t" id="mePhone" placeholder="508..."></label>
+  </div>
+
+  <h2>Appearance</h2>
+  <div class="themepick" id="themepick">
+    <button class="chip" data-th="light">Light</button>
+    <button class="chip" data-th="dark">Dark</button>
+    <button class="chip" data-th="system">System</button>
+  </div>
+
   <h2>Your book</h2>
   <div class="two">
     <label class="f">Meet everyone by<input class="t" id="qEnd" type="date"></label>
     <label class="f">Max plan items / day<input class="t mono" id="cap" type="number" min="1"></label>
   </div>
 
-  <h2>Bundles — per payroll run</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">Type your own numbers from your book. Nothing leaves this device.</p>
-  <div class="ptabhead"><span>Bundle</span><span>Base / run</span><span>Per emp / run</span></div>
-  <div id="bundles"></div>
-  <button class="b quiet" id="addb" style="margin-top:10px">+ bundle</button>
+  <h2>Price book — RUN FY&rsquo;27, Zone 7</h2>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">Per payroll run. Pre-loaded; edit only if rates change.</p>
+  <div id="pbook"></div>
 
   <h2>Add-ons — per payroll run</h2>
-  <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per emp / run</span></div>
+  <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per ee / run</span></div>
   <div id="addons"></div>
   <button class="b quiet" id="adda" style="margin-top:10px">+ add-on</button>
 
@@ -303,6 +392,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <button class="nb on" data-go="today"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Today</span><span class="badge" id="bdg" style="display:none">0</span></button>
   <button class="nb" data-go="year"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-3"/></svg><span>Horizon</span></button>
   <button class="nb" data-go="money"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M16 7.5c0-1.7-1.8-2.5-4-2.5s-4 .8-4 2.5S9.8 10 12 10s4 1 4 2.8-1.8 2.7-4 2.7-4-.9-4-2.7"/></svg><span>Value</span></button>
+  <button class="nb" data-go="probe"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg><span>Probe</span></button>
   <button class="nb" data-go="book"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h7M8 11h7"/></svg><span>Book</span></button>
   <button class="nb" data-go="all"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>All</span></button>
   <button class="nb" data-go="set"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Setup</span></button>
@@ -313,21 +403,61 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="horizon-v2";
-const FREQ={Weekly:52,Biweekly:26,Semimonthly:24,Monthly:12};
+const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 let D={promises:[],cfg:{},log:[]},openId=null,filter="all";
 
-const DEF={wk:12,fy:"",goal:0,rgoal:0,won:0,rwon:0,o1:40,o2:20,o3:8,qEnd:"",cap:12,
- bundles:[{n:"Essential",b:0,p:0},{n:"Enhanced",b:0,p:0},{n:"Complete",b:0,p:0},{n:"HR Pro",b:0,p:0}],
- addons:[{n:"Time & Attendance",b:0,p:0},{n:"Retirement 401(k)",b:0,p:0},{n:"Workers' Comp",b:0,p:0},{n:"Hiring / ATS",b:0,p:0}]};
+const PRICEBOOK=[
+ {n:"HR Pro", f:{
+   "Weekly":      {t:[[2,135.95],[4,142.95]], o:4.40},
+   "Bi-weekly":   {t:[[2,259.95],[4,266.95]], o:5.55},
+   "Semi-monthly":{t:[[2,275.95],[4,282.95]], o:5.65},
+   "Monthly":     {t:[[2,406.95],[4,413.95]], o:5.25}}},
+ {n:"Complete & HR Plus", f:{
+   "Weekly":      {t:[[2,92.95],[4,98.95]],   o:3.40},
+   "Bi-weekly":   {t:[[2,169.95],[4,175.95]], o:4.75},
+   "Semi-monthly":{t:[[2,181.95],[4,188.95]], o:4.80},
+   "Monthly":     {t:[[2,258.95],[4,264.95]], o:4.30}}},
+ {n:"Enhanced", f:{
+   "Weekly":      {t:[[1,64.50]],  o:3.15},
+   "Bi-weekly":   {t:[[1,92.95]],  o:3.60},
+   "Semi-monthly":{t:[[1,98.95]],  o:3.80},
+   "Monthly":     {t:[[1,125.95]], o:3.65},
+   "Quarterly":   {t:[[9999,199.95]], o:0}}},
+];
+const DEF={wk:12,fy:"",goal:0,rgoal:0,won:0,rwon:0,o1:40,o2:20,o3:8,qEnd:"",cap:12,me:{},theme:"system",
+ book:JSON.parse(JSON.stringify(PRICEBOOK)),
+ addons:[{n:"Time & Attendance",b:0,p:0},{n:"Retirement 401(k)",b:0,p:0},
+         {n:"Workers' Comp",b:0,p:0},{n:"Hiring / ATS",b:0,p:0}]};
 
 async function load(){
   try{ if(window.storage){const r=await window.storage.get(KEY);if(r&&r.value)D=JSON.parse(r.value)}
        else{const r=localStorage.getItem(KEY);if(r)D=JSON.parse(r)} }catch(e){}
-  D.promises=D.promises||[];D.accts=D.accts||[];D.batches=D.batches||[];D.cfg=Object.assign({},DEF,D.cfg||{});
+  D.promises=D.promises||[];D.accts=D.accts||[];D.batches=D.batches||[];D.probe=D.probe||{};
+  /* discovery moved from a flat numbered list to named core/follow-up ids — drop stale numeric answers */
+  Object.keys(D.probe).forEach(kk=>{if(/^\d+$/.test(kk))delete D.probe[kk]});
+  if(D.cfg){delete D.cfg.bundles;D.cfg.me=D.cfg.me||{};
+    if(!D.cfg.book||!D.cfg.book[0]||!D.cfg.book[0].f)D.cfg.book=JSON.parse(JSON.stringify(PRICEBOOK));}
+  (D.promises||[]).forEach(p=>{if(p.val){
+    if(p.val.freq=="Biweekly")p.val.freq="Bi-weekly";
+    if(p.val.freq=="Semimonthly")p.val.freq="Semi-monthly";
+    if(!(D.cfg.book||PRICEBOOK).some(b=>b.n==p.val.bundle))p.val.bundle="Complete & HR Plus";}});D.cfg=Object.assign({},DEF,D.cfg||{});
   if(!D.cfg.qEnd){const n=new Date();D.cfg.qEnd=new Date(n.getFullYear(),n.getMonth()<9?8:11,30).toISOString().slice(0,10)}
   if(!D.cfg.fy){const n=new Date();D.cfg.fy=new Date(n.getFullYear()+(n.getMonth()>=6?1:0),5,30).toISOString().slice(0,10)}
 }
 async function save(){const s=JSON.stringify(D);try{if(window.storage)await window.storage.set(KEY,s);else localStorage.setItem(KEY,s)}catch(e){}}
+
+const sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)");
+function applyTheme(){
+  const t=(D.cfg&&D.cfg.theme)||"system";
+  const dark=t=="dark"||(t=="system"&&sysDark&&sysDark.matches);
+  document.body.classList.toggle("dark",dark);
+  $$("#themepick .chip").forEach(c=>c.classList.toggle("on",c.dataset.th==t));
+  const mc=document.querySelector('meta[name="theme-color"]');
+  if(mc)mc.content=getComputedStyle(document.body).getPropertyValue("--paper").trim()||"#FAF8F4";
+}
+if(sysDark)sysDark.addEventListener?sysDark.addEventListener("change",()=>{if((D.cfg&&D.cfg.theme)=="system")applyTheme()}):null;
+$("#themepick").onclick=async e=>{const b=e.target.closest(".chip");if(!b)return;
+  D.cfg.theme=b.dataset.th;await save();applyTheme()};
 
 const DAY=864e5,today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
 const iso=d=>d.toISOString().slice(0,10),parseD=s=>{const[y,m,dd]=s.split("-").map(Number);return new Date(y,m-1,dd)};
@@ -356,12 +486,21 @@ function nlp(txt){
 }
 
 /* ---------- valuation ---------- */
+function bk(name){return (D.cfg.book||PRICEBOOK).find(b=>b.n==name)}
+function perRun(bundle,freq,emps){
+  const b=bk(bundle); if(!b||!b.f[freq]) return 0;
+  const c=b.f[freq];
+  for(const [cap,p] of c.t) if(emps<=cap) return +p;
+  const last=c.t[c.t.length-1];
+  return +(last[1]+(emps-last[0])*(+c.o||0));
+}
+function freqsFor(bundle){const b=bk(bundle);return b?Object.keys(b.f):Object.keys(FREQ)}
 function annual(v){
   if(!v||!v.emps)return 0;
-  const B=D.cfg.bundles.find(x=>x.n==v.bundle)||{b:0,p:0};
-  let perRun=(+B.b||0)+(+B.p||0)*v.emps;
-  (v.addons||[]).forEach(nm=>{const a=D.cfg.addons.find(x=>x.n==nm);if(a)perRun+=(+a.b||0)+(+a.p||0)*v.emps});
-  return perRun*(FREQ[v.freq]||26)*(1-(v.disc||0)/100);
+  let run=perRun(v.bundle,v.freq,v.emps);
+  (v.addons||[]).forEach(nm=>{const a=(D.cfg.addons||[]).find(x=>x.n==nm);
+    if(a)run+=(+a.b||0)+(+a.p||0)*v.emps});
+  return run*(FREQ[v.freq]||26)*(1-(v.disc||0)/100);
 }
 function odds(p){
   const base={quoted:D.cfg.o1,interested:D.cfg.o2,callback:D.cfg.o3}[p.stage||"callback"]/100;
@@ -375,14 +514,33 @@ const standing=()=>D.promises.filter(p=>p.state=="waiting");
 function madeThisWeek(){const n=today(),dow=(n.getDay()+6)%7,mon=new Date(n-dow*DAY);return D.promises.filter(p=>new Date(p.created)>=mon).length}
 
 /* ---------- today ---------- */
+let viewDate=today();
+const isViewToday=()=>iso(viewDate)==iso(today());
+function goDay(delta){viewDate=new Date(viewDate.getTime()+delta*DAY);openId=null;renderToday()}
+$("#dnPrev").onclick=()=>goDay(-1);
+$("#dnNext").onclick=()=>goDay(1);
+$("#dnToday").onclick=()=>{viewDate=today();openId=null;renderToday()};
+(()=>{let tx=null;const sec=$("#s-today");
+  sec.addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
+  sec.addEventListener("touchend",e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;
+    if(Math.abs(dx)>60)goDay(dx<0?1:-1)},{passive:true});
+})();
 function renderToday(){
-  const list=due(),shown=list.slice(0,7),st=$("#stack"),n=new Date();
-  $("#datestr").textContent=n.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
-  $("#hd").textContent=!list.length?(standing().length?"Nothing due today.":"Nothing here yet."):shown.length==1?"One person is waiting on you.":`${shown.length} people are waiting on you.`;
-  $("#bdg").style.display=list.length?"flex":"none";$("#bdg").textContent=list.length;
+  const isToday=isViewToday(),st=$("#stack");
+  const dueCount=due().length;
+  $("#bdg").style.display=dueCount?"flex":"none";$("#bdg").textContent=dueCount;
+  $("#dnToday").style.display=isToday?"none":"inline-block";
+  $("#datestr").textContent=(isToday?"today · ":"")+viewDate.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  const list=isToday?due():D.promises.filter(p=>p.state=="waiting"&&p.date==iso(viewDate)).sort((a,b)=>a.date<b.date?-1:1);
+  const shown=list.slice(0,7);
+  if(isToday){
+    $("#hd").textContent=!list.length?(standing().length?"Nothing due today.":"Nothing here yet."):shown.length==1?"One person is waiting on you.":`${shown.length} people are waiting on you.`;
+  } else {
+    $("#hd").textContent=!list.length?"Nothing lands here.":shown.length==1?"One promise lands here.":`${shown.length} promises land here.`;
+  }
   st.innerHTML="";if(openId===null&&shown.length)openId=shown[0].id;
   shown.forEach(p=>{
-    const late=days(parseD(p.date),today()),v=annual(p.val);
+    const late=isToday?days(parseD(p.date),today()):0,v=annual(p.val);
     const c=document.createElement("div");c.className="pc"+(p.id==openId?" open":"");c.dataset.id=p.id;
     c.innerHTML=`<div class="ph"><span class="nm">${p.kind=="partner"?'<span class="tag p">partner</span>':""}${esc(p.name)}${v?`<span class="tag v">${k(v)}/yr</span>`:""}</span><span class="og">${esc(p.org||"")}</span></div>
     <div class="pl">${esc(p.said||"—")}</div>
@@ -393,9 +551,15 @@ function renderToday(){
     st.appendChild(c);
   });
   $("#mt").style.display=list.length?"none":"block";
-  if(!list.length){$("#mtsaid").textContent=standing().length?"Bell rung. That's everyone today.":"Nothing here yet.";
-    $("#mtsub").textContent=standing().length?`${standing().length} promises standing · ${madeThisWeek()} made this week`:"Tap + and put your first callback on a date."}
-  renderPace(list.length-shown.length);
+  if(!list.length){
+    if(isToday){$("#mtsaid").textContent=standing().length?"Bell rung. That's everyone today.":"Nothing here yet.";
+      $("#mtsub").textContent=standing().length?`${standing().length} promises standing · ${madeThisWeek()} made this week`:"Tap + and put your first callback on a date.";}
+    else{$("#mtsaid").textContent="Nothing lands here.";$("#mtsub").textContent="No promises are due on this day.";}
+  }
+  $("#plan").style.display=isToday?"":"none";
+  $("#ahead").style.display=isToday?"":"none";
+  $("#pace").style.display=isToday?"":"none";
+  if(isToday)renderPace(list.length-shown.length);
 }
 function renderPace(extra){
   const made=madeThisWeek(),tgt=+D.cfg.wk||0,pct=tgt?Math.min(100,made/tgt*100):0;
@@ -422,27 +586,33 @@ function buckets(){
   }
   return{weeks,months};
 }
-function drawChart(host,agg,cls,lab){
+function drawChart(host,agg,cls,lab,opt){
+  opt=opt||{};
   const{weeks,months}=buckets();
-  const wv=weeks.map(agg),mv=months.map(agg),mx=Math.max(1,...wv,...mv);
-  const bar=(v,b,i)=>`<div class="bar ${v?cls(v,b):"z"}" style="height:${Math.max(3,v/mx*104)}px;animation-delay:${i*14}ms" title="${fmt(b.s)} — ${lab(v)}"></div>`;
-  host.innerHTML=`<div class="chart">
+  const wv=weeks.map(agg),mv=months.map(agg);
+  const peak=Math.max(0,...wv,...mv);
+  const floor=opt.floor||1, mx=Math.max(peak,floor), H=104;
+  const lbl=opt.lbl||(v=>v);
+  const bar=(v,b,i)=>`<div class="barwrap"><div class="barval">${v?lbl(v):""}</div>
+    <div class="bar ${v?cls(v,b):"z"}" style="height:${Math.max(3,v/mx*H)}px;animation-delay:${i*14}ms" title="${fmt(b.s)} — ${lab(v)}"></div></div>`;
+  const grid=`<div class="gl" style="bottom:${H}px"></div><div class="gl" style="bottom:${H/2}px"></div>`;
+  host.innerHTML=`<div class="ymax"><span>${lbl(mx)}</span><span>${lbl(mx/2)}</span></div>
+  <div class="chart">
     <div class="zone" style="flex:8">
-      <div class="bars">${weeks.map((b,i)=>bar(wv[i],b,i)).join("")}</div>
+      <div class="bars">${grid}${weeks.map((b,i)=>bar(wv[i],b,i)).join("")}</div>
       <div class="axis">${weeks.map((b,i)=>`<span>${i%2?"":(b.s.getMonth()+1)+"/"+b.s.getDate()}</span>`).join("")}</div>
-      <div class="zcap">by week</div>
-    </div>
+      <div class="zcap">by week</div></div>
     <div class="sep"></div>
     <div class="zone" style="flex:11">
-      <div class="bars">${months.map((b,i)=>bar(mv[i],b,i+8)).join("")}</div>
+      <div class="bars">${grid}${months.map((b,i)=>bar(mv[i],b,i+8)).join("")}</div>
       <div class="axis">${months.map(b=>`<span>${b.s.toLocaleDateString(undefined,{month:"short"})}</span>`).join("")}</div>
-      <div class="zcap">by month</div>
-    </div></div>`;
+      <div class="zcap">by month</div></div></div>
+  <div class="peakline">${peak?`busiest stretch holds <b>${lbl(peak)}</b>${peak<floor?` — scale held at ${lbl(floor)} so a light stretch still reads light`:""}`:"nothing on the board yet"}</div>`;
 }
 
 function renderYear(){
   const cnt=b=>standing().filter(p=>{const d=parseD(p.date);return d>=b.s&&d<b.e}).length;
-  drawChart($("#chart"),cnt,(v,b)=>b.s.getMonth()==0&&b.e-b.s>8*DAY?"jan":"",v=>v+" promise"+(v==1?"":"s"));
+  drawChart($("#chart"),cnt,(v,b)=>b.s.getMonth()==0&&b.e-b.s>8*DAY?"jan":"",v=>v+" promise"+(v==1?"":"s"),{floor:6,lbl:v=>Math.round(v)||""});
   const{weeks,months}=buckets(),all=[...weeks,...months].map(cnt);
   const jan=new Date(today().getFullYear(),0,1);if(jan<today())jan.setFullYear(jan.getFullYear()+1);
   const wave=standing().filter(p=>{const d=parseD(p.date);return d>=new Date(jan.getFullYear()-1,8,1)&&d<new Date(jan.getFullYear(),1,1)}).length;
@@ -463,7 +633,7 @@ function renderMoney(){
   $("#hero").innerHTML=`<div class="l">expected annual revenue in pipeline</div><div class="n">${$$$(exp)}</div>
     <div class="s">${$$$(gross)} if every one closed · ${V.length} valued${noval?` · ${noval} without a value yet`:""}</div>`;
   const agg=b=>V.filter(p=>{const d=parseD(p.date);return d>=b.s&&d<b.e}).reduce((s,p)=>s+annual(p.val)*odds(p),0);
-  drawChart($("#mchart"),agg,()=>"money",v=>k(v));
+  drawChart($("#mchart"),agg,()=>"money",v=>k(v),{floor:5000,lbl:v=>v?k(v):""});
 
   const withD=V.filter(p=>p.val.disc!=null);
   const avg=withD.length?withD.reduce((s,p)=>s+ +p.val.disc,0)/withD.length:0;
@@ -504,21 +674,32 @@ function whenF(id,v){return`<label class="f">When<input class="t" id="${id}" val
 function bindW(id){const i=$("#"+id),p=$("#"+id+"p");const r=()=>{const x=nlp(i.value);p.textContent=x?"→ "+parseD(x.date).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}):"→ can't read that — try \"3 weeks\" or \"January 1\"";i.dataset.iso=x?x.date:""};i.oninput=r;r()}
 
 function valBlock(v){
-  v=v||{emps:"",bundle:D.cfg.bundles[0]?.n||"",freq:"Biweekly",addons:[],disc:0};
+  v=v||{emps:"",bundle:"Complete & HR Plus",freq:"Bi-weekly",addons:[],disc:0};
+  const B=(D.cfg.book||PRICEBOOK);
   return `<div class="two"><label class="f">Employees<input class="t mono" id="ve" type="number" min="1" value="${v.emps||""}" placeholder="14"></label>
-  <label class="f">Pay frequency<select class="t" id="vf">${Object.keys(FREQ).map(f=>`<option${f==v.freq?" selected":""}>${f}</option>`).join("")}</select></label></div>
-  <label class="f">Bundle</label><div class="chips" id="vb">${D.cfg.bundles.map(b=>`<button class="chip${b.n==v.bundle?" on":""}" data-b="${esc(b.n)}">${esc(b.n)}</button>`).join("")}</div>
-  <label class="f">Add-ons</label><div class="chips" id="va">${D.cfg.addons.map(a=>`<button class="chip${(v.addons||[]).includes(a.n)?" on":""}" data-a="${esc(a.n)}">${esc(a.n)}</button>`).join("")}</div>
+  <label class="f">Pay frequency<select class="t" id="vf"></select></label></div>
+  <label class="f">Bundle</label><div class="chips" id="vb">${B.map(b=>`<button class="chip${b.n==v.bundle?" on":""}" data-b="${esc(b.n)}">${esc(b.n)}</button>`).join("")}</div>
+  <label class="f">Add-ons</label><div class="chips" id="va">${(D.cfg.addons||[]).map(a=>`<button class="chip${(v.addons||[]).includes(a.n)?" on":""}" data-a="${esc(a.n)}">${esc(a.n)}</button>`).join("")||'<span style="font-size:12px;color:var(--ink3)">none set up yet</span>'}</div>
   <label class="f">Discount <span class="mono" id="vdl">${v.disc||0}%</span><input type="range" id="vd" min="0" max="59" value="${v.disc||0}"></label>
   <div class="est"><div class="n" id="vn">$0</div><div class="l" id="vl">annual revenue</div></div>`;
 }
-function bindVal(){
-  const g=()=>({emps:+$("#ve").value||0,bundle:$("#vb .chip.on")?.dataset.b||"",freq:$("#vf").value,
+function fillFreq(bundle,want){
+  const sel=$("#vf"),list=freqsFor(bundle);
+  sel.innerHTML=list.map(f=>`<option${f==want?" selected":""}>${f}</option>`).join("");
+  if(!list.includes(want))sel.value=list.includes("Bi-weekly")?"Bi-weekly":list[0];
+}
+function bindVal(v){
+  const cur=v||{};
+  fillFreq(cur.bundle||"Complete & HR Plus",cur.freq||"Bi-weekly");
+  const g=()=>({emps:+$("#ve").value||0,bundle:$("#vb .chip.on")?.dataset.b||"Complete & HR Plus",freq:$("#vf").value,
     addons:$$("#va .chip.on").map(c=>c.dataset.a),disc:+$("#vd").value});
-  const up=()=>{const v=g(),a=annual(v);$("#vn").textContent=$$$(a);
-    $("#vl").textContent=v.emps?`${v.emps} emp · ${v.freq.toLowerCase()} · ${FREQ[v.freq]} runs/yr`:"annual revenue";$("#vdl").textContent=v.disc+"%"};
+  const up=()=>{const x=g(),a=annual(x);
+    $("#vn").textContent=$$$(a);
+    $("#vl").textContent=x.emps?`${x.emps} ee · ${x.freq.toLowerCase()} · ${$$$(perRun(x.bundle,x.freq,x.emps))}/run × ${FREQ[x.freq]}`:"annual revenue";
+    $("#vdl").textContent=x.disc+"%"};
   $("#ve").oninput=up;$("#vf").onchange=up;$("#vd").oninput=up;
-  $("#vb").onclick=e=>{if(e.target.dataset.b){$$("#vb .chip").forEach(c=>c.classList.toggle("on",c==e.target));up()}};
+  $("#vb").onclick=e=>{if(e.target.dataset.b){$$("#vb .chip").forEach(c=>c.classList.toggle("on",c==e.target));
+    fillFreq(e.target.dataset.b,$("#vf").value);up()}};
   $("#va").onclick=e=>{if(e.target.dataset.a){e.target.classList.toggle("on");up()}};
   up();return g;
 }
@@ -527,7 +708,7 @@ function sheetVal(p,card){
   <label class="f">How real is it?</label><div class="chips" id="vs">
   ${[["quoted","Quoted"],["interested","Interested"],["callback","Just a callback"]].map(s=>`<button class="chip${(p.stage||"callback")==s[0]?" on":""}" data-s="${s[0]}">${s[1]}</button>`).join("")}</div>
   <div class="sa"><button class="b quiet" onclick="closeSheet()">Cancel</button><button class="b pri" id="ok">Save</button></div>`);
-  const g=bindVal();let stage=p.stage||"callback";
+  const g=bindVal(p.val);let stage=p.stage||"callback";
   $("#vs").onclick=e=>{if(e.target.dataset.s){stage=e.target.dataset.s;$$("#vs .chip").forEach(c=>c.classList.toggle("on",c==e.target))}};
   $("#ok").onclick=async()=>{p.val=g();p.stage=stage;await save();closeSheet();renderToday();renderAll();toast(`${$$$(annual(p.val))} a year.`)};
 }
@@ -597,11 +778,225 @@ function keep(card,msg){
 }
 
 /* ---------- setup tables ---------- */
+function renderPB(){
+  const host=$("#pbook");if(!host)return;
+  host.innerHTML=(D.cfg.book||PRICEBOOK).map((b,bi)=>`
+    <div style="margin-top:16px">
+      <div style="font-size:13px;font-weight:500">${esc(b.n)}</div>
+      <div class="ptabhead" style="grid-template-columns:1.15fr 1fr 1fr 1fr"><span>Freq</span><span>ees 1&ndash;2</span><span>ees 3&ndash;4</span><span>each over</span></div>
+      ${Object.keys(b.f).map(fq=>{const c=b.f[fq],two=c.t.length>1;
+        return `<div class="ptab" style="grid-template-columns:1.15fr 1fr 1fr 1fr">
+          <span style="font-size:12.5px;color:var(--ink2)">${fq}</span>
+          <input class="mono" type="number" step="0.01" value="${c.t[0][1]}" data-b="${bi}" data-f="${fq}" data-k="t0">
+          <input class="mono" type="number" step="0.01" value="${two?c.t[1][1]:""}" ${two?"":"disabled placeholder='—'"} data-b="${bi}" data-f="${fq}" data-k="t1">
+          <input class="mono" type="number" step="0.01" value="${c.o||""}" ${c.o?"":"placeholder='flat'"} data-b="${bi}" data-f="${fq}" data-k="o">
+        </div>`}).join("")}
+    </div>`).join("");
+  host.oninput=e=>{const t=e.target;if(!t.dataset.k)return;
+    const b=D.cfg.book[+t.dataset.b],c=b.f[t.dataset.f],v=+t.value||0;
+    if(t.dataset.k=="t0")c.t[0][1]=v; else if(t.dataset.k=="t1"&&c.t[1])c.t[1][1]=v; else if(t.dataset.k=="o")c.o=v;};
+}
+const ME={name:"meName",email:"meEmail",title:"meTitle",phone:"mePhone"};
 function rows(id,arr){
   $("#"+id).innerHTML=arr.map((r,i)=>`<div class="ptab"><input value="${esc(r.n)}" data-i="${i}" data-f="n">
     <input class="mono" type="number" step="0.01" value="${r.b||""}" data-i="${i}" data-f="b" placeholder="0">
     <input class="mono" type="number" step="0.01" value="${r.p||""}" data-i="${i}" data-f="p" placeholder="0"></div>`).join("");
   $("#"+id).oninput=e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;arr[i][f]=f=="n"?e.target.value:+e.target.value||0};
+}
+
+
+/* ---------- discovery ---------- */
+const INDUSTRY=[
+ ["","— pick one —"],
+ ["Landscaping / tree service","high"],["Roofing","high"],["Construction / GC","high"],
+ ["Excavation / paving","high"],["Demolition","high"],["Trucking / logistics","high"],
+ ["Staffing agency","high"],["Home care / home health","high"],["Security services","high"],
+ ["Moving company","high"],["Scaffolding / steel","high"],["Manufacturing (heavy)","high"],
+ ["Restaurant / food service","med"],["Auto repair / collision","med"],["Cleaning services","med"],
+ ["Manufacturing (light)","med"],["Assisted living","med"],["Warehouse / distribution","med"],
+ ["Dental practice","low"],["Medical practice","low"],["Veterinary","low"],["Law firm","low"],
+ ["Accounting / CPA","low"],["Insurance agency","low"],["Professional services","low"],
+ ["Technology / software","low"],["Retail","low"],["Nonprofit","low"],["Fitness / studio","low"],
+ ["Property management","low"],["Childcare / school","low"],["Real estate","low"],["Other","low"],
+];
+const CORE=[
+ {id:"pay",q:"What do they pay for payroll today?",
+  a:[["Full-service provider — ADP, Paychex, Gusto, etc.","comp","a cleaner handoff than starting from zero"],
+     ["Doing it themselves — spreadsheets, checks by hand","pro","a system that doesn't assume any payroll background",["handbook","hrday"]],
+     ["Their CPA or bookkeeper runs it on the side","comp","payroll off their accountant's plate"]]},
+ {id:"time",q:"How long does payroll actually take them each cycle?",
+  a:[["A few minutes — it's already dialed in","enh",""],
+     ["An hour or more, every single run","comp","the time back that manual entry is costing them"],
+     ["They honestly don't know — someone else deals with it","pro","visibility into a process they've handed off blind"]]},
+ {id:"track",q:"How do employees track their time today?",
+  a:[["Paper timesheets, texts, or the honor system","pro","a system instead of trust and guesswork",[],"Time & Attendance"],
+     ["A spreadsheet someone reconciles by hand","comp","time and attendance that feeds payroll directly",[],"Time & Attendance"],
+     ["Already using a time clock or app","enh",""]]},
+ {id:"quit",q:"What happens when someone quits badly, or gets let go?",
+  a:[["It's been messy — threats, disputes, an unemployment fight","pro","legal support and someone accountable next time",["laborlaw","hrcost","workcomp"]],
+     ["Hasn't come up, but it worries them","comp","documentation and a process before it happens",["hrcost"]],
+     ["They handle it fine, no drama","enh",""]]},
+ {id:"benefits",q:"Any benefits they wish they could offer but can't right now?",
+  a:[["Yes — health coverage is the big one","peo","",["workcomp","turnover"]],
+     ["They have something, but the renewal keeps climbing","peo","",["workcomp","turnover"]],
+     ["Better retirement or perks, not health","comp","401(k) or perks they can actually manage"],
+     ["They're already offering something solid","enh",""]]},
+ {id:"signoff",q:"Who else has to sign off before they buy anything?",
+  a:[["Just them — they decide alone","enh",""],
+     ["A partner, CFO, or their CPA weighs in","comp","",["hiring","training"]],
+     ["A board or ownership group","pro","",["hiring","training","perfreview"]]]},
+];
+const FOLLOW={
+ handbook:{q:"Do they have an employee handbook?",
+  a:[["No handbook at all","pro","Handbook Creation Services — ADP writes it for them"],
+     ["Something old, or copied off the internet","comp","the Handbook Wizard to rebuild it properly"],
+     ["Current and maintained","enh",""]]},
+ hrday:{q:"Who handles HR questions day to day?",
+  a:[["The owner squeezes it in between everything else","pro","a dedicated HR team they can actually call"],
+     ["An office manager wearing four hats","comp","the HR Help Desk so they stop guessing"],
+     ["They have someone dedicated to HR","enh",""]]},
+ laborlaw:{q:"When a labor-law question comes up, what happens?",
+  a:[["They want a person to call","pro","dedicated HR support and Legal Club access"],
+     ["They Google it and hope","comp","the HR Help Desk plus compliance updates and training"],
+     ["They have counsel or an HR pro","enh",""]]},
+ hrcost:{q:"Has an HR situation ever cost them money or sleep?",
+  a:[["Yes — a termination, claim, or wage dispute","pro","legal services and someone accountable next time"],
+     ["No, but it's on their mind","comp","compliance training and the advanced HR toolkits"],
+     ["Not a concern for them","enh",""]]},
+ workcomp:{q:"Workers' comp — any surprises?",
+  a:[["Big audit surprises at year end","peo",""],
+     ["Already pay-as-you-go","",""],["Not sure","",""]]},
+ turnover:{q:"Losing people to better offers?",
+  a:[["Yes, and they don't know what the market pays","comp","compensation benchmarking"],
+     ["Some turnover, manageable","enh",""],["Very stable","enh",""]]},
+ hiring:{q:"How often are they hiring?",
+  a:[["Constantly — several roles open at once","pro","full ATS tools instead of job slots",["bgcheck"]],
+     ["A few times a year","comp","two ZipRecruiter slots and the Job Description Wizard",["bgcheck"]],
+     ["Rarely, low turnover","enh",""]]},
+ training:{q:"Any formal training for staff?",
+  a:[["They want structured training and development","pro","the Learning Management System and employee training"],
+     ["Nothing formal, but they know they should","comp","HR forms, documents and toolkits to start"],
+     ["Not interested","enh",""]]},
+ bgcheck:{q:"Background checks on new hires?",
+  a:[["Every hire","comp","25 checks included instead of 5"],
+     ["Occasionally","enh",""],["Never","enh",""]]},
+ perfreview:{q:"Performance reviews and documentation?",
+  a:[["Nothing written down — that's the risk","pro","full HR tracking plus someone to build the process"],
+     ["Informal, wants to tighten it","comp","HR Tracking and the Document Vault"],
+     ["Already tracked properly","enh",""]]},
+};
+function activeFollowKeys(){
+  const P=D.probe||{},set=new Set();
+  const pull=q=>{const j=P[q.id];if(j===undefined)return;(q.a[j][3]||[]).forEach(kk=>{if(FOLLOW[kk])set.add(kk)})};
+  CORE.forEach(pull);
+  for(let pass=0;pass<5;pass++){const n=set.size;
+    [...set].forEach(kk=>pull({id:kk,a:FOLLOW[kk].a}));
+    if(set.size==n)break}
+  return[...set];
+}
+function activeQuestions(){
+  return[...CORE,...activeFollowKeys().map(kk=>({id:kk,q:FOLLOW[kk].q,a:FOLLOW[kk].a}))];
+}
+function pv(id){return ($("#pb"+id)?.value||"").trim()}
+function renderProbe(){
+  const P=D.probe||(D.probe={});
+  const sel=$("#pbf");
+  if(sel&&!sel.options.length)sel.innerHTML=Object.keys(FREQ).map(f=>`<option${f=="Bi-weekly"?" selected":""}>${f}</option>`).join("");
+  const ind=$("#pbin");
+  if(ind&&!ind.options.length)ind.innerHTML=INDUSTRY.map(i=>`<option value="${esc(i[0])}">${esc(i[1]&&i[0]?i[0]:i[1]||i[0])}</option>`).join("");
+  ["co","ct","em","pp","cpa","in","e","f","d"].forEach(f=>{const el=$("#pb"+f);
+    if(el&&P["_"+f]&&!el.value)el.value=P["_"+f]});
+  const qBlock=(q,id)=>`<div class="qc"><div class="qt">${esc(q.q)}</div>
+    <div class="opts">${q.a.map((o,j)=>`<button class="opt${P[id]===j?" on":""}" data-q="${id}" data-o="${j}">${esc(o[0])}</button>`).join("")}</div></div>`;
+  const follows=activeFollowKeys();
+  $("#qs").innerHTML=CORE.map(q=>qBlock(q,q.id)).join("")
+    +(follows.length?`<div class="qsdivider">based on what you just said</div>`+follows.map(kk=>qBlock(FOLLOW[kk],kk)).join(""):"");
+  renderRec();
+}
+function renderRec(){
+  const P=D.probe||{},host=$("#rec");if(!host)return;
+  ["co","ct","em","pp","cpa","in","e","f","d"].forEach(f=>{P["_"+f]=pv(f)});
+  if($("#pbdl"))$("#pbdl").textContent=(pv("d")||0)+"%";
+  const AQ=activeQuestions();
+  const answered=AQ.filter(q=>P[q.id]!==undefined).length;
+  if(answered<3){host.innerHTML=`<p class="read" style="font-size:13px">Answer at least three and a recommendation appears here.</p>`;return}
+  let pro=0,comp=0,peo=0;const why=[];
+  AQ.forEach(q=>{const j=P[q.id];if(j===undefined)return;
+    const t=q.a[j][1],r=q.a[j][2];
+    if(t=="pro"){pro++;if(r)why.push(r)}
+    if(t=="comp"){comp++;if(r)why.push(r)}
+    if(t=="peo")peo++;});
+  const trackJ=P["track"],addonHint=(trackJ!==undefined&&CORE.find(c=>c.id=="track").a[trackJ][4])||"";
+  const pick=pro>=3?"HR Pro":(pro+comp)>=3?"Complete & HR Plus":"Enhanced";
+  const emps=+pv("e")||0, freq=$("#pbf")?.value||"Bi-weekly", disc=+pv("d")||0;
+  const ind=pv("in"), risk=(INDUSTRY.find(i=>i[0]==ind)||[])[1]||"";
+  const price=b=>emps?annual({emps,bundle:b,freq,addons:[],disc}):0;
+  const down=pick=="HR Pro"?"Drop to Complete and they lose dedicated HR support, handbook creation, ATS tools, the learning system and Legal Club."
+    :pick=="Complete & HR Plus"?"Drop to Enhanced and they lose the HR Help Desk, Document Vault, handbook wizard, compliance training and 20 of the 25 background checks."
+    :"Nothing in their answers justifies paying for HR features they won't use.";
+  let route="";
+  if(peo>=2&&emps>=10){
+    if(risk=="high")route=`<div class="peo"><b>PEO pain, but ${esc(ind)} is a hard underwrite.</b>
+      Benefits and comp both hurt — that's the TotalSource conversation, except high-hazard classes are commonly declined or surcharged by PEOs.
+      ${emps>=50?`At ${emps} employees, <b>Workforce Now</b> is the play: same all-in-one payroll, HR, time, benefits and talent, no co-employment, so the risk class stops mattering. Major Accounts hand-off.`
+        :`At ${emps} they're below the Workforce Now range — keep them on RUN with add-ons and revisit as they grow.`}
+      <br><br><span style="opacity:.85">Confirm appetite with your TotalSource rep. Underwriting rules are theirs, not mine.</span></div>`;
+    else if(emps<=150)route=`<div class="peo"><b>This smells like TotalSource.</b> Benefits pain plus comp exposure at ${emps} employees${risk=="med"?` — ${esc(ind)} sits mid-hazard, so check appetite first`:""}. Second meeting, different framing, not a bundle upgrade.</div>`;
+  }
+  const noProv=/none|nothing|in.?house|manual|quickbook|excel|spreadsheet|by hand/i.test(pv("pp"));
+  host.innerHTML=`<div class="recbox">
+    <div class="lab">recommend</div><div class="big">${pick}</div>
+    ${emps?`<div class="amt">${$$$(price(pick))}/yr &middot; ${emps} ee &middot; ${freq.toLowerCase()}${disc?` &middot; ${disc}% off`:" &middot; list"}</div>`:`<div class="amt">add employees for pricing</div>`}
+    ${why.length?`<ul>${[...new Set(why)].slice(0,5).map(w=>`<li>They need ${w}</li>`).join("")}</ul>`:""}
+    <div class="down">${down}</div></div>
+    ${emps?`<div class="ladder">${["Enhanced","Complete & HR Plus","HR Pro"].map(b=>
+      `<div class="rung${b==pick?" pick":""}"><em>${esc(b)}</em><strong>${k(price(b))}</strong></div>`).join("")}</div>
+      <p class="read" style="font-size:12px">Annual${disc?`, ${disc}% applied`:", list price"}.</p>`:""}
+    ${route}
+    ${addonHint?`<p class="read" style="font-size:12.5px">Nothing tracking hours today — worth quoting <b>${esc(addonHint)}</b> alongside the bundle.</p>`:""}
+    ${noProv?`<p class="read" style="font-size:12.5px">No incumbent — nothing to unwind, and a January 1 start is clean. Push for that date.</p>`:""}
+    <div class="sa" style="justify-content:flex-start;margin-top:16px">
+      <button class="b pri" id="mailthem">Email ${pv("ct")?esc(pv("ct").split(/[ ,]/)[0]):"prospect"}</button>
+      <button class="b" id="mailme">Send to myself</button>
+      <button class="b quiet" id="copysum">Copy</button></div>`;
+  const R={pick,emps,freq,disc,price,why:[...new Set(why)],risk,route:!!route};
+  $("#mailthem").onclick=()=>mailProspect(R);
+  $("#mailme").onclick=()=>mailSelf(R);
+  $("#copysum").onclick=()=>{navigator.clipboard?.writeText(selfBody(R)).then(()=>toast("Copied."),()=>toast("Couldn't copy."))};
+}
+function quoteLines(R){
+  if(!R.emps)return "";
+  const run=perRun(R.pick,R.freq,R.emps)*(1-R.disc/100);
+  return `${R.pick}\n${R.emps} employees, ${R.freq.toLowerCase()} payroll\n${$$$(run)} per payroll run${R.disc?` (${R.disc}% off list)`:""}\n${$$$(R.price(R.pick))} per year\n`;
+}
+function mailProspect(R){
+  const co=pv("co")||"your team", nm=(pv("ct")||"").split(/[ ,]/)[0], me=D.cfg.me||{};
+  const body=`${nm?`Hi ${nm},`:"Hi,"}\n\nGood talking today. Based on what you described, here's what I'd put in front of ${co}:\n\n`
+   +quoteLines(R)+`\nWhy this one:\n`
+   +(R.why.length?R.why.map(w=>`  - ${w}`).join("\n"):"  - Straightforward payroll and tax filing, nothing you won't use.")
+   +`\n\nPricing holds for 30 days. Happy to walk through it or send a written proposal.\n\n`
+   +`${me.name||""}\n${me.title||"ADP Small Business"}\n${me.phone||""}\n${me.email||""}`;
+  openMail(pv("em"),`${co} — payroll and HR options`,body);
+}
+function selfBody(R){
+  const P=D.probe||{};
+  return `PROBE — ${pv("co")||"unnamed"} (${pv("ct")||"no contact"})\n`
+   +`${pv("in")||"industry not set"}${R.risk?` [${R.risk} hazard]`:""}\n`
+   +`Current provider: ${pv("pp")||"unknown"}\nCPA: ${pv("cpa")||"unknown"}\n`
+   +`${R.emps||"?"} employees, ${R.freq}\n\nRECOMMEND: ${R.pick}\n`+quoteLines(R)
+   +(R.route?`\n** PEO / Workforce Now flag raised **\n`:"")
+   +`\nANSWERS\n`+activeQuestions().map(q=>P[q.id]===undefined?null:`${q.q}\n  > ${q.a[P[q.id]][0]}`).filter(Boolean).join("\n")
+   +`\n\nLadder: Enhanced ${k(R.price("Enhanced"))} / Complete ${k(R.price("Complete & HR Plus"))} / HR Pro ${k(R.price("HR Pro"))}`;
+}
+function mailSelf(R){
+  const to=(D.cfg.me||{}).email;
+  if(!to)return toast("Add your email in Setup first.");
+  openMail(to,`Probe: ${pv("co")||"unnamed"} — ${R.pick}`,selfBody(R));
+}
+function openMail(to,subj,body){
+  const url=`mailto:${encodeURIComponent(to||"")}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  if(url.length>7800)return toast("Too long to email — use Copy.");
+  location.href=url;
 }
 
 /* ---------- the next few days ---------- */
@@ -790,10 +1185,18 @@ $("#plan").onclick=async e=>{
     $("#ok").onclick=async()=>{const dt=$("#bw").dataset.iso;if(!dt)return toast("Needs a date it can read.");
       D.promises.push({id:Date.now(),kind:a.type=="partner"?"partner":"prospect",name:a.name,org:a.city||"",
         said:$("#bs").value.trim(),why:"",date:dt,created:iso(today()),moves:[],state:"waiting",stage:"callback",
-        val:a.emps?{emps:a.emps,bundle:D.cfg.bundles[0]?.n||"",freq:"Biweekly",addons:[],disc:0}:null});
+        val:a.emps?{emps:a.emps,bundle:"Complete & HR Plus",freq:"Bi-weekly",addons:[],disc:0}:null});
       await save();closeSheet();render();renderBook();toast(`Promised. Back ${fmt(parseD(dt))}.`)};
   }
 };
+$("#qs").onclick=async e=>{const b=e.target.closest(".opt");if(!b)return;
+  const q=b.dataset.q,o=+b.dataset.o;D.probe=D.probe||{};
+  if(D.probe[q]===o)delete D.probe[q]; else D.probe[q]=o;
+  await save();renderProbe()};
+$("#preset").onclick=async()=>{D.probe={};["co","ct","em","pp","cpa","e"].forEach(f=>{const el=$("#pb"+f);if(el)el.value=""});
+  if($("#pbd"))$("#pbd").value=0; if($("#pbin"))$("#pbin").value=""; await save();renderProbe()};
+["co","ct","em","pp","cpa","e","d"].forEach(f=>{const el=$("#pb"+f);if(el)el.oninput=()=>renderRec()});
+["in","f"].forEach(f=>{const el=$("#pb"+f);if(el)el.onchange=()=>renderRec()});
 $("#bfilters").onclick=e=>{if(e.target.dataset.b){bfilter=e.target.dataset.b;renderBook()}};
 $("#batches").onclick=e=>{const id=e.target.dataset.del;if(id)delBatch(id)};
 function guessType(n){n=(n||"").toLowerCase();
@@ -849,27 +1252,28 @@ $("#alllist").onclick=e=>{const r=e.target.closest(".row");if(!r)return;
   <button class="b quiet" onclick="closeSheet()">Close</button></div>`)};
 $("#filters").onclick=e=>{if(e.target.dataset.f){filter=e.target.dataset.f;renderAll()}};
 $("#fab").onclick=sheetNew;
-$("#addb").onclick=()=>{D.cfg.bundles.push({n:"New bundle",b:0,p:0});rows("bundles",D.cfg.bundles)};
+
 $("#adda").onclick=()=>{D.cfg.addons.push({n:"New add-on",b:0,p:0});rows("addons",D.cfg.addons)};
 $$(".nb").forEach(b=>b.onclick=()=>{const g=b.dataset.go;document.body.dataset.s=g;
   $$(".screen").forEach(s=>s.classList.toggle("on",s.id=="s-"+g));
   $$(".nb").forEach(x=>x.classList.toggle("on",x==b));
-  if(g=="year")renderYear();if(g=="money")renderMoney();if(g=="all")renderAll();if(g=="book")renderBook();window.scrollTo(0,0)});
+  if(g=="today"){viewDate=today();openId=null;renderToday()}
+  if(g=="year")renderYear();if(g=="money")renderMoney();if(g=="all")renderAll();if(g=="book")renderBook();if(g=="probe")renderProbe();
+  applyTheme();window.scrollTo(0,0)});
 $("#save").onclick=async()=>{["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{
-  D.cfg[f]=(f=="fy"||f=="qEnd")?$("#"+f).value:+$("#"+f).value||0});await save();render();toast("Saved.")};
+  D.cfg[f]=(f=="fy"||f=="qEnd")?$("#"+f).value:+$("#"+f).value||0});
+  D.cfg.me=D.cfg.me||{};Object.entries(ME).forEach(([kk,id])=>{const el=$("#"+id);if(el)D.cfg.me[kk]=el.value.trim()});await save();render();toast("Saved.")};
 $("#exp").onclick=()=>{const b=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="horizon-"+iso(today())+".json";a.click()};
 $("#imp").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json";
-  i.onchange=async()=>{const f=i.files[0];if(!f)return;D=JSON.parse(await f.text());D.cfg=Object.assign({},DEF,D.cfg);await save();render();toast("Imported.")};i.click()};
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;D=JSON.parse(await f.text());D.cfg=Object.assign({},DEF,D.cfg);D.probe=D.probe||{};await save();applyTheme();render();toast("Imported.")};i.click()};
 
 function render(){renderToday();renderPlan();renderAhead();
   ["wk","fy","goal","rgoal","won","rwon","o1","o2","o3","qEnd","cap"].forEach(f=>{const el=$("#"+f);if(el)el.value=D.cfg[f]});
-  rows("bundles",D.cfg.bundles);rows("addons",D.cfg.addons)}
+  Object.entries(ME).forEach(([kk,id])=>{const el=$("#"+id);if(el)el.value=(D.cfg.me||{})[kk]||""});
+  renderPB();rows("addons",D.cfg.addons)}
 document.body.dataset.s="today";
-/* The UI must render no matter what. Any failure in load() falls back to a
-   blank-but-working app rather than a white screen. */
-load().then(render).catch(e=>{console.error("load failed, rendering anyway:",e);try{render()}catch(_){}});
-window.addEventListener("error",e=>console.error("Bellwether:",e.message));
+load().then(()=>{applyTheme();render()}).catch(e=>{console.error("load failed:",e);try{applyTheme();render()}catch(_){}});
 </script>
 </body>
 </html>
