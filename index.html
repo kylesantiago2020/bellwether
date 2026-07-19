@@ -37,14 +37,15 @@ body{font-family:'IBM Plex Sans',system-ui,sans-serif;touch-action:manipulation;
 font-size:15px;line-height:1.5;padding-bottom:88px;-webkit-font-smoothing:antialiased;transition:background .3s}
 .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
 .said{font-family:'Instrument Serif',Georgia,serif;line-height:1.4}
-.wrap{max-width:640px;margin:0 auto;padding:22px 18px 0}
+.wrap{max-width:640px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 18px 0}
 h1{font-size:25px;font-weight:400;letter-spacing:-.5px;line-height:1.25;margin-top:4px}
 h2{font-size:13px;font-weight:500;margin-top:28px;color:var(--ink2)}
 .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ac);letter-spacing:.04em;text-transform:uppercase}
 .screen{display:none}.screen.on{display:block;animation:f .28s ease both}
 @keyframes f{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 button{font-family:inherit;cursor:pointer}
-.b{font-size:13.5px;padding:8px 14px;border-radius:8px;border:1px solid var(--rule2);background:var(--card);color:var(--ink);transition:.15s}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.b{font-size:14px;padding:9px 15px;border-radius:9px;border:1px solid var(--rule2);background:var(--card);color:var(--ink);transition:.15s}
 .b:active{transform:scale(.97)}
 .b.pri{background:var(--ac);border-color:var(--ac);color:#fff}
 .b.quiet{border-color:transparent;color:var(--ink2)}
@@ -61,29 +62,81 @@ button{font-family:inherit;cursor:pointer}
 .wm b{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.3px}
 .wm span{display:block;font-size:10.5px;color:var(--ink3);font-family:'IBM Plex Mono',monospace}
 
-/* day nav + counter */
+/* day nav + shape */
 .daynav{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dnbtn{width:34px;height:34px;border-radius:50%;border:none;background:var(--sunk);color:var(--ink2);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
+.dnbtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--sunk);color:var(--ink2);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
 .dnbtn:active{transform:scale(.92)}
 .dncenter{flex:1;text-align:center}
-.counter{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:15px 17px}
-.ctop{display:flex;justify-content:space-between;align-items:baseline}
-.ctop .lab{font-size:12.5px;color:var(--ink2)}
-.cnum{font-family:'IBM Plex Mono',monospace;font-size:26px;letter-spacing:-1px}
-.cnum s{text-decoration:none;font-size:14px;color:var(--ink3)}
-.track{margin-top:11px;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
-.fill{height:100%;background:var(--ac);border-radius:3px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
-.fill.ok{background:var(--grn)}
-.csub{margin-top:9px;font-size:12.5px;color:var(--ink2);line-height:1.6}
-.csub b{color:var(--ink);font-weight:500}
+.shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
+.shape b{color:var(--ink);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+
+/* the now card — the one thing to do next */
+.now{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:17px 17px 15px;box-shadow:0 14px 34px -24px rgba(21,23,28,.5)}
+body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
+.nh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.nval{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grn);flex:none}
+.nbody{cursor:pointer}
+.nname{font-size:22px;font-weight:500;letter-spacing:-.45px;line-height:1.25;margin-top:9px;overflow-wrap:anywhere}
+.nwhy{margin-top:5px;font-size:14px;color:var(--ink2);line-height:1.5}
+.nmeta{margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+.npri{display:block;width:100%;margin-top:15px;padding:14px;border-radius:11px;border:none;background:var(--ac);color:#fff;font-size:15px;font-weight:500;text-align:center;text-decoration:none;font-family:inherit;cursor:pointer}
+.npri:active{transform:scale(.98)}
+.npri.dial2{background:var(--grn)}
+.nrow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.nq{padding:12px 6px;border-radius:10px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-size:13.5px;font-weight:500;font-family:inherit}
+.nq:active{transform:scale(.96)}
+.now.clear{text-align:center;padding:26px 18px 20px;background:var(--acs);border-color:var(--acs);box-shadow:none}
+.now.clear .nname{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:23px}
+.now.clear .nwhy{max-width:340px;margin:7px auto 0}
+
+/* pace — touches bar collapsed, mission behind it */
+.pace{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.phead{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;background:none;border:none;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.plab{font-size:12.5px;color:var(--ink2);flex:none}
+.ptrack{flex:1;height:5px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.pfill{display:block;height:100%;background:var(--ac);border-radius:3px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.pfill.ok{background:var(--grn)}
+.pnum{font-family:'IBM Plex Mono',monospace;font-size:13px;flex:none}
+.pnum s{text-decoration:none;color:var(--ink3);font-size:11px}
+.chev{flex:none;width:16px;height:16px;color:var(--ink3);transition:transform .2s}
+.pace.open .chev{transform:rotate(180deg)}
+.pbody{display:none;padding:2px 15px 13px;border-top:1px solid var(--rule)}
+.pace.open .pbody{display:block}
+.pfoot{margin-top:11px;font-size:12px;color:var(--ink3);line-height:1.6}
+
+/* week strip — the next five working days, tappable */
+.wgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}
+.wd{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:9px 2px 8px;text-align:center;font-family:inherit;color:var(--ink);cursor:pointer}
+.wd:active{transform:scale(.95)}
+.wd em{font-style:normal;display:block;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.wd b{display:block;font-size:14px;font-weight:500;margin-top:3px}
+.wd s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px;color:var(--ink3)}
+.wd s.has{color:var(--ac)}
+.wd.on{border-color:var(--ac);background:var(--acs)}
+
+/* call run card */
+.runcard{margin-top:26px;background:var(--card);border:1px solid var(--rule);border-radius:13px;padding:15px 17px}
+.runcard .rh{display:flex;justify-content:space-between;align-items:baseline}
+.runcard .rh b{font-size:13.5px;font-weight:500}
+.runcard .rh span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+.runcard p{margin-top:5px;font-size:12.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.runcard .runbtn{margin-top:12px}
+.runbtn.ghost{background:var(--sunk);color:var(--ink2)}
+
+/* nearby — cluster folded behind one line */
+.nearby{margin-top:10px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;background:var(--sunk);border:none;border-radius:10px;font-family:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer}
+.nearby s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
 
 /* blocks */
 .block{margin-top:26px}
 .bh{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:8px}
 .bh .t{font-size:13px;font-weight:500}
 .bh .n{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
-.qr{display:flex;align-items:center;gap:11px;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer}
+.qr{display:flex;align-items:center;gap:9px;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer}
 .qr:last-child{border-bottom:none}
+.rtick{width:30px;height:30px;flex:none;background:none;border:none;padding:0;position:relative;margin-left:-4px}
+.rtick:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card)}
+.rtick:active{transform:scale(.88)}
 .qr .i{min-width:0;flex:1}
 .qr .nm{font-size:14.5px;font-weight:500;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qr .rs{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -136,7 +189,7 @@ button{font-family:inherit;cursor:pointer}
 .brief .flag{margin-top:11px;padding:10px 12px;border-radius:8px;background:var(--ambsoft);color:var(--amb);font-size:12.5px;line-height:1.55}
 .act{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--rule)}
 .act:last-child{border-bottom:none}
-.tick{width:21px;height:21px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);flex:none;padding:0}
+.tick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);flex:none;padding:0}
 .tick:active{transform:scale(.9)}
 .act .i{min-width:0;flex:1;cursor:pointer}
 .push{flex:none;background:none;border:1px solid var(--rule2);border-radius:7px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 8px}
@@ -182,7 +235,7 @@ button{font-family:inherit;cursor:pointer}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .parse{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.chip{font-size:12.5px;padding:6px 11px;border-radius:20px;border:1px solid var(--rule2);background:var(--card);color:var(--ink)}
+.chip{font-size:13px;padding:7px 12px;border-radius:20px;border:1px solid var(--rule2);background:var(--card);color:var(--ink)}
 .chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
 input[type=range]{width:100%;margin-top:10px;accent-color:var(--ac)}
 .srch{width:100%;margin-top:14px;font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:10px;padding:11px 14px}
@@ -244,16 +297,12 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
 .toast .undo{background:none;border:none;color:var(--paper);font-family:inherit;font-size:13px;font-weight:500;text-decoration:underline;padding:0}
-/* quote */
-.quote{margin-top:14px;padding:15px 17px;border-left:2px solid var(--ac);background:var(--acs);border-radius:0 10px 10px 0}
-.quote .said{font-size:17px;line-height:1.45}
-.quote .who{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ac)}
+/* quote — the day's sign-off, at the bottom where it belongs */
+.quote{margin-top:32px;text-align:center;padding:0 10px}
+.quote .said{font-size:16.5px;line-height:1.5;color:var(--ink2)}
+.quote .who{margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
 
-/* mission */
-.mission{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:15px 17px}
-.mission .mh{display:flex;justify-content:space-between;align-items:baseline}
-.mission .mh b{font-size:13px;font-weight:500}
-.mission .mh span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+/* mission rows — live inside the pace card now */
 .mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule)}
 .mrow:last-child{border-bottom:none}
 .mdot{width:9px;height:9px;border-radius:50%;background:var(--sunk);border:1.5px solid var(--rule2);flex:none}
@@ -261,11 +310,9 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .mdot.part{background:var(--amb);border-color:var(--amb)}
 .mrow .mt2{flex:1;font-size:13.5px}
 .mrow .mn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none}
-.mission .foot{margin-top:11px;font-size:12px;color:var(--ink3);line-height:1.6}
 
 /* cluster */
-.cluster{margin-top:16px;background:var(--sunk);border-radius:12px;padding:15px 17px}
-.cluster .ch{font-size:13px;font-weight:500}
+.cluster{margin-top:10px;background:var(--sunk);border-radius:12px;padding:15px 17px}
 .cluster p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
 .cluster .cl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;cursor:pointer}
 .cluster .cl:last-child{border-bottom:none}
@@ -319,12 +366,13 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <button class="dnbtn" id="dnNext" aria-label="Next day">&rsaquo;</button>
   </div>
   <h1 id="hd">Loading&hellip;</h1>
-  <button class="b quiet" id="dnToday" style="display:none;margin-top:4px">Jump to today</button>
-  <div id="quote"></div>
-  <div id="counter"></div>
-  <div id="mission"></div>
-  <div id="cluster"></div>
+  <div class="shape" id="shape"></div>
+  <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
+  <div id="now"></div>
+  <div id="pace"></div>
   <div id="blocks"></div>
+  <div id="week"></div>
+  <div id="quote"></div>
 </section>
 
 <!-- ===== ACCOUNT ===== -->
@@ -1169,7 +1217,6 @@ function render(){
 }
 
 /* ---------- today ---------- */
-const BLOCKS=[["meet","Meetings","Scheduled — walk in prepared"],["visit","In the field","Drop-ins and stop-bys"],["call","Calls","Worked in a run"],["follow","Follow-ups","Desk work"]];
 function actionBlock(n){const k2=n.kind||"call";return ["meet","visit","follow","call"].includes(k2)?k2:"call"}
 /* one account, one row per day — the highest-priority due action decides the block */
 function todayRows(d){
@@ -1218,11 +1265,10 @@ const QUOTES=[
  ["You can't build a reputation on what you're going to do.","Henry Ford"],
  ["If it is important to you, you will find a way. If not, you'll find an excuse.","Unknown"],
 ];
-let quoteI=-1;
-function pickQuote(){
+/* one quote per day, same quote all day — it should feel chosen, not shuffled */
+function dailyQuote(){
   if(!QUOTES.length)return null;
-  let i;do{i=Math.floor(Math.random()*QUOTES.length)}while(QUOTES.length>1&&i==quoteI);
-  quoteI=i;return QUOTES[i];
+  return QUOTES[Math.round(today().getTime()/DAY)%QUOTES.length];
 }
 const MISSION=[["visits","Drop in on a business","prospect"],["clients","See a client","client"],
   ["partners","Stop by a CPA","partner"],["calls","Outbound calls",""],["follow","Clear a follow-up",""]];
@@ -1241,7 +1287,9 @@ function missionDone(){
     follow:t.filter(x=>x.e.kind=="emailed"||x.e.kind=="texted").length
   };
 }
-function renderMission(rows){
+function renderPace(rows){
+  const tgt=+D.cfg.touchTarget||40,got=touchesOn(today());
+  const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
   const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone();
   const booked=rows.filter(r=>r.block=="meet").length;
   const plan=Object.assign({},m);
@@ -1251,17 +1299,23 @@ function renderMission(rows){
     const d2=done[k2]||0,tg=plan[k2],cls=d2>=tg?"done":d2?"part":"";
     return `<div class="mrow"><span class="mdot ${cls}"></span><span class="mt2">${label}${tg>1?" ×"+tg:""}</span><span class="mn">${d2} / ${tg}</span></div>`;
   }).join("");
-  const total=MISSION.reduce((s,[k2])=>s+(plan[k2]||0),0),got=MISSION.reduce((s,[k2])=>s+Math.min(done[k2]||0,plan[k2]||0),0);
-  $("#mission").innerHTML=`<div class="mission">
-    <div class="mh"><b>Today's mission</b><span>${got} / ${total}</span></div>
-    ${rowsHtml}
-    <div class="foot">${booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}</div>
+  const wk=weekAvg();
+  $("#pace").innerHTML=`<div class="pace${paceOpen?" open":""}">
+    <button class="phead" data-act="pace" aria-expanded="${paceOpen}">
+      <span class="plab">Touches</span>
+      <span class="ptrack"><span class="pfill${got>=tgt?" ok":""}" style="width:${pct}%"></span></span>
+      <span class="pnum">${got}<s> / ${tgt}</s></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="pbody">
+      ${rowsHtml}
+      <div class="pfoot">${booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}${wk?` Your real weekly average is ${wk} a day.`:""}</div>
+    </div>
   </div>`;
 }
-function renderCluster(rows){
-  const el=$("#cluster");
+/* where are you already going today? that town gets the drop-ins */
+function nearbyData(rows){
   const inPlay=new Set(rows.map(r=>r.a.id));
-  /* where are you already going today? that town gets the drop-ins */
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
   const byTown={};
   A().forEach(a=>{if(!isWorking(a)||!a.city||inPlay.has(a.id))return;
@@ -1269,65 +1323,179 @@ function renderCluster(rows){
   let town=anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null;
   if(!town){const best=Object.keys(byTown).sort((x,y)=>byTown[y].length-byTown[x].length)[0];
     if(best&&byTown[best].length>=3)town=best}
-  if(!town){el.innerHTML="";return}
-  const list=byTown[town].sort((x,y)=>score(y)-score(x)).slice(0,4);
-  el.innerHTML=`<div class="cluster">
-    <div class="ch">While you're in ${esc(town)}</div>
-    <p>${anchorTown?`You're already headed there for ${esc(anchorTown.name)}.`:`${byTown[town].length} accounts you're working sit in ${esc(town)}.`} Windshield time is the expensive part — spend it once.</p>
-    ${list.map(a=>{const lt=lastTouch(a);
+  if(!town)return null;
+  return {town,anchor:anchorTown,all:byTown[town].length,
+    list:byTown[town].sort((x,y)=>score(y)-score(x)).slice(0,4)};
+}
+function nearbyHtml(rows){
+  const nb=nearbyData(rows);if(!nb)return "";
+  let h=`<button class="nearby" data-act="nearby"><span>While you're in <b>${esc(nb.town)}</b> — ${nb.all} more account${nb.all==1?"":"s"} you're working</span><s>${showNearby?"hide":"show"}</s></button>`;
+  if(showNearby)h+=`<div class="cluster">
+    <p style="margin-top:0">${nb.anchor?`You're already headed there for ${esc(nb.anchor.name)}.`:""} Windshield time is the expensive part — spend it once.</p>
+    ${nb.list.map(a=>{const lt=lastTouch(a);
       return `<div class="cl" data-addvisit="${a.id}"><span>${esc(a.name)}</span>
         <s>${[a.emps?a.emps+" ee":"",lt?days(parseD(lt),today())+"d":"never"].filter(Boolean).join(" · ")} &nbsp;+ add</s></div>`}).join("")}
   </div>`;
+  return h;
+}
+/* the one thing to do right now: meetings first, then field, then whatever scores highest */
+function nowPick(rows){
+  if(!rows.length)return null;
+  const pri=b=>b=="meet"?0:b=="visit"?1:2;
+  const skipped=r=>r.a.skip==iso(today())?1:0;
+  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
+}
+function renderNow(rows){
+  const el=$("#now"),got=touchesOn(today());
+  if(!rows.length){
+    el.innerHTML=`<div class="now clear">
+      <div class="eyebrow">now</div>
+      <div class="nname">${got?"Day cleared.":"The queue is empty."}</div>
+      <div class="nwhy">${got?got+" touches logged. Anything past this is house money — go find one more.":"Start a call run — highest-value untouched accounts first."}</div>
+      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
+    return null;
+  }
+  const r=nowPick(rows),a=r.a,n=r.lead;
+  const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
+  const lt=lastTouch(a),val=dealValue(a);
+  const kindLab={meet:"meeting",visit:"drop-in",call:"call",follow:"follow-up"}[r.block];
+  let pri;
+  if(r.block=="call"&&ph)pri=`<a class="npri dial2" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call ${esc(who||ph)}</a>`;
+  else if((r.block=="meet"||r.block=="visit")&&a.city)pri=`<a class="npri" href="https://maps.apple.com/?q=${encodeURIComponent(a.name+" "+a.city)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city)}</a>`;
+  else if(r.block=="follow"&&em)pri=`<a class="npri" href="mailto:${esc(em)}">Email ${esc(who||a.name)}</a>`;
+  else pri=`<button class="npri" data-open="${a.id}">Open the brief</button>`;
+  el.innerHTML=`<div class="now">
+    <div class="nh"><span class="eyebrow">now · ${kindLab}${r.over?" · overdue":""}</span><span class="nval">${val?k(val):""}</span></div>
+    <div class="nbody" data-open="${a.id}">
+      <div class="nname">${esc(a.name)}</div>
+      <div class="nwhy">${esc(n.why||"Follow up")}</div>
+      <div class="nmeta">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div>
+    </div>
+    ${pri}
+    <div class="nrow">
+      <button class="nq" data-nowdone="${a.id}|${n.id}">Done</button>
+      <button class="nq" data-nowlater="${a.id}|${n.id}">Later</button>
+      <button class="nq" data-nowskip="${a.id}">Skip</button>
+    </div>
+  </div>`;
+  return r;
+}
+function dayShape(rows){
+  const c={meet:0,visit:0,call:0,follow:0};
+  rows.forEach(r=>c[r.block]++);
+  const p=[];
+  if(c.meet)p.push(`<b>${c.meet}</b> meeting${c.meet==1?"":"s"}`);
+  if(c.visit)p.push(`<b>${c.visit}</b> drop-in${c.visit==1?"":"s"}`);
+  if(c.call)p.push(`<b>${c.call}</b> call${c.call==1?"":"s"}`);
+  if(c.follow)p.push(`<b>${c.follow}</b> follow-up${c.follow==1?"":"s"}`);
+  return p.join(" &nbsp;·&nbsp; ");
+}
+function renderList(rows,isNow){
+  const el=$("#blocks");
+  if(!rows.length){
+    el.innerHTML=isNow?"":`<div class="empty"><div class="said">Nothing scheduled.</div>
+      <p>Tap a day below, or use Territory to add work to this one.</p></div>`;
+    return;
+  }
+  const per=showAllRows?999:(+D.cfg.pageSize||10);
+  const nowR=isNow?nowPick(rows):null;
+  const rest=rows.filter(r=>r!==nowR);
+  const rank={meet:0,visit:1};
+  const field=rest.filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  const calls=rest.filter(r=>r.block=="call");
+  const desk=rest.filter(r=>r.block=="follow");
+  const row=r=>{
+    const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
+    const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
+    const mt=r.block=="meet"?`<span class="tagm">meeting</span>`:"";
+    return `<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
+      <button class="rtick" data-rowdone="${r.a.id}|${r.lead.id}" aria-label="Mark done"></button>
+      <div class="i"><div class="nm">${esc(r.a.name)}</div>
+        <div class="rs">${mt}${extra}${r.over?"overdue · ":""}${esc(why)}</div></div>
+      <div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>
+    </div>`;
+  };
+  const group=(title,list,tail)=>{
+    if(!list.length&&!tail)return "";
+    let h=`<div class="block"><div class="bh"><span class="t">${title}</span><span class="n">${list.length}</span></div>`;
+    list.slice(0,per).forEach(r=>h+=row(r));
+    if(list.length>per)h+=`<div class="more"><button class="b quiet" data-act="morerows">Show ${list.length-per} more</button></div>`;
+    h+=(tail||"")+`</div>`;
+  return h;
+  };
+  let html="";
+  const nb=isNow?nearbyHtml(rows):"";
+  if(field.length||nb)html+=group("In the field",field,nb);
+  if(isNow){
+    if(calls.length){
+      const names=calls.slice(0,3).map(r=>r.a.name).join(", ")+(calls.length>3?" +"+(calls.length-3)+" more":"");
+      html+=`<div class="runcard"><div class="rh"><b>Call run</b><span>${calls.length} due</span></div>
+        <p>${esc(names)}</p>
+        <button class="runbtn" data-act="run">Start calling</button></div>`;
+    }
+  }else if(calls.length)html+=group("Calls",calls);
+  if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
+  if(isNow&&!calls.length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
+  el.innerHTML=html;
+}
+function renderWeek(cur){
+  const ds=[];let d=today();
+  while(ds.length<5){if(d.getDay()!=0&&d.getDay()!=6)ds.push(d);d=addDays(d,1)}
+  $("#week").innerHTML=`<div class="block"><div class="bh"><span class="t">This week</span><span class="n">tap a day</span></div>
+    <div class="wgrid">${ds.map(x=>{
+      const n=todayRows(x).length,on=iso(x)==iso(cur);
+      return `<button class="wd${on?" on":""}" data-week="${iso(x)}" aria-label="${x.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}">
+        <em>${x.toLocaleDateString(undefined,{weekday:"short"})}</em><b>${x.getDate()}</b>
+        <s class="${n?"has":""}">${n||"·"}</s></button>`}).join("")}
+    </div></div>`;
 }
 function renderToday(){
   const d=viewDate||today(),isNow=iso(d)==iso(today());
   $("#datestr").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   $("#dnToday").style.display=isNow?"none":"";
-  const rows=todayRows(d),tgt=+D.cfg.touchTarget||40,got=touchesOn(d);
-  $("#hd").textContent=isNow?(rows.length?"Here's the day.":"Nothing owed today."):(rows.length?rows.length+" owed":"Clear");
-  const q=isNow?pickQuote():null;
-  $("#quote").innerHTML=q?`<div class="quote"><div class="said">${esc(q[0])}</div><div class="who">${esc(q[1])}</div></div>`:"";
-  if(isNow){renderMission(rows);renderCluster(rows)}else{$("#mission").innerHTML="";$("#cluster").innerHTML=""}
-
-  const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
-  const wk=weekAvg();
-  $("#counter").innerHTML=`<div class="counter">
-    <div class="ctop"><span class="lab">Touches logged</span>
-      <span class="cnum">${got}<s> / ${tgt}</s></span></div>
-    <div class="track"><div class="fill${got>=tgt?" ok":""}" style="width:${pct}%"></div></div>
-    <div class="csub">Your real weekly average is <b>${wk}</b> a day.${wk&&wk<tgt*.7?" The target is the target; the app's job is to make it cheaper, not to nag you.":""}</div>
-  </div>`;
-
-  if(!rows.length){
-    $("#blocks").innerHTML=`<div class="empty"><div class="said">${isNow?"The queue is empty. Go find someone.":"Nothing scheduled."}</div>
-      <p>${isNow?"Start a call run from your territory — highest-value untouched accounts first.":"Use Territory to add work to this day."}</p>
-      ${isNow?'<button class="runbtn" data-act="run">Start a call run</button>':""}</div>`;
-    return;
-  }
-  const per=showAllRows?999:(+D.cfg.pageSize||10);let html="",shown=0;
-  BLOCKS.forEach(([key,title,sub])=>{
-    const list=rows.filter(r=>r.block==key);if(!list.length)return;
-    html+=`<div class="block"><div class="bh"><span class="t">${title}</span><span class="n">${list.length}</span></div>`;
-    list.slice(0,per).forEach(r=>{
-      shown++;
-      const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
-      const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
-      html+=`<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
-        <div class="i"><div class="nm">${esc(r.a.name)}</div>
-          <div class="rs">${extra}${r.over?"overdue · ":""}${esc(why)}</div></div>
-        <div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>
-      </div>`;
-    });
-    if(list.length>per)html+=`<div class="more"><button class="b quiet" data-act="morerows">Show ${list.length-per} more</button></div>`;
-    if(key=="call")html+=`<button class="runbtn" data-act="run">Run calls${list.length?" ("+list.length+" due)":""}</button>`;
-    html+=`</div>`;
-  });
-  if(!rows.some(r=>r.block=="call"))html+=`<div class="block"><button class="runbtn" data-act="run">Start a call run</button></div>`;
-  $("#blocks").innerHTML=html;
+  const rows=todayRows(d);
+  $("#hd").textContent=isNow?(rows.length?"Here's the day.":"Nothing owed today.")
+    :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
+               :(rows.length?rows.length+" still open":"Clear"));
+  $("#shape").innerHTML=rows.length?dayShape(rows):"";
+  if(isNow){renderNow(rows);renderPace(rows)}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
+  renderList(rows,isNow);
+  renderWeek(d);
+  const q=isNow?dailyQuote():null;
+  $("#quote").innerHTML=q?`<div class="quote"><div class="said">&ldquo;${esc(q[0])}&rdquo;</div><div class="who">${esc(q[1])}</div></div>`:"";
 }
 function weekAvg(){
   let t=0;for(let i=0;i<7;i++)t+=touchesOn(addDays(today(),-i));
   return Math.round(t/7);
+}
+/* one path for "done", wherever it's tapped — now card, list row, or account screen */
+function completeAction(a,nid,msg){
+  const n=(a.next||[]).find(x=>x.id==nid&&!x.done);if(!n)return;
+  const before=snapshot(a);
+  n.done=true;
+  const kmap={visit:"visited",meet:"met",follow:"emailed",call:"called"};
+  logEvent(a,kmap[n.kind]||"note",n.why);
+  markDirty();save();render();
+  toastUndo(msg||"Logged.",()=>restoreAcct(before));
+}
+function laterSheet(aid,nid){
+  const a=acct(aid);if(!a)return;
+  const n=(a.next||[]).find(x=>x.id==nid&&!x.done);if(!n)return;
+  openSheet(`<h3>Push it</h3><div class="sub">${esc(a.name)} — ${esc(n.why)}</div>
+    <div class="chips" style="margin-top:16px">
+      <button class="chip" data-later="${aid}|${nid}|1">Tomorrow</button>
+      <button class="chip" data-later="${aid}|${nid}|3">In 3 days</button>
+      <button class="chip" data-later="${aid}|${nid}|7">Next week</button>
+    </div>
+    <label class="f">Or pick the day</label>${dateField("ltWhen","friday, the 28th")}
+    <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
+      <button class="b pri" data-act="laterpick" data-n="${aid}|${nid}">Move it</button></div>`);
+  wireDate("ltWhen");
+}
+function moveAction(a,n,dt){
+  const was=n.date;n.date=dt;
+  save();closeSheet();render();
+  toastUndo("Moved to "+fmt(parseD(dt))+".",()=>{n.date=was;save();render()});
 }
 
 /* ---------- call block ---------- */
@@ -1483,7 +1651,7 @@ function renderAccount(){
   h+=`<div class="hist">${ev.length?ev.map(e=>`${fmt(parseD(e.when))} — ${esc(e.kind)}${e.text?": "+esc(e.text):""}`).join("<br>"):"No history yet."}</div></div>`;
   $("#acctbody").innerHTML=h;
 }
-let openQ=null,showAllQ=false,showAllRows=false;
+let openQ=null,showAllQ=false,showAllRows=false,paceOpen=false,showNearby=false;
 /* the whole discovery flow: one open question at a time, answered ones collapse */
 function discoverySection(a){
   const lang=dlang(),dual=!!D.cfg.dual&&lang!="en";
@@ -1966,11 +2134,22 @@ async function loadSample(){
 /* ---------- wiring ---------- */
 let naType="prospect",anKind="call",enKind="call";
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push]");
+  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push],[data-nowdone],[data-nowlater],[data-nowskip],[data-rowdone],[data-later],[data-week]");
   if(!t)return;
   const a=curId?acct(curId):null;
 
   if(t.dataset.go){go(t.dataset.go);return}
+  if(t.dataset.nowdone||t.dataset.rowdone){
+    const [aid,nid]=(t.dataset.nowdone||t.dataset.rowdone).split("|"),ac=acct(aid);
+    if(ac)completeAction(ac,nid,t.dataset.nowdone?"Logged — next one's up.":"Logged.");return}
+  if(t.dataset.nowlater){const [aid,nid]=t.dataset.nowlater.split("|");laterSheet(aid,nid);return}
+  if(t.dataset.nowskip){const sk=acct(t.dataset.nowskip);
+    if(sk){const was=sk.skip;sk.skip=iso(today());save();render();
+      toastUndo("Skipped for today.",()=>{sk.skip=was;save();render()})}return}
+  if(t.dataset.later){const [aid,nid,dd]=t.dataset.later.split("|"),ac=acct(aid);
+    const n=ac&&(ac.next||[]).find(x=>x.id==nid);
+    if(n)moveAction(ac,n,iso(addDays(today(),+dd)));return}
+  if(t.dataset.week){viewDate=parseD(t.dataset.week);showAllRows=false;render();return}
   if(t.dataset.open){openQ=null;showAllQ=false;go("acct",t.dataset.open,screen);return}
   if(t.dataset.tf){terrFilter=t.dataset.tf;render();return}
   if(t.dataset.ru){rUnit=t.dataset.ru;render();return}
@@ -1988,11 +2167,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.dual){D.cfg.dual=!D.cfg.dual;save();render();return}
   if(t.dataset.reopen){openQ=t.dataset.reopen;render();return}
   if(t.dataset.ans&&t.dataset.v!==undefined&&a){setAnswer(a,t.dataset.ans,t.dataset.v);openQ=null;render();return}
-  if(t.dataset.tick&&a){const n=(a.next||[]).find(x=>x.id==t.dataset.tick);
-    if(n){const before=snapshot(a);n.done=true;
-      const kmap={visit:"visited",meet:"met",follow:"emailed",call:"called"};
-      logEvent(a,kmap[n.kind]||"note",n.why);markDirty();save();render();
-      toastUndo("Logged.",()=>restoreAcct(before))}return}
+  if(t.dataset.tick&&a){completeAction(a,t.dataset.tick);return}
   if(t.dataset.log){logSheet(t.dataset.log);return}
   if(t.dataset.lost){markLost(queue[qi],t.dataset.lost);save();advance();return}
   if(t.dataset.lostr&&a){const before=snapshot(a);markLost(a,t.dataset.lostr);save();closeSheet();render();
@@ -2020,6 +2195,14 @@ document.addEventListener("click",async e=>{
       n.why=$("#enWhy").value.trim()||n.why;
       n.date=dateOf("enWhen")||n.date;n.kind=enKind;
       save();closeSheet();render();toast("Updated.");break}
+    case"pace":paceOpen=!paceOpen;render();break;
+    case"nearby":showNearby=!showNearby;render();break;
+    case"laterpick":{
+      const [aid,nid]=(t.dataset.n||"").split("|"),ac=acct(aid);
+      const n=ac&&(ac.next||[]).find(x=>x.id==nid);
+      const dt=dateOf("ltWhen");
+      if(!dt){toast("Pick a date — the calendar button is right there.");break}
+      if(n)moveAction(ac,n,dt);break}
     case"morerows":showAllRows=true;render();break;
     case"moreterr":terrPage++;renderTerritory();break;
     case"newfromsearch":{newAcctSheet();const el=$("#naName");if(el)el.value=terrQ.trim();break}
