@@ -323,6 +323,21 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .mrow .mn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none}
 
 /* cluster */
+.trow{display:flex;align-items:center;gap:10px;margin-top:2px}
+.trow .chips{flex:1;min-width:0}
+.srchnote{font-size:12px;color:var(--ink3);padding:6px 0}
+.sortbtn{flex:none;font-size:12.5px;padding:6px 10px;border-radius:8px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-family:inherit;cursor:pointer;white-space:nowrap;transition:transform .08s ease}
+.sortbtn:active{transform:scale(.97)}
+.sortbtn span{margin-left:5px;opacity:.6}
+.dupe{margin-top:14px;background:var(--sunk);border:1px solid var(--rule2);border-radius:12px;padding:13px 14px}
+.dupe b{font-size:13.5px;font-weight:600;display:block}
+.dupe p{font-size:12px;color:var(--ink3);margin-top:9px;line-height:1.55}
+.drow{display:flex;flex-direction:column;padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer}
+.drow:last-of-type{border-bottom:0}
+.drow span{font-size:13.5px}
+.drow s{font-size:11.5px;color:var(--ink3);text-decoration:none;margin-top:2px}
+.keyn .knbody{font-size:13.5px;line-height:1.65;margin-top:4px;white-space:normal}
+.keyn .knempty{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:4px}
 .cluster{margin-top:10px;background:var(--sunk);border-radius:12px;padding:15px 17px}
 .cluster p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
 .cluster .cl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;cursor:pointer}
@@ -399,12 +414,13 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div class="eyebrow">your territory</div>
   <h1>Territory</h1>
   <input class="srch" id="q" placeholder="Search accounts&hellip;" autocomplete="off">
-  <div class="chips" id="tfilters"></div>
+  <div class="trow"><div class="chips" id="tfilters"></div><div id="tsort"></div></div>
   <div id="terrlist" style="margin-top:4px"></div>
   <div class="imp">
     <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
     <p style="font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.6">Export a list view and paste the rows, or pick the file. First row must be headers. Include <b>contact name, phone and email</b> columns &mdash; the call block needs them.</p>
     <div id="batches"></div>
+  <div id="dupereport"></div>
     <div class="chips" id="ityp"><button class="chip on" data-imptype="client">Clients</button><button class="chip" data-imptype="prospect">Competitor accts</button><button class="chip" data-imptype="cpa">CPAs</button><button class="chip" data-imptype="bank">Banks</button><button class="chip" data-imptype="partner">Partners</button></div>
     <textarea class="paste" id="pastebox" placeholder="Account Name	Contact	Phone	Email	Employees	Product	Pay Frequency	City"></textarea>
     <div class="sa" style="justify-content:flex-start;margin-top:12px">
@@ -548,7 +564,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const SCHEMA=5;                       /* bump this and add a step to MIGRATIONS */
+const SCHEMA=6;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -747,6 +763,8 @@ function repairAccount(a){
   if(typeof a.name!="string"){a.name=String(a.name||"(unnamed)");w.push(a.id+": name")}
   if(!["client","prospect","cpa","bank","partner"].includes(a.type))a.type="prospect";
   a.source=typeof a.source=="string"?a.source:"";
+  a.addr=typeof a.addr=="string"?a.addr:"";
+  a.notes=typeof a.notes=="string"?a.notes:"";
   if(a.type!="prospect"&&!REL.some(([c])=>c==a.rel)){
     a.rel=(a.events||[]).some(e=>e.kind=="met"||e.kind=="visited")?"intro":"notmet";
   }
@@ -817,6 +835,12 @@ const MIGRATIONS={
     return d;
   }
   ,
+  5:function(d){
+    /* v5 → v6: a street address you can navigate to, and notes that survive every log */
+    d.accounts.forEach(a=>{a.addr=a.addr||"";a.notes=a.notes||""});
+    return d;
+  }
+  ,
   4:function(d){
     /* v4 → v5: a territory is an ecosystem, not a pipeline. The old "partner" bucket
        was labeled CPAs in the UI, so that's what those accounts become. Strategic
@@ -848,7 +872,7 @@ function blankAcct(o){
   return Object.assign({id:uid(),name:"",type:"prospect",city:"",emps:0,industry:"",
     contact:{name:"",email:"",phone:""},
     today:{bundle:"",freq:"",addons:[],spend:0},
-    next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",
+    next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",addr:"",notes:"",
     discovery:{answers:{},updated:""},quote:null,events:[],batch:""},o||{});
 }
 /* the one-time lift from the old horizon app — produces schema 2, then the chain takes over */
@@ -1472,7 +1496,7 @@ function renderNow(rows){
     +(isRel(a)?" · "+(TYPESHORT[a.type]||"client"):"");
   let pri;
   if(r.block=="call"&&ph)pri=`<a class="npri dial2" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call ${esc(who||ph)}</a>`;
-  else if((r.block=="meet"||r.block=="visit")&&a.city)pri=`<a class="npri" href="https://maps.apple.com/?q=${encodeURIComponent(a.name+" "+a.city)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city)}</a>`;
+  else if((r.block=="meet"||r.block=="visit")&&canMap(a))pri=`<a class="npri" href="${mapURL(a)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city||"go")}</a>`;
   else if(r.block=="follow"&&em)pri=`<a class="npri" href="mailto:${esc(em)}">Email ${esc(who||a.name)}</a>`;
   else pri=`<button class="npri" data-open="${a.id}">Open the brief</button>`;
   el.innerHTML=`<div class="now">
@@ -1490,6 +1514,13 @@ function renderNow(rows){
     </div>
   </div>`;
   return r;
+}
+/* a briefing opens the way a manager would — by name, at the right hour */
+function greeting(){
+  const nm=((D.cfg.me||{}).name||"").trim().split(/\s+/)[0];
+  const h=new Date().getHours();
+  const part=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+  return nm?`${part}, ${nm}.`:"Here's the day.";
 }
 function dayShape(rows){
   const c={meet:0,visit:0,call:0,follow:0};
@@ -1575,7 +1606,7 @@ function renderToday(){
   $("#datestr").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   $("#dnToday").style.display=isNow?"none":"";
   const rows=todayRows(d);
-  $("#hd").textContent=isNow?(rows.length?"Here's the day.":A().length?"Nothing owed today.":"Start here.")
+  $("#hd").textContent=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
@@ -1725,6 +1756,7 @@ function renderAccount(){
   <div class="acts2">
     ${ph?`<a class="b" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call</a><a class="b" href="sms:${esc(ph.replace(/[^0-9+]/g,""))}">Text</a>`:""}
     ${em?`<a class="b" href="mailto:${esc(em)}">Email</a>`:""}
+    ${canMap(a)?`<a class="b" href="${mapURL(a)}" target="_blank" rel="noopener">Navigate</a>`:""}
     ${(!ph&&!em)?`<button class="b pri" data-act="editacct">Add contact info</button>`:`<button class="b quiet" data-act="editacct">Edit</button>`}
   </div>`;
 
@@ -1744,6 +1776,12 @@ function renderAccount(){
       <button class="push" data-push="${n.id}" aria-label="Push a week">+7d</button></div>`;
   });
   h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
+
+  /* the things you'd write on the back of a card — never overwritten by a log entry */
+  h+=`<div class="sect keyn"><div class="h"><b>Key notes</b><span>always here</span></div>
+    ${a.notes?`<div class="knbody">${esc(a.notes).replace(/\n/g,"<br>")}</div>`
+      :`<div class="knempty">Gatekeeper's name, best time to walk in, where to park, what the owner cares about. The things you'd forget by Thursday.</div>`}
+    <button class="b quiet" data-act="editnotes" style="margin-top:11px">${a.notes?"Edit notes":"Add notes"}</button></div>`;
 
   if(a.type=="prospect"||a.type=="client")h+=discoverySection(a);
 
@@ -1855,21 +1893,58 @@ function setAnswer(a,id,v){
 
 /* ---------- territory ---------- */
 const TFILTERS=[["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["dormant","Dormant / lost"]];
+/* everything you might half-remember about an account, in one string */
+function haystack(a){
+  const c=a.contact||{};
+  return norm([a.name,c.name,c.email,a.city,a.addr,a.source,a.industry,
+    TYPELABEL[a.type]||"",TYPESHORT[a.type]||""].filter(Boolean).join(" "));
+}
+const digits=s=>String(s||"").replace(/\D/g,"");
+function matches(a,q,qd){
+  if(haystack(a).includes(q))return true;
+  /* phone typed any way at all — 508-555-0134, (508) 5550134, or the last four */
+  if(qd.length>=3){const p=digits((a.contact||{}).phone);if(p&&p.includes(qd))return true}
+  return false;
+}
+const SORTS=[["reco","Recommended"],["az","A–Z"],["added","Recently added"],
+  ["touched","Recently contacted"],["due","Next action due"],["value","Highest opportunity"]];
+function sortList(list){
+  const nextDue=a=>{const n=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];return n?n.date:"9999-99-99"};
+  const touched=a=>lastTouch(a)||"0000-00-00";
+  switch(D.cfg.terrSort){
+    case"az":return list.sort((x,y)=>x.name.localeCompare(y.name));
+    /* ids are time-ordered, so newest id is newest account — no extra field to keep in sync */
+    case"added":return list.sort((x,y)=>(x.id<y.id?1:-1));
+    case"touched":return list.sort((x,y)=>touched(y)<touched(x)?-1:1);
+    case"due":return list.sort((x,y)=>nextDue(x)<nextDue(y)?-1:1);
+    case"value":return list.sort((x,y)=>dealValue(y)-dealValue(x)||refStats(y).total-refStats(x).total);
+    default:return list.sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
+  }
+}
 function terrList(){
-  const q=norm(terrQ);
-  return A().filter(a=>{
-    if(q&&!norm(a.name).includes(q)&&!norm((a.contact||{}).name||"").includes(q)&&!norm(a.city||"").includes(q))return false;
+  const q=norm(terrQ),qd=digits(terrQ);
+  /* searching is a hunt for one account — a filter chip must never hide the thing you typed */
+  if(q||qd.length>=3)return sortList(A().filter(a=>matches(a,q,qd)));
+  return sortList(A().filter(a=>{
     if(terrFilter=="dormant")return !isOpen(a);
     if(!isOpen(a))return false;
     /* the app says a won client is still yours to work — so the working list has to show it */
     if(terrFilter=="open")return true;
     if(terrFilter=="never")return !lastMet(a);
     return a.type==terrFilter;
-  }).sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
+  }));
 }
 function renderTerritory(){
-  $("#tfilters").innerHTML=TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}</button>`).join("");
+  const searching=!!(norm(terrQ)||digits(terrQ).length>=3);
+  /* while searching, the filters are irrelevant — say so instead of showing dead chips */
+  $("#tfilters").innerHTML=searching
+    ? `<div class="srchnote">Searching every account &mdash; filters off.</div>`
+    : TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}</button>`).join("");
   const list=terrList(),cap=60*terrPage;
+  const sl=(SORTS.find(([v])=>v==(D.cfg.terrSort||"reco"))||SORTS[0])[1];
+  $("#tsort").innerHTML=list.length
+    ? `<button class="sortbtn" data-act="sortmenu">${searching?list.length+" found":sl}<span>&#9662;</span></button>`
+    : "";
   /* the right column answers "what has this been worth?" — dollars for deals, referrals for relationships */
   const worth=a=>{const v=dealValue(a);if(v)return k(v);
     if(isRel(a)){const n=refStats(a).total;if(n)return n+" ref"+(n==1?"":"s")}
@@ -1914,23 +1989,28 @@ function parseRows(txt){
   const ix={name:find("accountname","company","account","name"),contact:find("contact","primary"),
     phone:find("phone","mobile"),email:find("email"),emps:find("employee","ee","headcount"),
     bundle:find("product","bundle","plan"),freq:find("frequency","payfreq"),city:find("city","town"),
-    ind:find("industry","sic")};
+    addr:find("street","address","billingstreet"),ind:find("industry","sic")};
   return lines.slice(1).map(l=>{
     const c=cut(l).map(s=>s.replace(/^"|"$/g,"").trim());
     const g=i=>i>=0?(c[i]||""):"";
     return {name:g(ix.name)||c[0]||"",contactName:g(ix.contact),phone:g(ix.phone),email:g(ix.email),
       emps:parseInt(g(ix.emps).replace(/[^0-9]/g,""))||0,bundle:g(ix.bundle),freq:g(ix.freq),
-      city:g(ix.city),industry:g(ix.ind)};
+      city:g(ix.city),addr:g(ix.addr),industry:g(ix.ind)};
   }).filter(r=>r.name);
 }
 function doImport(txt,type){
   const rows=parseRows(txt);
   if(!rows||!rows.length){toast("Couldn't read that — first row must be headers.");return}
   const by={};A().forEach(a=>{if(a.name)by[norm(a.name)]=a});
-  let add=0,upd=0,noPhone=0;const fresh=[];
+  let add=0,upd=0,noPhone=0;const fresh=[],maybe=[];
   rows.forEach(r=>{
     let a=by[norm(r.name)];
-    if(!a){a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
+    if(!a){
+      /* an exact-name match already merges; this catches "Doyle Plumbing LLC" landing
+         next to the "Doyle Plumbing" you added by hand last week */
+      const near=findDupes(r.name,r.phone,r.addr);
+      if(near.length)maybe.push({name:r.name,hit:near[0]});
+      a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
       D.accounts.push(a);by[norm(r.name)]=a;add++;fresh.push(a)}else upd++;
     if(r.emps)a.emps=r.emps;
     if(r.city)a.city=r.city;
@@ -1951,6 +2031,12 @@ function doImport(txt,type){
   (D.batches=D.batches||[]).push({name:type+" "+fmt(today()),n:rows.length,on:iso(today())});
   save();$("#pastebox").value="";render();
   toast(`${add} added, ${upd} updated${noPhone?` · ${noPhone} without a phone`:""}${last?` · first touches through ${fmt(parseD(last))}`:""}`);
+  /* silently creating near-duplicates is how a book rots — say it plainly, once */
+  $("#dupereport").innerHTML=maybe.length
+    ? `<div class="dupe" style="margin-top:14px"><b>${maybe.length} may already be in your book.</b>
+       ${maybe.slice(0,6).map(mm=>`<div class="drow" data-open="${mm.hit.a.id}"><span>${esc(mm.name)}</span><s>${mm.hit.why} as ${esc(mm.hit.a.name)}</s></div>`).join("")}
+       <p>They were added &mdash; nothing was overwritten. Tap any to open the original and delete whichever you don't want.</p></div>`
+    : "";
 }
 
 /* ---------- review ---------- */
@@ -2114,6 +2200,31 @@ function catchUp(){
 }
 /* the one rule that keeps a book alive: nothing leaves a conversation without a next date.
    If you don't name one, Bellwether uses your own cadence and says so. */
+/* street address if we have one, otherwise the business name and town — Apple Maps
+   resolves both, and a rep should never be copy-pasting an address in a parking lot */
+const mapQuery=a=>[a.name,a.addr||"",a.city||""].filter(Boolean).join(", ");
+const mapURL=a=>"https://maps.apple.com/?q="+encodeURIComponent(mapQuery(a));
+const canMap=a=>!!(a&&(a.addr||a.city));
+/* "Doyle Plumbing" and "Doyle Plumbing LLC" are the same business — strip the noise
+   that varies between a Salesforce export and what you type in a parking lot */
+const bare=s=>norm(s).replace(/\b(the|inc|llc|llp|ltd|co|corp|company|group|and)\b/g,"");
+/* likely-the-same-account, scored by the evidence a rep would actually use */
+function findDupes(name,phone,addr,skipId){
+  const bn=bare(name),pd=digits(phone),ad=bare(addr||"");
+  if(!bn&&!pd)return [];
+  return A().map(a=>{
+    if(a.id==skipId)return null;
+    const an=bare(a.name),ap=digits((a.contact||{}).phone),aa=bare(a.addr||"");
+    let why="";
+    if(pd&&ap&&pd.length>=7&&ap.slice(-10)==pd.slice(-10))why="same phone number";
+    else if(bn&&an&&(an==bn||(bn.length>=5&&(an.includes(bn)||bn.includes(an)))))
+      why=ad&&aa&&aa==ad?"same name and address":"nearly the same name";
+    /* two businesses genuinely share an address in any strip mall, so this is the
+       weakest signal — still worth surfacing, clearly labelled, never blocking */
+    else if(ad&&aa&&ad.length>=6&&aa==ad)why="same address";
+    return why?{a,why}:null;
+  }).filter(Boolean).slice(0,4);
+}
 const sugBundle=a=>(a.quote||{}).bundle||recommend(a).bundle;
 function keepAlive(a,why){
   if(!isOpen(a)||openActions(a).length)return null;
@@ -2160,7 +2271,7 @@ const dateOf=id=>dateVals[id]||"";
 const kindOf=id=>{const t=$("#"+id);const r=t?nlp(t.value):null;return r?r.kind:"call"};
 
 /* ---------- sheets ---------- */
-let lastCity="";
+let lastCity="",dupeOK=false;
 function newAcctSheet(){
   chipVal.nt="prospect";
   openSheet(`<h3>New account</h3><div class="sub">Name is the only thing required.</div>
@@ -2168,10 +2279,13 @@ function newAcctSheet(){
     <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-nt="${v}">${l}</button>`).join("")}</div>
     <div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number"></label>
       <label class="f">City<input class="t" id="naCity" value="${esc(lastCity)}"></label></div>
+    <label class="f">Street address <s style="font-weight:400;text-transform:none;letter-spacing:0">optional &mdash; powers Navigate</s><input class="t" id="naAddr" autocomplete="off" placeholder="12 Union Ave"></label>
     <div class="two"><label class="f">Contact<input class="t" id="naContact"></label>
       <label class="f">Phone<input class="t" id="naPhone" type="tel"></label></div>
     <label class="f">First next action &mdash; leave it blank and the first call goes out tomorrow</label>${dateField("naNext","call tuesday")}
-    <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savenew">Add</button></div>`);
+    <div id="dupewarn"></div>
+    <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" id="naSave" data-act="savenew">Add</button></div>`);
+  dupeOK=false;
   wireDate("naNext");
   setTimeout(()=>$("#naName").focus(),90);
 }
@@ -2207,6 +2321,7 @@ function editAcctSheet(){
     <div class="chips" id="eType" style="margin-top:2px">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l])=>`<button class="chip${a.type==v?" on":""}" data-et="${v}">${l}</button>`).join("")}</div>
     <div class="two"><label class="f">Employees<input class="t mono" id="eEmps" type="number" value="${a.emps||""}"></label>
       <label class="f">City<input class="t" id="eCity" value="${esc(a.city)}"></label></div>
+    <label class="f">Street address<input class="t" id="eAddr" value="${esc(a.addr||"")}" placeholder="12 Union Ave"></label>
     <div class="two"><label class="f">Contact<input class="t" id="eContact" value="${esc((a.contact||{}).name)}"></label>
       <label class="f">Phone<input class="t" id="ePhone" type="tel" value="${esc((a.contact||{}).phone)}"></label></div>
     <label class="f">Email<input class="t" id="eEmail" type="email" value="${esc((a.contact||{}).email)}"></label>
@@ -2459,6 +2574,7 @@ tap("go",t=>go(t.dataset.go));
 tap("open",t=>{openQ=null;showAllQ=false;go("acct",t.dataset.open,screen)});
 tap("week",t=>{viewDate=parseD(t.dataset.week);showAllRows=false;render()});
 tap("tf",t=>{terrFilter=t.dataset.tf;render()});
+tap("sort",t=>{D.cfg.terrSort=t.dataset.sort;terrPage=1;save();closeSheet();render()});
 tap("ru",t=>{rUnit=t.dataset.ru;render()});
 tap("th",t=>{D.cfg.theme=t.dataset.th;save();applyTheme()});
 tap("lang",t=>{D.cfg.dlang=t.dataset.lang;save();render()});
@@ -2552,7 +2668,24 @@ document.addEventListener("click",async e=>{
     case"editacct":editAcctSheet();break;
     case"savenew":{
       const nm=$("#naName").value.trim();if(!nm){toast("Needs a name.");break}
-      const na=blankAcct({name:nm,type:chipVal.nt||"prospect",emps:+$("#naEmps").value||0,city:$("#naCity").value.trim()});
+      const nph=$("#naPhone").value.trim(),nad=($("#naAddr")?$("#naAddr").value.trim():"");
+      /* warn once, then take the rep at their word — they can see the street, we can't */
+      /* warn in place — never blow away what they just typed — then take them at
+         their word on the second tap. They can see the street; we can't. */
+      if(!dupeOK){
+        const hits=findDupes(nm,nph,nad);
+        if(hits.length){
+          dupeOK=true;
+          const w=$("#dupewarn");
+          if(w)w.innerHTML=`<div class="dupe"><b>${hits.length==1?"This looks like one you already have.":"These look like ones you already have."}</b>
+            ${hits.map(hh=>`<div class="drow" data-open="${hh.a.id}"><span>${esc(hh.a.name)}</span><s>${hh.why}${hh.a.city?" · "+esc(hh.a.city):""}</s></div>`).join("")}
+            <p>Tap one to open it instead. Or press Add again to create this anyway.</p></div>`;
+          const b=$("#naSave");if(b)b.textContent="Add anyway";
+          break;
+        }
+      }
+      dupeOK=false;
+      const na=blankAcct({name:nm,type:chipVal.nt||"prospect",emps:+$("#naEmps").value||0,city:$("#naCity").value.trim(),addr:nad});
       if(isRel(na))na.rel="notmet";
       na.contact={name:$("#naContact").value.trim(),phone:$("#naPhone").value.trim(),email:""};
       const dt=dateOf("naNext");
@@ -2572,6 +2705,7 @@ document.addEventListener("click",async e=>{
       if(!a)break;
       const oldName=a.name;
       a.name=$("#eName").value.trim()||a.name;a.emps=+$("#eEmps").value||0;a.city=$("#eCity").value.trim();
+      a.addr=($("#eAddr")?$("#eAddr").value.trim():a.addr)||"";
       /* lead sources point at a name — rename the account and the attribution has to follow,
          or every deal it sourced silently detaches */
       if(oldName&&a.name!=oldName)A().forEach(x=>{if(x.source&&norm(x.source)==norm(oldName))x.source=a.name});
@@ -2635,6 +2769,22 @@ document.addEventListener("click",async e=>{
       toast(auto?"Logged — next one set for "+fmt(parseD(auto))+".":"Logged.");break}
     case"export":await exportBackup();break;
     case"diag":await diagnostics();break;
+    case"editnotes":{
+      if(!a)break;
+      openSheet(`<h3>Key notes</h3><div class="sub">Stays pinned to ${esc(a.name)}. Nothing you log will overwrite it.</div>
+        <label class="f">Notes<textarea class="t" id="knText" rows="7" placeholder="Ask for Denise at the front desk — owner is in before 8. Park behind the building.">${esc(a.notes||"")}</textarea></label>
+        <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savenotes">Save</button></div>`);
+      setTimeout(()=>{const e2=$("#knText");if(e2)e2.focus()},90);break}
+    case"savenotes":{
+      if(!a)break;
+      a.notes=$("#knText").value.trim();
+      await save();closeSheet();render();toast(a.notes?"Pinned.":"Notes cleared.");break}
+    case"sortmenu":{
+      openSheet(`<h3>Sort territory</h3>
+        <div class="chips" style="margin-top:6px">${SORTS.map(([v,l])=>
+          `<button class="chip${(D.cfg.terrSort||"reco")==v?" on":""}" data-sort="${v}">${l}</button>`).join("")}</div>
+        <div class="parse" style="margin-top:12px">Recommended puts the biggest opportunity and the coldest accounts first &mdash; the order Bellwether would work them in.</div>
+        <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
     case"catchup":catchUp();break;
     case"sample":await loadSample();break;
     case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
