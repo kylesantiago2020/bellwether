@@ -70,10 +70,15 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
 .rhythm{margin-top:7px;font-size:12.5px;color:var(--ink3)}
 .rhythm span{border-left:2px solid var(--ac);padding-left:8px}
+.behind{margin-top:14px;background:var(--sunk);border:1px solid var(--rule2);border-radius:13px;padding:14px 15px}
+.behind b{font-size:14px;font-weight:600;display:block}
+.behind p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
+.behind button{margin-top:11px;width:100%;padding:11px;border-radius:10px;border:1px solid var(--ac);background:transparent;color:var(--ac);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;transition:transform .08s ease}
+.behind button:active{transform:scale(.97)}
 .shape b{color:var(--ink);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
 
 /* the now card — the one thing to do next */
-.now{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:17px 17px 15px;box-shadow:0 14px 34px -24px rgba(21,23,28,.5)}
+.now{animation:f .22s ease both;margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:17px 17px 15px;box-shadow:0 14px 34px -24px rgba(21,23,28,.5)}
 body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .nh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .nval{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grn);flex:none}
@@ -81,6 +86,8 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .nname{font-size:22px;font-weight:500;letter-spacing:-.45px;line-height:1.25;margin-top:9px;overflow-wrap:anywhere}
 .nwhy{margin-top:5px;font-size:14px;color:var(--ink2);line-height:1.5}
 .nmeta{margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+.npri{transition:transform .08s ease}
+.nq,.runbtn,.cb,.b,.chip,.wd{transition:transform .08s ease,background .15s,border-color .15s,color .15s}
 .npri{display:block;width:100%;margin-top:15px;padding:14px;border-radius:11px;border:none;background:var(--ac);color:#fff;font-size:15px;font-weight:500;text-align:center;text-decoration:none;font-family:inherit;cursor:pointer}
 .npri:active{transform:scale(.98)}
 .npri.dial2{background:var(--grn)}
@@ -134,7 +141,9 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .bh{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:8px}
 .bh .t{font-size:13px;font-weight:500}
 .bh .n{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
-.qr{display:flex;align-items:center;gap:9px;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer}
+.qr{display:flex;align-items:center;gap:9px;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
+.qr:active,.bk:active{transform:scale(.985)}
+.npri:active,.nq:active,.runbtn:active,.cb:active,.b:active,.chip:active,.wd:active{transform:scale(.97)}
 .qr:last-child{border-bottom:none}
 .rtick{width:30px;height:30px;flex:none;background:none;border:none;padding:0;position:relative;margin-left:-4px}
 .rtick:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card)}
@@ -370,6 +379,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <h1 id="hd">Loading&hellip;</h1>
   <div class="shape" id="shape"></div>
   <div class="rhythm" id="rhythm"></div>
+  <div id="catchup"></div>
   <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
   <div id="now"></div>
   <div id="pace"></div>
@@ -395,7 +405,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
     <p style="font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.6">Export a list view and paste the rows, or pick the file. First row must be headers. Include <b>contact name, phone and email</b> columns &mdash; the call block needs them.</p>
     <div id="batches"></div>
-    <div class="chips" id="ityp"><button class="chip on" data-t="client">Clients</button><button class="chip" data-t="prospect">Competitor accts</button><button class="chip" data-t="partner">CPAs / partners</button></div>
+    <div class="chips" id="ityp"><button class="chip on" data-imptype="client">Clients</button><button class="chip" data-imptype="prospect">Competitor accts</button><button class="chip" data-imptype="cpa">CPAs</button><button class="chip" data-imptype="bank">Banks</button><button class="chip" data-imptype="partner">Partners</button></div>
     <textarea class="paste" id="pastebox" placeholder="Account Name	Contact	Phone	Email	Employees	Product	Pay Frequency	City"></textarea>
     <div class="sa" style="justify-content:flex-start;margin-top:12px">
       <button class="b pri" id="doimp">Import</button>
@@ -426,7 +436,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <h2>Your day</h2>
   <div class="two">
     <label class="f">Touch target / day<input class="t mono" id="touchTarget" type="number" min="1"></label>
-    <label class="f">Queue shows at once<input class="t mono" id="pageSize" type="number" min="3"></label>
+    <label class="f">Rows shown per list<input class="t mono" id="pageSize" type="number" min="3"></label>
   </div>
   <label class="f">Callback cadence &mdash; days between attempts<input class="t mono" id="cadence" placeholder="3, 4, 7, 14, 21"></label>
 
@@ -582,7 +592,7 @@ const DEF={fy:"",qEnd:"",goal:0,rgoal:0,o1:40,o2:20,o3:8,me:{},theme:"system",
  officeDays:"fri",
  dlang:"en",dual:false,
  lastExport:"",dirtySince:"",
- book:JSON.parse(JSON.stringify(PRICEBOOK)),
+ book:PRICEBOOK,
  addons:[{n:"Time & Attendance",b:0,p:0},{n:"Retirement 401(k)",b:0,p:0},
          {n:"Workers' Comp",b:0,p:0},{n:"Hiring / ATS",b:0,p:0}]};
 
@@ -598,6 +608,8 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s==null?"":s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
+/* the only deep copy in the app — used for snapshots, backups and default templates */
+const clone=o=>JSON.parse(JSON.stringify(o));
 
 const MON=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
 const DOW=["sun","mon","tue","wed","thu","fri","sat"];
@@ -760,10 +772,13 @@ function validate(d){
   d.accounts=d.accounts.filter(a=>a&&typeof a=="object");
   d.accounts.forEach(a=>repairLog.push(...repairAccount(a)));
   d.batches=Array.isArray(d.batches)?d.batches:[];
-  d.cfg=Object.assign({},DEF,d.cfg&&typeof d.cfg=="object"?d.cfg:{});
+  /* defaults are a factory template, never a live object — a shared reference here means
+     editing a price in Setup silently rewrites DEF for every later load */
+  d.cfg=Object.assign({},clone(DEF),d.cfg&&typeof d.cfg=="object"?d.cfg:{});
   d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
   d.cfg.rhythm=Object.assign({},DEF.rhythm,d.cfg.rhythm&&typeof d.cfg.rhythm=="object"?d.cfg.rhythm:{});
-  if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=JSON.parse(JSON.stringify(PRICEBOOK));repairLog.push("price book restored to defaults")}
+  if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=clone(PRICEBOOK);repairLog.push("price book restored to defaults")}
+  if(!Array.isArray(d.cfg.addons))d.cfg.addons=clone(DEF.addons);
   /* de-dupe ids — two accounts sharing an id makes edits land on the wrong one */
   const seen=new Set();
   d.accounts.forEach(a=>{if(seen.has(a.id)){a.id=uid();repairLog.push("duplicate id reassigned")}seen.add(a.id)});
@@ -873,7 +888,7 @@ function migrateLegacy(old){
       goal:+(old.cfg||{}).goal||0,rgoal:+(old.cfg||{}).rgoal||0,
       o1:+(old.cfg||{}).o1||40,o2:+(old.cfg||{}).o2||20,o3:+(old.cfg||{}).o3||8,
       me:(old.cfg||{}).me||{},theme:(old.cfg||{}).theme||"system",
-      book:(old.cfg||{}).book||JSON.parse(JSON.stringify(PRICEBOOK)),
+      book:(old.cfg||{}).book||clone(PRICEBOOK),
       addons:(old.cfg||{}).addons||DEF.addons,
       touchTarget:40,pageSize:10
     }),v:2,batches:old.batches||[],migratedOn:iso(today())};
@@ -929,7 +944,6 @@ async function load(){
   if(steps.length||loadReport.recovered)await save();
   return loadReport;
 }
-let saveT=null;
 async function save(){
   D.v=SCHEMA;calcRev++;
   D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
@@ -975,7 +989,6 @@ function perRun(bundle,freq,emps){
   const last=c.t[c.t.length-1];
   return +(last[1]+(emps-last[0])*(+c.o||0));
 }
-function freqsFor(bundle){const b=bk(bundle);return b?Object.keys(b.f):Object.keys(FREQ)}
 function annual(v){
   if(!v||!v.emps)return 0;
   let run=perRun(v.bundle,v.freq,v.emps);
@@ -1012,6 +1025,9 @@ function score(a){
   return _memo.s[a.id];
 }
 function dealValueRaw(a,over){
+  /* a CPA firm with eight staff is not a $3k deal — relationships are counted in
+     referrals, everywhere, or the number lies on every screen that shows it */
+  if(a.type=="cpa"||a.type=="bank"||a.type=="partner")return 0;
   const q=quoteAnnual(a,over);if(!q)return 0;
   if(a.type=="client"){const cur=currentAnnual(a);return Math.max(0,q-cur)}
   return q;
@@ -1037,7 +1053,6 @@ const isOpen=a=>a.outcome=="open";
 const isWon=a=>!!a.won;
 const isWorking=a=>isOpen(a)&&!isWon(a);
 const openActions=a=>(a.next||[]).filter(n=>!n.done);
-const dueActions=(a,d)=>openActions(a).filter(n=>n.date<=iso(d));
 const lastEvent=(a,kinds)=>{const e=(a.events||[]).filter(x=>!kinds||kinds.includes(x.kind));return e.length?e[e.length-1]:null};
 const lastMet=a=>{const e=lastEvent(a,["met"]);return e?e.when:""};
 const lastTouch=a=>{const e=lastEvent(a,TOUCH);return e?e.when:""};
@@ -1066,7 +1081,8 @@ function cadenceDays(attempt){
   return arr[Math.min(attempt,arr.length-1)];
 }
 const attemptsOn=a=>(a.events||[]).filter(e=>e.kind=="called").length;
-function pipeline(){return A().filter(a=>isWorking(a)&&a.emps)}
+/* the weighted pipeline is deals you can close — relationships feed it, they aren't in it */
+function pipeline(){return A().filter(a=>isWorking(a)&&a.emps&&!isRel(a))}
 function scoreRaw(a){
   let s=dealValue(a)/1000;
   const lt=lastTouch(a);
@@ -1253,13 +1269,20 @@ function toastUndo(m,fn){
   t.classList.add("on","act");
   clearTimeout(toastT);toastT=setTimeout(()=>{t.classList.remove("on","act");undoFn=null},6000);
 }
-function snapshot(a){return JSON.parse(JSON.stringify(a))}
+function snapshot(a){return clone(a)}
+/* the account the open screen or sheet is about — every handler used to re-derive this */
+const cur=()=>curId?acct(curId):null;
+const relLabel=c=>(REL.find(([x])=>x==c)||[])[1]||"";
+/* save + repaint, with the undo the app offers for anything reversible */
+function commit(msg,revert){
+  save();render();
+  if(revert)toastUndo(msg,()=>{revert();save();render()});else if(msg)toast(msg);
+}
 function restoreAcct(snap){
   const i=D.accounts.findIndex(x=>x.id==snap.id);
   if(i>=0)D.accounts[i]=snap;else D.accounts.push(snap);
   save();render();toast("Undone.");
 }
-function markDirty(){if(!D.cfg.dirtySince)D.cfg.dirtySince=new Date().toISOString()}
 function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on")}
 function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML=""}
 let backTo="today";
@@ -1339,8 +1362,8 @@ function dailyQuote(){
   if(!QUOTES.length)return null;
   return QUOTES[Math.round(today().getTime()/DAY)%QUOTES.length];
 }
-const MISSION=[["visits","Drop in on a business","prospect"],["clients","See a client","client"],
-  ["partners","Stop by a CPA, bank, or partner","partner"],["calls","Outbound calls",""],["follow","Clear a follow-up",""]];
+const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
+  ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
 function todayTouches(){
   const s=iso(today()),out=[];
   A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))out.push({a,e})}));
@@ -1360,7 +1383,9 @@ function renderPace(rows){
   const tgt=+D.cfg.touchTarget||40,got=touchesOn(today());
   const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
   const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone();
-  const booked=rows.filter(r=>r.block=="meet").length;
+  /* only what is actually on today's calendar — an overdue meeting from last week
+     is not a reason to trim today's calls */
+  const booked=rows.filter(r=>r.block=="meet"&&r.lead.date==iso(today())).length;
   const office=officeDay(today());
   const plan=Object.assign({},m);
   /* a booked day is not a cold-call day — scheduled work eats the dial time first.
@@ -1389,7 +1414,8 @@ function nearbyData(rows){
   const inPlay=new Set(rows.map(r=>r.a.id));
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
   const byTown={};
-  A().forEach(a=>{if(!isWorking(a)||!a.city||inPlay.has(a.id))return;
+  /* "in play" for a trip means open, not un-won — a client you closed is the best stop on the street */
+  A().forEach(a=>{if(!isOpen(a)||!a.city||inPlay.has(a.id))return;
     (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
   let town=anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null;
   if(!town){const best=Object.keys(byTown).sort((x,y)=>byTown[y].length-byTown[x].length)[0];
@@ -1422,6 +1448,15 @@ function nowPick(rows){
 }
 function renderNow(rows){
   const el=$("#now"),got=touchesOn(today());
+  if(!A().length){
+    el.innerHTML=`<div class="now clear">
+      <div class="eyebrow">welcome</div>
+      <div class="nname">Your territory isn't in here yet.</div>
+      <div class="nwhy">Bellwether builds each day from your accounts — who to see, who to call, and why. Import your book from Territory, or load the sample territory to feel how a full day runs.</div>
+      <button class="npri" data-go="terr" style="max-width:280px;margin:16px auto 0">Open Territory</button>
+      <button class="b quiet" data-act="sample" style="margin-top:10px">Load the sample territory</button></div>`;
+    return null;
+  }
   if(!rows.length){
     el.innerHTML=`<div class="now clear">
       <div class="eyebrow">now</div>
@@ -1521,7 +1556,7 @@ function renderList(rows,isNow){
     else if(calls.length)html+=group("Calls",calls);
     if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
   }
-  if(isNow&&!calls.length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
+  if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
   el.innerHTML=html;
 }
 function renderWeek(cur){
@@ -1540,13 +1575,20 @@ function renderToday(){
   $("#datestr").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   $("#dnToday").style.display=isNow?"none":"";
   const rows=todayRows(d);
-  $("#hd").textContent=isNow?(rows.length?"Here's the day.":"Nothing owed today.")
+  $("#hd").textContent=isNow?(rows.length?"Here's the day.":A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
   const rl=(D.cfg.rhythm||{})[DOW[d.getDay()]];
   $("#rhythm").innerHTML=rl?`<span>${esc(rl)}</span>`:"";
-  if(isNow){renderNow(rows);renderPace(rows)}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
+  /* a two-week backlog presented as "here's the day" is a lie the rep stops believing */
+  const over=isNow?rows.filter(r=>r.over).length:0,cap=dayCapacity();
+  $("#catchup").innerHTML=(over&&rows.length>cap)
+    ? `<div class="behind"><b>You're carrying ${over} from earlier.</b>
+       <p>That's more than a day holds. Bellwether can keep the highest-value ones on today, around what you already have booked, and lay the rest across the days ahead &mdash; field work off your office days.</p>
+       <button data-act="catchup">Re-plan it</button></div>`
+    : "";
+  if(isNow){renderNow(rows);if(A().length)renderPace(rows);else $("#pace").innerHTML=""}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
   renderList(rows,isNow);
   renderWeek(d);
   const q=isNow?dailyQuote():null;
@@ -1563,8 +1605,8 @@ function completeAction(a,nid,msg){
   n.done=true;
   const kmap={visit:"visited",meet:"met",follow:"emailed",call:"called"};
   logEvent(a,kmap[n.kind]||"note",n.why);
-  markDirty();save();render();
-  toastUndo(msg||"Logged.",()=>restoreAcct(before));
+  const auto=keepAlive(a);
+  commit((msg||"Logged.")+(auto?" Next touch "+fmt(parseD(auto))+".":""),()=>restoreAcct(before));
 }
 function laterSheet(aid,nid){
   const a=acct(aid);if(!a)return;
@@ -1581,9 +1623,8 @@ function laterSheet(aid,nid){
   wireDate("ltWhen");
 }
 function moveAction(a,n,dt){
-  const was=n.date;n.date=dt;
-  save();closeSheet();render();
-  toastUndo("Moved to "+fmt(parseD(dt))+".",()=>{n.date=was;save();render()});
+  const was=n.date;n.date=dt;closeSheet();
+  commit("Moved to "+fmt(parseD(dt))+".",()=>{n.date=was});
 }
 
 /* ---------- call block ---------- */
@@ -1591,7 +1632,9 @@ let queue=[],qi=0;
 function buildQueue(){
   const due=todayRows(today()).filter(r=>r.block=="call").map(r=>r.a);
   const have=new Set(due.map(a=>a.id));
-  const pool=A().filter(a=>isWorking(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
+  /* relationships are worked deliberately, on a date you chose — they join a run only when
+     a call is actually due. Top-ups are prospecting, which is a volume game. */
+  const pool=A().filter(a=>isWorking(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>score(y)-score(x));
   const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(today()));
   return due.concat(pool.slice(0,Math.max(10,need)));
@@ -1614,7 +1657,7 @@ function drawCard(){
   $("#cpg").textContent=`${qi+1} / ${queue.length}`;
   $("#ccard").innerHTML=`
     <div class="co">${esc(a.name)}</div>
-    <div class="meta">${[a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
+    <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
     <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
     ${lt?`<div class="last">Last touch ${days(parseD(lt),today())} days ago${le&&le.text?" — "+esc(le.text.slice(0,70)):""}</div>`:`<div class="last">Never touched. Attempt ${attemptsOn(a)+1}.</div>`}
     ${ph?`<a class="dial" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}`;
@@ -1631,13 +1674,15 @@ function callOutcome(c){
   if(c=="noanswer"||c=="message"){
     logEvent(a,"called",c=="message"?"left message":"no answer");
     reschedule(a,c=="message"?"Left a message — follow":"Try again");
+    const nxt=openActions(a).filter(n=>actionBlock(n)=="call")[0];
+    if(nxt)toast((c=="message"?"Message logged":"Logged")+" — back to them "+fmt(parseD(nxt.date))+".");
     save();advance();return;
   }
   if(c=="talked"){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
       <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
-      <label class="f" style="text-align:left">When next?</label>${dateField("cnext","next tuesday, the 28th")}
+      <label class="f" style="text-align:left">When next? <s style="font-weight:400;text-transform:none;letter-spacing:0">blank means ${fmt(addDays(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
       <div class="sa"><button class="b quiet" data-c="cancel">Back</button><button class="b pri" data-c="savetalk">Save &amp; next</button></div>`;
     wireDate("cnext");
     setTimeout(()=>$("#csaid").focus(),80);return;
@@ -1657,6 +1702,7 @@ function callOutcome(c){
     if(said)a.brief=said;
     openActions(a).filter(n=>actionBlock(n)=="call").forEach(n=>n.done=true);
     if(dt)a.next.push({id:uid(),date:dt,why:said?said.slice(0,60):"Follow up",kind:kindOf("cnext"),done:false});
+    else keepAlive(a,said?said.slice(0,60):"");
     if(a.stage=="callback")a.stage="interested";
     save();advance();return;
   }
@@ -1679,7 +1725,7 @@ function renderAccount(){
   <div class="acts2">
     ${ph?`<a class="b" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call</a><a class="b" href="sms:${esc(ph.replace(/[^0-9+]/g,""))}">Text</a>`:""}
     ${em?`<a class="b" href="mailto:${esc(em)}">Email</a>`:""}
-    <button class="b quiet" data-act="editacct">Edit</button>
+    ${(!ph&&!em)?`<button class="b pri" data-act="editacct">Add contact info</button>`:`<button class="b quiet" data-act="editacct">Edit</button>`}
   </div>`;
 
   h+=`<div class="brief">
@@ -1804,7 +1850,7 @@ function setAnswer(a,id,v){
   a.discovery=a.discovery||{answers:{},updated:""};
   a.discovery.answers[id]=v;a.discovery.updated=iso(today());
   if(id=="cost"&&+v){a.today=a.today||{};a.today.spend=+v}
-  markDirty();save();
+  save();
 }
 
 /* ---------- territory ---------- */
@@ -1815,7 +1861,8 @@ function terrList(){
     if(q&&!norm(a.name).includes(q)&&!norm((a.contact||{}).name||"").includes(q)&&!norm(a.city||"").includes(q))return false;
     if(terrFilter=="dormant")return !isOpen(a);
     if(!isOpen(a))return false;
-    if(terrFilter=="open")return isWorking(a);
+    /* the app says a won client is still yours to work — so the working list has to show it */
+    if(terrFilter=="open")return true;
     if(terrFilter=="never")return !lastMet(a);
     return a.type==terrFilter;
   }).sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
@@ -1823,18 +1870,32 @@ function terrList(){
 function renderTerritory(){
   $("#tfilters").innerHTML=TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}</button>`).join("");
   const list=terrList(),cap=60*terrPage;
+  /* the right column answers "what has this been worth?" — dollars for deals, referrals for relationships */
+  const worth=a=>{const v=dealValue(a);if(v)return k(v);
+    if(isRel(a)){const n=refStats(a).total;if(n)return n+" ref"+(n==1?"":"s")}
+    return "—"};
+  const EMPTIES={
+    open:["Nothing in motion.","Every account here should have a next action. Import your book below, or tap + and add the first one."],
+    prospect:["No prospects yet.","This is where competitor accounts live until they become clients. Import a Salesforce list below, or add one with +."],
+    client:["No clients in the book yet.","Your assigned ADP clients belong here — most have never met you, and every one deserves a face. Import the client list below."],
+    cpa:["No CPA firms yet.","Every CPA in the territory is a future referral source. Add each firm with +, drop in, and start the relationship."],
+    bank:["No bank branches yet.","One account per branch — referrals come from bankers, not banks, and every branch has its own pulse. Add your huddle branches with +."],
+    partner:["No strategic partners yet.","Partners like a POS brokerage send you warm introductions. Add them with + and log every referral — the impact adds up in their file."],
+    never:["Everyone's been met.","There's no one in the book you haven't shaken hands with. That's the job, done well."],
+    dormant:["Nothing parked, nothing lost.","A clean book. When something goes quiet, park it here — nothing is ever deleted."]};
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
     return `<div class="bk" data-open="${a.id}">
       <div><div class="nm">${esc(a.name)}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
       <div class="s">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div></div>
-      <div class="rd">${dealValue(a)?k(dealValue(a)):"—"}</div></div>`}).join("")
+      <div class="rd">${worth(a)}</div></div>`}).join("")
     +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
     :(terrQ.trim()
       ? `<div class="empty" style="margin-top:18px"><div class="said">No match for &ldquo;${esc(terrQ.trim())}&rdquo;</div>
          <p>If you're standing in front of it, add it now — you won't remember tonight.</p>
          <button class="runbtn" data-act="newfromsearch">Add ${esc(terrQ.trim())}</button></div>`
-      : `<div class="hist" style="margin-top:16px">Nothing here. Import below, or tap + to add one.</div>`);
+      : (()=>{const [t2,p2]=EMPTIES[terrFilter]||EMPTIES.open;
+         return `<div class="empty" style="margin-top:18px"><div class="said">${t2}</div><p>${p2}</p></div>`})());
   const b=D.batches||[];
   $("#batches").innerHTML=b.length?`<div class="hist" style="margin-top:8px">Imported: ${b.map(x=>esc(x.name)+" ("+x.n+")").join(" · ")}</div>`:"";
 }
@@ -1866,10 +1927,11 @@ function doImport(txt,type){
   const rows=parseRows(txt);
   if(!rows||!rows.length){toast("Couldn't read that — first row must be headers.");return}
   const by={};A().forEach(a=>{if(a.name)by[norm(a.name)]=a});
-  let add=0,upd=0,noPhone=0;
+  let add=0,upd=0,noPhone=0;const fresh=[];
   rows.forEach(r=>{
     let a=by[norm(r.name)];
-    if(!a){a=blankAcct({name:r.name,type});D.accounts.push(a);by[norm(r.name)]=a;add++}else upd++;
+    if(!a){a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
+      D.accounts.push(a);by[norm(r.name)]=a;add++;fresh.push(a)}else upd++;
     if(r.emps)a.emps=r.emps;
     if(r.city)a.city=r.city;
     if(r.industry)a.industry=r.industry;
@@ -1879,9 +1941,16 @@ function doImport(txt,type){
     if(r.email)a.contact.email=r.email;
     if(type=="client"){a.today=a.today||{};if(r.bundle)a.today.bundle=r.bundle;if(r.freq)a.today.freq=r.freq}
   });
+  /* an imported name with no next step isn't in your territory, it's a list.
+     Every one gets a first touch, phased in at a pace you can keep. */
+  const need=fresh.filter(x=>!openActions(x).length).sort((x,y)=>score(y)-score(x));
+  const plan=spread(need.map(x=>({a:x,kind:isRel(x)?"visit":"call"})),1);
+  plan.forEach(p=>p.it.a.next.push({id:uid(),date:p.date,
+    why:isRel(p.it.a)?"Introduce yourself":"First call",kind:p.it.kind,done:false}));
+  const last=plan.length?plan[plan.length-1].date:null;
   (D.batches=D.batches||[]).push({name:type+" "+fmt(today()),n:rows.length,on:iso(today())});
   save();$("#pastebox").value="";render();
-  toast(`${add} added, ${upd} updated${noPhone?` · ${noPhone} without a phone`:""}`);
+  toast(`${add} added, ${upd} updated${noPhone?` · ${noPhone} without a phone`:""}${last?` · first touches through ${fmt(parseD(last))}`:""}`);
 }
 
 /* ---------- review ---------- */
@@ -1892,7 +1961,14 @@ function weeksAhead(n){
   return out;
 }
 function renderReview(){
-  $("#runits").innerHTML=[["count","Deals"],["dollars","Dollars"]].map(([v,l])=>`<button class="chip${rUnit==v?" on":""}" data-ru="${v}">${l}</button>`).join("");
+  if(!A().length){
+    $("#hero").innerHTML=`<div class="empty" style="margin-top:12px"><div class="said">The scoreboard needs a game.</div>
+      <p>Once your accounts are in, this page shows the next 12 weeks of coverage, your real activity numbers, and the pace you need for President's Club.</p>
+      <button class="runbtn" data-go="terr" style="max-width:280px">Open Territory</button></div>`;
+    ["#runits","#chart","#rnote","#rfigs","#wall","#clubfigs","#clubnote"].forEach(s=>$(s).innerHTML="");
+    return;
+  }
+  $("#runits").innerHTML=[["count","Accounts"],["dollars","Dollars"]].map(([v,l])=>`<button class="chip${rUnit==v?" on":""}" data-ru="${v}">${l}</button>`).join("");
   const wks=weeksAhead(12);
   const vals=wks.map(w=>{
     let n=0;
@@ -1926,8 +2002,11 @@ function renderReview(){
     <div class="fig"><em>Revenue to club</em><strong>${rg?k(Math.max(0,rg-rev)):"—"}</strong></div>`;
   const daysLeft=D.cfg.fy?days(today(),parseD(D.cfg.fy)):0;
   $("#clubnote").innerHTML=(g&&daysLeft>0)?`${daysLeft} days left. At your current pace that's <b>${(won.length/Math.max(1,(365-daysLeft)/7)).toFixed(1)}</b> deals a week; club needs <b>${((g-won.length)/Math.max(1,daysLeft/7)).toFixed(1)}</b>.`:"Set your year and goals in Setup to see club pace.";
-  const cold=A().filter(a=>isOpen(a)&&!openActions(a).length).length;
-  $("#wall").innerHTML=cold?`<b>${cold} open accounts have no next action.</b> They are not in your pipeline, they're just names. Work them into a call run.`:"Every open account has a next action. That's the whole game.";
+  const coldAll=A().filter(a=>isOpen(a)&&!openActions(a).length);
+  const coldRel=coldAll.filter(isRel).length,coldDeal=coldAll.length-coldRel;
+  $("#wall").innerHTML=coldAll.length
+    ?`<b>${coldAll.length} open account${coldAll.length==1?"":"s"} ha${coldAll.length==1?"s":"ve"} no next action.</b> They are not in your territory yet, they're just names. ${[coldDeal?`Start a call run to work the ${coldDeal} you can reach by phone`:"",coldRel?`${coldRel} relationship${coldRel==1?"":"s"} need${coldRel==1?"s":""} a first visit — open ${coldRel==1?"it":"them"} and set one`:""].filter(Boolean).join(". ")}.`
+    :"Every open account has a next action. That's the whole game.";
 }
 function countEvents(kind){return A().reduce((s,a)=>s+(a.events||[]).filter(e=>e.kind==kind).length,0)}
 
@@ -1984,6 +2063,74 @@ function saveSetup(quiet){
 
 /* ---------- date field: type it or pick it, always in sync ---------- */
 const CALICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>';
+/* you already said what it is — "send the proposal" is a follow-up, not a call.
+   Bellwether picks the chip; tapping one yourself stops it guessing over you. */
+/* a day you can actually keep — taken from your own mission, not a magic number */
+function dayCapacity(){
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{});
+  return Math.max(6,(+m.visits||0)+(+m.clients||0)+(+m.partners||0)+(+m.calls||0)+(+m.follow||0));
+}
+/* one scheduler for every pile of work: fill the days ahead at that pace, never past it.
+   Field work slides off office days on its own — you can't drop in from the ADP office. */
+function spread(items,startOffset){
+  const cap=dayCapacity();
+  let d=addDays(today(),startOffset||0),used=0;
+  const skipWk=x=>{while(x.getDay()==0||x.getDay()==6)x=addDays(x,1);return x};
+  d=skipWk(d);
+  return items.map(it=>{
+    if(used>=cap){d=skipWk(addDays(d,1));used=0}
+    let day=d;
+    if((it.kind=="visit"||it.kind=="meet")&&officeDay(day)){
+      let alt=skipWk(addDays(day,1));
+      while(officeDay(alt))alt=skipWk(addDays(alt,1));
+      day=alt;
+    }
+    used++;
+    return {it,date:iso(day)};
+  });
+}
+/* a pile of overdue work is dead weight — re-plan it once, at a pace you can keep */
+function catchUp(){
+  const over=todayRows(today()).filter(r=>r.over);
+  if(!over.length){toast("Nothing behind. Work the day.");return}
+  const cap=dayCapacity();
+  /* today's real commitments come first — the backlog only fills the room that's left */
+  const already=todayRows(today()).filter(r=>!r.over).length;
+  const room=Math.max(0,cap-already);
+  const keep=over.slice(0,room),move=over.slice(room);
+  const stale=r=>r.due.filter(n=>n.date<iso(today()));
+  /* remember every date being touched, so one Undo puts the whole plan back */
+  const before=[];
+  over.forEach(r=>stale(r).forEach(n=>before.push({n,was:n.date})));
+  keep.forEach(r=>stale(r).forEach(n=>n.date=iso(today())));
+  /* an account moves as a unit — its overdue work stays together on the new day */
+  const plan=spread(move.map(r=>({kind:r.lead.kind,row:r})),1);
+  plan.forEach(p=>stale(p.it.row).forEach(n=>n.date=p.date));
+  const last=plan.length?plan[plan.length-1].date:null;
+  commit(move.length
+    ?`Re-planned. ${keep.length} today, the rest through ${fmt(parseD(last))}.`
+    :`Re-planned — all ${keep.length} land today.`,
+    ()=>before.forEach(b=>b.n.date=b.was));
+}
+/* the one rule that keeps a book alive: nothing leaves a conversation without a next date.
+   If you don't name one, Bellwether uses your own cadence and says so. */
+const sugBundle=a=>(a.quote||{}).bundle||recommend(a).bundle;
+function keepAlive(a,why){
+  if(!isOpen(a)||openActions(a).length)return null;
+  const when=iso(addDays(today(),isRel(a)?30:cadenceDays(attemptsOn(a))));
+  const kind=isRel(a)?"visit":"call";
+  a.next.push({id:uid(),date:when,why:why||(isRel(a)?"Stay in front of them":"Follow up"),kind,done:false});
+  return when;
+}
+function autoKind(txtId,chipsId,attr,set){
+  const txt=$("#"+txtId);if(!txt)return;
+  txt.addEventListener("input",()=>{
+    const box=$("#"+chipsId);
+    if(!box||box.dataset.touched)return;
+    const k2=nlpKind(txt.value);set(k2);
+    $$("#"+chipsId+" .chip").forEach(c=>c.classList.toggle("on",c.dataset[attr]==k2));
+  });
+}
 function dateField(id,ph){
   return `<div class="dfield">
     <input class="t" id="${id}" placeholder="${ph||"tuesday, the 28th, 7/28/26"}" autocomplete="off">
@@ -2013,15 +2160,17 @@ const dateOf=id=>dateVals[id]||"";
 const kindOf=id=>{const t=$("#"+id);const r=t?nlp(t.value):null;return r?r.kind:"call"};
 
 /* ---------- sheets ---------- */
+let lastCity="";
 function newAcctSheet(){
+  chipVal.nt="prospect";
   openSheet(`<h3>New account</h3><div class="sub">Name is the only thing required.</div>
     <label class="f">Name<input class="t" id="naName" autocomplete="off"></label>
     <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-nt="${v}">${l}</button>`).join("")}</div>
     <div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number"></label>
-      <label class="f">City<input class="t" id="naCity"></label></div>
+      <label class="f">City<input class="t" id="naCity" value="${esc(lastCity)}"></label></div>
     <div class="two"><label class="f">Contact<input class="t" id="naContact"></label>
       <label class="f">Phone<input class="t" id="naPhone" type="tel"></label></div>
-    <label class="f">First next action</label>${dateField("naNext","call tuesday")}
+    <label class="f">First next action &mdash; leave it blank and the first call goes out tomorrow</label>${dateField("naNext","call tuesday")}
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savenew">Add</button></div>`);
   wireDate("naNext");
   setTimeout(()=>$("#naName").focus(),90);
@@ -2038,7 +2187,7 @@ function editNextSheet(nid){
   wireDate("enWhen");
   $("#enWhen").value=parseD(n.date).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
   dateVals.enWhen=n.date;$("#enWhen_pick").value=n.date;
-  enKind=n.kind||"call";
+  chipVal.ek=n.kind||"call";
 }
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
@@ -2046,7 +2195,8 @@ function addNextSheet(){
     <label class="f">When</label>${dateField("anWhen","friday, the 28th, 3 weeks")}
     <div class="chips" id="anKind">${[["call","Call"],["visit","Drop-in"],["meet","Meeting"],["follow","Follow-up"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-ak="${v}">${l}</button>`).join("")}</div>
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="saveaction">Add</button></div>`);
-  wireDate("anWhen");anKind="call";
+  wireDate("anWhen");chipVal.ak="call";
+  autoKind("anWhy","anKind","ak",v=>chipVal.ak=v);
   setTimeout(()=>$("#anWhy").focus(),90);
 }
 function editAcctSheet(){
@@ -2087,20 +2237,17 @@ function logSheet(kind){
       <div class="sa"><button class="b quiet" data-act="close">Cancel</button></div>`);return;
   }
   if(kind=="won"){
-    const v=dealValue(a),q=a.quote||{},wasProspect=a.type!="client";
-    a.won={on:iso(today()),value:v,bundle:q.bundle||recommend(a).bundle,freq:q.freq||"Bi-weekly",disc:+q.disc||0};
-    a.wonStage=a.stage||"callback";
-    a.type="client";                       /* same account, new lifecycle — nothing is lost */
-    a.outcome="open";                      /* still yours to work: onboarding, add-ons, referrals */
-    a.stage="client";
-    a.today=Object.assign({},a.today||{},{bundle:a.won.bundle,freq:a.won.freq,spend:quoteAnnual(a)});
-    logEvent(a,"won",$$$(v)+" · "+a.won.bundle);
-    openActions(a).forEach(n=>n.done=true);
-    /* a new client is the best referral source you will ever have — don't let it go quiet */
-    a.next.push({id:uid(),date:iso(addDays(today(),14)),why:"First payroll check-in",kind:"call",done:false});
-    a.next.push({id:uid(),date:iso(addDays(today(),90)),why:"Add-on review — and ask who else they know",kind:"visit",done:false});
-    save();render();
-    toast(wasProspect?`Won — now a client. ${$$$(v)} to your number.`:`Won — ${$$$(v)} to your number.`);return;
+    /* the number that decides President's Club is the one number Bellwether can't know.
+       It guesses from the ladder, you confirm what it actually came in at. */
+    const v=Math.round(dealValue(a)),sug=sugBundle(a);
+    chipVal.wb=sug;
+    openSheet(`<h3>Won it</h3><div class="sub">Only one thing to confirm &mdash; what it actually came in at. That's what counts toward club.</div>
+      <label class="f">Annual value<input class="t mono" id="wnVal" type="number" inputmode="decimal" value="${v||""}" placeholder="0"></label>
+      <div class="parse">${v?"Bellwether's estimate from the ladder &mdash; change it to the signed number.":"No pricing on file yet &mdash; put in what you sold."}</div>
+      <label class="f" style="margin-top:14px">What they bought</label>
+      <div class="chips" id="wnBundle">${["Enhanced","Complete & HR Plus","HR Pro"].map(b=>`<button class="chip${sug==b?" on":""}" data-wb="${esc(b)}">${esc(b)}</button>`).join("")}</div>
+      <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savewon">Book it</button></div>`);
+    setTimeout(()=>{const e2=$("#wnVal");if(e2){e2.focus();if(e2.select)e2.select()}},90);return;
   }
   const label={met:"Met",quoted:"Quoted",note:"Note"}[kind];
   openSheet(`<h3>${label}</h3>
@@ -2294,62 +2441,81 @@ async function loadSample(){
 }
 
 /* ---------- wiring ---------- */
-let naType="prospect",anKind="call",enKind="call";
-document.addEventListener("click",async e=>{
-  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push],[data-nowdone],[data-nowlater],[data-nowskip],[data-rowdone],[data-later],[data-week],[data-rel],[data-et]");
-  if(!t)return;
-  const a=curId?acct(curId):null;
 
-  if(t.dataset.go){go(t.dataset.go);return}
-  if(t.dataset.nowdone||t.dataset.rowdone){
-    const [aid,nid]=(t.dataset.nowdone||t.dataset.rowdone).split("|"),ac=acct(aid);
-    if(ac)completeAction(ac,nid,t.dataset.nowdone?"Logged — next one's up.":"Logged.");return}
-  if(t.dataset.nowlater){const [aid,nid]=t.dataset.nowlater.split("|");laterSheet(aid,nid);return}
-  if(t.dataset.nowskip){const sk=acct(t.dataset.nowskip);
-    if(sk){const was=sk.skip;sk.skip=iso(today());save();render();
-      toastUndo("Skipped for today.",()=>{sk.skip=was;save();render()})}return}
-  if(t.dataset.later){const [aid,nid,dd]=t.dataset.later.split("|"),ac=acct(aid);
-    const n=ac&&(ac.next||[]).find(x=>x.id==nid);
-    if(n)moveAction(ac,n,iso(addDays(today(),+dd)));return}
-  if(t.dataset.week){viewDate=parseD(t.dataset.week);showAllRows=false;render();return}
-  if(t.dataset.open){openQ=null;showAllQ=false;go("acct",t.dataset.open,screen);return}
-  if(t.dataset.tf){terrFilter=t.dataset.tf;render();return}
-  if(t.dataset.ru){rUnit=t.dataset.ru;render();return}
-  if(t.dataset.th){D.cfg.theme=t.dataset.th;save();applyTheme();return}
-  if(t.dataset.t){$$("#ityp .chip").forEach(c=>c.classList.toggle("on",c==t));return}
-  if(t.dataset.nt){naType=t.dataset.nt;$$("#naType .chip").forEach(c=>c.classList.toggle("on",c==t));return}
-  if(t.dataset.et){$$("#eType .chip").forEach(c=>c.classList.toggle("on",c==t));return}
-  if(t.dataset.ak){anKind=t.dataset.ak;$$("#anKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
-  if(t.dataset.ek){enKind=t.dataset.ek;$$("#enKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
-  if(t.dataset.editnext){editNextSheet(t.dataset.editnext);return}
-  if(t.dataset.push&&a){const n=(a.next||[]).find(x=>x.id==t.dataset.push);
-    if(n){const was=n.date;n.date=iso(addDays(parseD(n.date),7));save();render();
-      toastUndo("Pushed to "+fmt(parseD(n.date))+".",()=>{n.date=was;save();render()})}return}
-  if(t.dataset.rung&&a){a.quote=Object.assign({freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0},a.quote||{},{bundle:t.dataset.rung});save();render();return}
-  if(t.dataset.lang){D.cfg.dlang=t.dataset.lang;save();render();return}
-  if(t.dataset.dual){D.cfg.dual=!D.cfg.dual;save();render();return}
-  if(t.dataset.reopen){openQ=t.dataset.reopen;render();return}
-  if(t.dataset.ans&&t.dataset.v!==undefined&&a){setAnswer(a,t.dataset.ans,t.dataset.v);openQ=null;render();return}
-  if(t.dataset.tick&&a){completeAction(a,t.dataset.tick);return}
-  if(t.dataset.log){logSheet(t.dataset.log);return}
-  if(t.dataset.rel){const a2=acct(curId);if(a2){
-    const was=a2.rel;a2.rel=t.dataset.rel;
-    if(was!=a2.rel)logEvent(a2,"note","relationship \u2192 "+((REL.find(([c])=>c==a2.rel)||[])[1]||a2.rel).toLowerCase());
-    save();render()}return}
-  if(t.dataset.lost){markLost(queue[qi],t.dataset.lost);save();advance();return}
-  if(t.dataset.lostr&&a){const before=snapshot(a);markLost(a,t.dataset.lostr);save();closeSheet();render();
-    toastUndo("Logged as lost.",()=>restoreAcct(before));return}
-  if(t.dataset.c){callOutcome(t.dataset.c);return}
-  if(t.dataset.restore){
-    if(!confirm("Restore this backup? Your current data is backed up first."))return;
-    await makeBackup("before restore");
-    const j=await readBackup(t.dataset.restore);
-    if(!j){toast("That backup won't parse.");return}
-    D=j;validate(D);const rr=await runMigrations(D);D=rr.d;
-    await save();closeSheet();render();toast("Restored.");return}
-  if(t.dataset.addvisit){const v=acct(t.dataset.addvisit);
-    if(v){v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
-      save();render();toast("Added to today.")}return}
+/* every clickable data-* attribute lives in TAPS. The selector is built from its keys,
+   so adding an interaction is one entry here and nothing else — forgetting to widen a
+   hand-written selector was the easiest silent bug in this file. */
+const TAPS={};
+const tap=(key,fn)=>{TAPS[key]=fn};
+/* chip groups: one selected value per group, so four near-identical toggles became one */
+const chipVal={};
+function pickChip(t,group){
+  chipVal[group]=t.dataset[group];
+  const box=t.closest(".chips");
+  if(box){box.dataset.touched="1";[...box.children].forEach(c=>c.classList&&c.classList.toggle("on",c==t))}
+}
+
+tap("go",t=>go(t.dataset.go));
+tap("open",t=>{openQ=null;showAllQ=false;go("acct",t.dataset.open,screen)});
+tap("week",t=>{viewDate=parseD(t.dataset.week);showAllRows=false;render()});
+tap("tf",t=>{terrFilter=t.dataset.tf;render()});
+tap("ru",t=>{rUnit=t.dataset.ru;render()});
+tap("th",t=>{D.cfg.theme=t.dataset.th;save();applyTheme()});
+tap("lang",t=>{D.cfg.dlang=t.dataset.lang;save();render()});
+tap("dual",()=>{D.cfg.dual=!D.cfg.dual;save();render()});
+tap("reopen",t=>{openQ=t.dataset.reopen;render()});
+tap("editnext",t=>editNextSheet(t.dataset.editnext));
+tap("log",t=>logSheet(t.dataset.log));
+tap("c",t=>callOutcome(t.dataset.c));
+
+/* chip groups — every one of these behaves identically */
+["imptype","nt","et","wb","ak","ek"].forEach(g=>tap(g,t=>pickChip(t,g)));
+
+/* one account + one action, encoded as "accountId|actionId" */
+const pair=s=>{const [aid,nid]=String(s).split("|");const ac=acct(aid);
+  return {a:ac,n:ac&&(ac.next||[]).find(x=>x.id==nid&&!x.done)}};
+tap("nowdone",t=>{const p=pair(t.dataset.nowdone);if(p.a)completeAction(p.a,p.n&&p.n.id,"Logged — next one's up.")});
+tap("rowdone",t=>{const p=pair(t.dataset.rowdone);if(p.a)completeAction(p.a,p.n&&p.n.id,"Logged.")});
+tap("nowlater",t=>{const [aid,nid]=t.dataset.nowlater.split("|");laterSheet(aid,nid)});
+tap("later",t=>{const [aid,nid,dd]=t.dataset.later.split("|"),p=pair(aid+"|"+nid);
+  if(p.n)moveAction(p.a,p.n,iso(addDays(today(),+dd)))});
+tap("nowskip",t=>{const sk=acct(t.dataset.nowskip);if(!sk)return;
+  const was=sk.skip;sk.skip=iso(today());
+  commit("Skipped for today.",()=>{sk.skip=was})});
+tap("push",t=>{const a=cur();const n=a&&(a.next||[]).find(x=>x.id==t.dataset.push);
+  if(n)moveAction(a,n,iso(addDays(parseD(n.date),7)))});
+tap("tick",t=>{const a=cur();if(a)completeAction(a,t.dataset.tick)});
+tap("addvisit",t=>{const v=acct(t.dataset.addvisit);if(!v)return;
+  v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
+  save();render();toast("Added to today.")});
+
+tap("rung",t=>{const a=cur();if(!a)return;
+  a.quote=Object.assign({freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0},a.quote||{},{bundle:t.dataset.rung});
+  save();render()});
+tap("ans",t=>{const a=cur();if(!a||t.dataset.v===undefined)return;
+  setAnswer(a,t.dataset.ans,t.dataset.v);openQ=null;render()});
+tap("rel",t=>{const a=cur();if(!a)return;
+  const was=a.rel;a.rel=t.dataset.rel;
+  if(was!=a.rel)logEvent(a,"note","relationship \u2192 "+(relLabel(a.rel)||a.rel).toLowerCase());
+  save();render()});
+tap("lost",t=>{markLost(queue[qi],t.dataset.lost);save();advance()});
+tap("lostr",t=>{const a=cur();if(!a)return;
+  const before=snapshot(a);markLost(a,t.dataset.lostr);closeSheet();
+  commit("Logged as lost.",()=>restoreAcct(before))});
+tap("restore",async t=>{
+  if(!confirm("Restore this backup? Your current data is backed up first."))return;
+  await makeBackup("before restore");
+  const j=await readBackup(t.dataset.restore);
+  if(!j){toast("That backup won't parse.");return}
+  D=j;validate(D);const rr=await runMigrations(D);D=rr.d;
+  await save();closeSheet();render();toast("Restored.");});
+
+const TAPSEL=Object.keys(TAPS).concat("act").map(k=>"[data-"+k+"]").join(",");
+document.addEventListener("click",async e=>{
+  const t=e.target.closest(TAPSEL);
+  if(!t)return;
+  for(const k of Object.keys(TAPS))if(t.dataset[k]!==undefined){await TAPS[k](t);return}
+  const a=cur();
 
   switch(t.dataset.act){
     case"undo":{const f=undoFn;undoFn=null;$("#toast").classList.remove("on","act");if(f)f();break}
@@ -2360,7 +2526,7 @@ document.addEventListener("click",async e=>{
     case"saveedit-next":{
       if(!a)break;const n=(a.next||[]).find(x=>x.id==t.dataset.n);if(!n)break;
       n.why=$("#enWhy").value.trim()||n.why;
-      n.date=dateOf("enWhen")||n.date;n.kind=enKind;
+      n.date=dateOf("enWhen")||n.date;n.kind=chipVal.ek||n.kind;
       save();closeSheet();render();toast("Updated.");break}
     case"pace":paceOpen=!paceOpen;render();break;
     case"nearby":showNearby=!showNearby;render();break;
@@ -2377,7 +2543,7 @@ document.addEventListener("click",async e=>{
       if(!a)break;
       a.outcome="open";a.lostReason="";
       logEvent(a,"note","reopened");
-      if(!openActions(a).length)a.next.push({id:uid(),date:iso(today()),why:"Reopened — make contact",kind:"call",done:false});
+      keepAlive(a,"Reopened — make contact");
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":startRun();break;
     case"allq":showAllQ=!showAllQ;openQ=null;render();break;
@@ -2386,21 +2552,29 @@ document.addEventListener("click",async e=>{
     case"editacct":editAcctSheet();break;
     case"savenew":{
       const nm=$("#naName").value.trim();if(!nm){toast("Needs a name.");break}
-      const na=blankAcct({name:nm,type:naType,emps:+$("#naEmps").value||0,city:$("#naCity").value.trim()});
+      const na=blankAcct({name:nm,type:chipVal.nt||"prospect",emps:+$("#naEmps").value||0,city:$("#naCity").value.trim()});
       if(isRel(na))na.rel="notmet";
       na.contact={name:$("#naContact").value.trim(),phone:$("#naPhone").value.trim(),email:""};
       const dt=dateOf("naNext");
-      if(dt)na.next.push({id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false});
-      D.accounts.push(na);await save();closeSheet();go("acct",na.id);toast("Added.");break}
+      /* an account without a next action is just a name — Bellwether never creates one */
+      na.next.push(dt?{id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false}
+        :{id:uid(),date:iso(addDays(today(),1)),why:"First contact",kind:isRel(na)?"visit":"call",done:false});
+      lastCity=na.city||lastCity;
+      D.accounts.push(na);await save();closeSheet();go("acct",na.id);
+      toast(dt?"Added.":"Added — first "+(isRel(na)?"visit":"call")+" set for tomorrow.");break}
     case"saveaction":{
       if(!a)break;
       const dt=dateOf("anWhen");
       if(!dt){toast("Pick a date — the calendar button is right there.");break}
-      a.next.push({id:uid(),date:dt,why:$("#anWhy").value.trim()||"Follow up",kind:anKind,done:false});
+      a.next.push({id:uid(),date:dt,why:$("#anWhy").value.trim()||"Follow up",kind:chipVal.ak||"call",done:false});
       await save();closeSheet();render();toast("Scheduled "+fmt(parseD(dt))+".");break}
     case"saveedit":{
       if(!a)break;
+      const oldName=a.name;
       a.name=$("#eName").value.trim()||a.name;a.emps=+$("#eEmps").value||0;a.city=$("#eCity").value.trim();
+      /* lead sources point at a name — rename the account and the attribution has to follow,
+         or every deal it sourced silently detaches */
+      if(oldName&&a.name!=oldName)A().forEach(x=>{if(x.source&&norm(x.source)==norm(oldName))x.source=a.name});
       a.contact={name:$("#eContact").value.trim(),phone:$("#ePhone").value.trim(),email:$("#eEmail").value.trim()};
       a.today=a.today||{};a.today.spend=+$("#eSpend").value||0;
       a.source=($("#eSource")?$("#eSource").value.trim():a.source)||"";
@@ -2408,6 +2582,26 @@ document.addEventListener("click",async e=>{
       if(sel){a.type=sel.dataset.et;
         if(isRel(a)&&!REL.some(([c])=>c==a.rel))a.rel=lastMet(a)?"intro":"notmet"}
       await save();closeSheet();render();break}
+    case"savewon":{
+      if(!a)break;
+      const before=snapshot(a),wasProspect=a.type!="client";
+      const v=+$("#wnVal").value||0,q=a.quote||{};
+      const wb=chipVal.wb||sugBundle(a);
+      a.won={on:iso(today()),value:v,bundle:wb,freq:q.freq||(a.today&&a.today.freq)||"Bi-weekly",disc:+q.disc||0};
+      a.wonStage=a.stage||"callback";
+      a.type="client";                       /* same account, new lifecycle — nothing is lost */
+      a.outcome="open";                      /* still yours to work: onboarding, add-ons, referrals */
+      a.stage="client";
+      if(!REL.some(([c])=>c==a.rel))a.rel=lastMet(a)?"intro":"notmet";
+      a.today=Object.assign({},a.today||{},{bundle:wb,freq:a.won.freq,spend:v});
+      logEvent(a,"won",$$$(v)+" · "+wb);
+      openActions(a).forEach(n=>n.done=true);
+      /* a new client is the best referral source you will ever have — don't let it go quiet */
+      a.next.push({id:uid(),date:iso(addDays(today(),14)),why:"First payroll check-in",kind:"call",done:false});
+      a.next.push({id:uid(),date:iso(addDays(today(),90)),why:"Add-on review — and ask who else they know",kind:"visit",done:false});
+      await save();closeSheet();render();
+      toastUndo(wasProspect?`Booked — now a client. ${$$$(v)} to your number.`:`Booked — ${$$$(v)} to your number.`,
+        ()=>restoreAcct(before));break}
     case"saveref":{
       if(!a)break;
       const nm=$("#rfName").value.trim();if(!nm){toast("Give the business a name.");break}
@@ -2419,11 +2613,15 @@ document.addEventListener("click",async e=>{
       D.accounts.push(p);
       logEvent(a,"referral",nm);
       if(a.rel=="notmet"||a.rel=="intro"||a.rel=="building")a.rel="referring";
+      /* the source is the relationship that matters — it never leaves this exchange unscheduled */
+      const back=keepAlive(a,"Close the loop on "+nm);
       await save();closeSheet();render();
-      toast(nm+" is in your pipeline — call goes out tomorrow.");break}
+      toast(nm+" is in your pipeline — call goes out tomorrow."+(back?" Back to "+a.name+" "+fmt(parseD(back))+".":""));break}
     case"delacct":{
       if(!a)break;
-      D.accounts=D.accounts.filter(x=>x.id!=a.id);await save();closeSheet();go("terr");toast("Deleted.");break}
+      const gone=snapshot(a),n=(a.events||[]).length;
+      D.accounts=D.accounts.filter(x=>x.id!=a.id);await save();closeSheet();go("terr");
+      toastUndo(`Deleted ${gone.name}${n?` and ${n} logged touch${n==1?"":"es"}`:""}.`,()=>restoreAcct(gone));break}
     case"savelog":{
       if(!a)break;
       const kind=t.dataset.k,txt=$("#lgText").value.trim();
@@ -2432,9 +2630,12 @@ document.addEventListener("click",async e=>{
       if(kind=="quoted")a.stage="quoted";else if(kind=="met"&&a.stage=="callback")a.stage="interested";
       const dt=dateOf("lgWhen");
       if(dt)a.next.push({id:uid(),date:dt,why:$("#lgWhy").value.trim()||"Follow up",kind:kindOf("lgWhen"),done:false});
-      await save();closeSheet();render();toast("Logged.");break}
+      const auto=dt?null:keepAlive(a,$("#lgWhy").value.trim());
+      await save();closeSheet();render();
+      toast(auto?"Logged — next one set for "+fmt(parseD(auto))+".":"Logged.");break}
     case"export":await exportBackup();break;
     case"diag":await diagnostics();break;
+    case"catchup":catchUp();break;
     case"sample":await loadSample();break;
     case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
     case"impmerge":await applyImport("merge");break;
@@ -2468,7 +2669,7 @@ $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1)
 $("#dnToday").addEventListener("click",()=>{viewDate=today();render()});
 $("#save").addEventListener("click",saveSetup);
 $("#doimp").addEventListener("click",()=>{
-  const type=($("#ityp .chip.on")||{dataset:{t:"client"}}).dataset.t;
+  const type=chipVal.imptype||"client";
   doImport($("#pastebox").value,type);
 });
 $("#pickfile").addEventListener("click",()=>{
@@ -2493,7 +2694,7 @@ function importFile(){
       let j=null;try{j=JSON.parse(rd.result)}catch(e){}
       /* validate before anything is replaced — a bad file must never reach storage */
       if(!validShape(j)){toast("That file isn't a Bellwether backup.");return}
-      const copy=JSON.parse(JSON.stringify(j));validate(copy);
+      const copy=clone(j);validate(copy);
       pendingImport=copy;
       const mine=A().length;
       openSheet(`<h3>Import ${copy.accounts.length} accounts</h3>
@@ -2546,7 +2747,9 @@ async function diagnostics(){
       ${row("prospects",A().filter(a=>a.type=="prospect").length)}
       ${row("clients",A().filter(a=>a.type=="client").length)}
       ${row("won",A().filter(isWon).length)}
-      ${row("cpa / partners",A().filter(a=>a.type=="partner").length)}
+      ${row("cpa firms",A().filter(a=>a.type=="cpa").length)}
+      ${row("bank branches",A().filter(a=>a.type=="bank").length)}
+      ${row("referral partners",A().filter(a=>a.type=="partner").length)}
       ${row("open actions",A().reduce((s,a)=>s+openActions(a).length,0))}
       ${row("events",A().reduce((s,a)=>s+(a.events||[]).length,0))}
       ${row("backups",ix.length)}
