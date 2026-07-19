@@ -68,6 +68,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .dnbtn:active{transform:scale(.92)}
 .dncenter{flex:1;text-align:center}
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
+.rhythm{margin-top:7px;font-size:12.5px;color:var(--ink3)}
+.rhythm span{border-left:2px solid var(--ac);padding-left:8px}
 .shape b{color:var(--ink);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
 
 /* the now card — the one thing to do next */
@@ -367,6 +369,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   </div>
   <h1 id="hd">Loading&hellip;</h1>
   <div class="shape" id="shape"></div>
+  <div class="rhythm" id="rhythm"></div>
   <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
   <div id="now"></div>
   <div id="pace"></div>
@@ -438,6 +441,15 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Outbound calls<input class="t mono" id="mCalls" type="number" min="0"></label>
   </div>
   <label class="f">Follow-ups cleared<input class="t mono" id="mFollow" type="number" min="0"></label>
+
+  <h2>Week rhythm &mdash; not every day serves the same purpose</h2>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">One line per day, shown on the Today screen. Office days keep you off the road: calls lead, drop-ins wait.</p>
+  <label class="f">Monday<input class="t" id="rMon"></label>
+  <label class="f">Tuesday<input class="t" id="rTue"></label>
+  <label class="f">Wednesday<input class="t" id="rWed"></label>
+  <label class="f">Thursday<input class="t" id="rThu"></label>
+  <label class="f">Friday<input class="t" id="rFri"></label>
+  <label class="f">Office days<input class="t mono" id="rOffice" placeholder="fri"></label>
 
   <div id="bakbanner"></div>
 
@@ -526,9 +538,19 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const SCHEMA=4;                       /* bump this and add a step to MIGRATIONS */
+const SCHEMA=5;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
+/* every relationship type has its own definition of success — these name the arc */
+const REL=[["notmet","Not met"],["intro","Introduced"],["building","Developing"],["referring","Referring"],["trusted","Trusted"]];
+const RELNUDGE={notmet:"Walk in and introduce yourself. That's the whole first move.",
+  intro:"Find a reason to be useful before you ask for anything.",
+  building:"Ask for one specific referral — vague asks get vague results.",
+  referring:"Close the loop fast on every referral. That's what earns the next one.",
+  trusted:"Protect the rhythm. Trusted partners are lost through silence, not mistakes."};
+const TYPELABEL={prospect:"prospect",client:"ADP client",cpa:"CPA firm",bank:"bank branch",partner:"referral partner"};
+const TYPESHORT={cpa:"CPA",bank:"bank",partner:"partner"};
+const isRel=a=>a&&a.type!="prospect";
 let D={accounts:[],cfg:{},v:SCHEMA}, viewDate=null, screen="today", curId=null, terrFilter="open", terrQ="", terrPage=1;
 
 const PRICEBOOK=[
@@ -552,6 +574,12 @@ const PRICEBOOK=[
 const DEF={fy:"",qEnd:"",goal:0,rgoal:0,o1:40,o2:20,o3:8,me:{},theme:"system",
  touchTarget:40,pageSize:10,cadence:"3, 4, 7, 14, 21",
  mission:{visits:3,clients:2,partners:1,calls:12,follow:2},
+ rhythm:{mon:"Field day — drop-ins, prospecting, relationship stops",
+         tue:"8:30 · Banker huddle — BoA Medfield, 478 Main St",
+         wed:"8:30 · Banker huddle — BoA Dedham, 858 Washington St",
+         thu:"8:30 · Banker huddle — BoA Ashland, 300 Elliott St",
+         fri:"Office day — calls, follow-ups, pipeline, plan next week"},
+ officeDays:"fri",
  dlang:"en",dual:false,
  lastExport:"",dirtySince:"",
  book:JSON.parse(JSON.stringify(PRICEBOOK)),
@@ -705,7 +733,11 @@ function repairAccount(a){
   const w=[];
   if(!a.id){a.id=uid();w.push("account with no id")}
   if(typeof a.name!="string"){a.name=String(a.name||"(unnamed)");w.push(a.id+": name")}
-  if(!["client","prospect","partner"].includes(a.type))a.type="prospect";
+  if(!["client","prospect","cpa","bank","partner"].includes(a.type))a.type="prospect";
+  a.source=typeof a.source=="string"?a.source:"";
+  if(a.type!="prospect"&&!REL.some(([c])=>c==a.rel)){
+    a.rel=(a.events||[]).some(e=>e.kind=="met"||e.kind=="visited")?"intro":"notmet";
+  }
   a.emps=+a.emps||0;
   a.city=a.city||"";a.industry=a.industry||"";
   a.contact=(a.contact&&typeof a.contact=="object")?a.contact:{name:"",email:"",phone:""};
@@ -730,6 +762,7 @@ function validate(d){
   d.batches=Array.isArray(d.batches)?d.batches:[];
   d.cfg=Object.assign({},DEF,d.cfg&&typeof d.cfg=="object"?d.cfg:{});
   d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
+  d.cfg.rhythm=Object.assign({},DEF.rhythm,d.cfg.rhythm&&typeof d.cfg.rhythm=="object"?d.cfg.rhythm:{});
   if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=JSON.parse(JSON.stringify(PRICEBOOK));repairLog.push("price book restored to defaults")}
   /* de-dupe ids — two accounts sharing an id makes edits land on the wrong one */
   const seen=new Set();
@@ -768,6 +801,22 @@ const MIGRATIONS={
     d.cfg.dlang=d.cfg.dlang||"en";
     return d;
   }
+  ,
+  4:function(d){
+    /* v4 → v5: a territory is an ecosystem, not a pipeline. The old "partner" bucket
+       was labeled CPAs in the UI, so that's what those accounts become. Strategic
+       partners and bank branches are new types, re-tagged by hand via Edit.
+       Every non-prospect gets a relationship stage; every prospect can carry a source. */
+    d.accounts.forEach(a=>{
+      if(a.type=="partner")a.type="cpa";
+      a.source=a.source||"";
+      if(a.type!="prospect"&&!a.rel){
+        const met=(a.events||[]).some(e=>e.kind=="met"||e.kind=="visited");
+        a.rel=met?"intro":"notmet";
+      }
+    });
+    return d;
+  }
 };
 async function runMigrations(d){
   let from=+d.v||1,steps=[];
@@ -784,7 +833,7 @@ function blankAcct(o){
   return Object.assign({id:uid(),name:"",type:"prospect",city:"",emps:0,industry:"",
     contact:{name:"",email:"",phone:""},
     today:{bundle:"",freq:"",addons:[],spend:0},
-    next:[],outcome:"open",handedOff:false,stage:"callback",
+    next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",
     discovery:{answers:{},updated:""},quote:null,events:[],batch:""},o||{});
 }
 /* the one-time lift from the old horizon app — produces schema 2, then the chain takes over */
@@ -998,6 +1047,19 @@ function touchesOn(d){
   A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))n++}));
   return n;
 }
+/* the week has a shape: Fridays are for phones and paperwork, not parking lots */
+const officeDay=d=>String(D.cfg.officeDays||"fri").toLowerCase().split(/[,\s]+/).includes(DOW[d.getDay()]);
+/* what has this relationship actually produced? counted, never guessed */
+function refStats(a){
+  const refs=(a.events||[]).filter(e=>e.kind=="referral");
+  const cut90=iso(addDays(today(),-90)),cut180=iso(addDays(today(),-180));
+  const last90=refs.filter(e=>e.when>=cut90).length;
+  const prior90=refs.filter(e=>e.when>=cut180&&e.when<cut90).length;
+  const sourced=A().filter(p=>p.source&&norm(p.source)==norm(a.name));
+  const openV=sourced.filter(isWorking).reduce((s,p)=>s+dealValue(p),0);
+  const wonV=sourced.filter(isWon).reduce((s,p)=>s+(+((p.won||{}).value)||0),0);
+  return {total:refs.length,last90,prior90,sourced:sourced.length,openV,wonV};
+}
 function cadenceDays(attempt){
   const arr=String(D.cfg.cadence||"3,4,7,14,21").split(/[,\s]+/).map(Number).filter(x=>x>0);
   if(!arr.length)return 4;
@@ -1009,7 +1071,14 @@ function scoreRaw(a){
   let s=dealValue(a)/1000;
   const lt=lastTouch(a);
   s+=lt?Math.min(30,days(parseD(lt),today())/4):40;
-  if(a.type=="partner")s+=14;
+  /* relationship capital compounds — sources of business outrank single deals */
+  if(a.type=="partner")s+=16;
+  if(a.type=="bank")s+=12;
+  if(a.type=="cpa")s+=10;
+  /* referral producers earn priority with evidence, not a label */
+  if(isRel(a)){const r=refStats(a);s+=Math.min(12,r.last90*4)}
+  /* the mandate: every assigned client gets met, face to face */
+  if(a.type=="client"&&!lastMet(a))s+=22;
   if(a.type=="client"&&a.emps>=10&&a.emps<=150)s+=18;
   if(a.type=="client"&&a.emps>=10&&/essential|basic|enhanced/i.test(a.today.bundle||""))s+=12;
   if(a.skip==iso(today()))s=-1;
@@ -1271,7 +1340,7 @@ function dailyQuote(){
   return QUOTES[Math.round(today().getTime()/DAY)%QUOTES.length];
 }
 const MISSION=[["visits","Drop in on a business","prospect"],["clients","See a client","client"],
-  ["partners","Stop by a CPA","partner"],["calls","Outbound calls",""],["follow","Clear a follow-up",""]];
+  ["partners","Stop by a CPA, bank, or partner","partner"],["calls","Outbound calls",""],["follow","Clear a follow-up",""]];
 function todayTouches(){
   const s=iso(today()),out=[];
   A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))out.push({a,e})}));
@@ -1282,7 +1351,7 @@ function missionDone(){
   return {
     visits:t.filter(x=>inField(x)&&x.a.type=="prospect").length,
     clients:t.filter(x=>inField(x)&&x.a.type=="client").length,
-    partners:t.filter(x=>x.a.type=="partner").length,
+    partners:t.filter(x=>["cpa","bank","partner"].includes(x.a.type)).length,
     calls:t.filter(x=>x.e.kind=="called").length,
     follow:t.filter(x=>x.e.kind=="emailed"||x.e.kind=="texted").length
   };
@@ -1292,9 +1361,11 @@ function renderPace(rows){
   const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
   const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone();
   const booked=rows.filter(r=>r.block=="meet").length;
+  const office=officeDay(today());
   const plan=Object.assign({},m);
-  /* a booked day is not a cold-call day — scheduled work eats the dial time first */
-  if(booked>=2)plan.calls=Math.max(4,Math.round(m.calls*.6));
+  /* a booked day is not a cold-call day — scheduled work eats the dial time first.
+     Except office days: the phone IS the plan, meetings are the exception */
+  if(booked>=2&&!office)plan.calls=Math.max(4,Math.round(m.calls*.6));
   const rowsHtml=MISSION.filter(([k2])=>plan[k2]>0).map(([k2,label])=>{
     const d2=done[k2]||0,tg=plan[k2],cls=d2>=tg?"done":d2?"part":"";
     return `<div class="mrow"><span class="mdot ${cls}"></span><span class="mt2">${label}${tg>1?" ×"+tg:""}</span><span class="mn">${d2} / ${tg}</span></div>`;
@@ -1309,7 +1380,7 @@ function renderPace(rows){
     </button>
     <div class="pbody">
       ${rowsHtml}
-      <div class="pfoot">${booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}${wk?` Your real weekly average is ${wk} a day.`:""}</div>
+      <div class="pfoot">${office?`Office day. Run the phones, clear the desk, plan the week.${booked?` ${booked} meeting${booked==1?"":"s"} still on the books — honor them, then back to the desk.`:""}`:booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}${wk?` Your real weekly average is ${wk} a day.`:""}</div>
     </div>
   </div>`;
 }
@@ -1324,8 +1395,10 @@ function nearbyData(rows){
   if(!town){const best=Object.keys(byTown).sort((x,y)=>byTown[y].length-byTown[x].length)[0];
     if(best&&byTown[best].length>=3)town=best}
   if(!town)return null;
+  /* a trip to a town is the cheapest chance you'll get to meet an assigned client */
+  const unmet=a2=>a2.type=="client"&&!lastMet(a2)?1:0;
   return {town,anchor:anchorTown,all:byTown[town].length,
-    list:byTown[town].sort((x,y)=>score(y)-score(x)).slice(0,4)};
+    list:byTown[town].sort((x,y)=>unmet(y)-unmet(x)||score(y)-score(x)).slice(0,4)};
 }
 function nearbyHtml(rows){
   const nb=nearbyData(rows);if(!nb)return "";
@@ -1341,7 +1414,9 @@ function nearbyHtml(rows){
 /* the one thing to do right now: meetings first, then field, then whatever scores highest */
 function nowPick(rows){
   if(!rows.length)return null;
-  const pri=b=>b=="meet"?0:b=="visit"?1:2;
+  const office=officeDay(today());
+  /* meetings are commitments and always lead; on office days the field waits behind the phone */
+  const pri=b=>b=="meet"?0:b=="visit"?(office?3:1):2;
   const skipped=r=>r.a.skip==iso(today())?1:0;
   return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
 }
@@ -1358,7 +1433,8 @@ function renderNow(rows){
   const r=nowPick(rows),a=r.a,n=r.lead;
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
   const lt=lastTouch(a),val=dealValue(a);
-  const kindLab={meet:"meeting",visit:"drop-in",call:"call",follow:"follow-up"}[r.block];
+  const kindLab={meet:"meeting",visit:"drop-in",call:"call",follow:"follow-up"}[r.block]
+    +(isRel(a)?" · "+(TYPESHORT[a.type]||"client"):"");
   let pri;
   if(r.block=="call"&&ph)pri=`<a class="npri dial2" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call ${esc(who||ph)}</a>`;
   else if((r.block=="meet"||r.block=="visit")&&a.city)pri=`<a class="npri" href="https://maps.apple.com/?q=${encodeURIComponent(a.name+" "+a.city)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city)}</a>`;
@@ -1407,7 +1483,8 @@ function renderList(rows,isNow){
   const row=r=>{
     const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
     const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
-    const mt=r.block=="meet"?`<span class="tagm">meeting</span>`:"";
+    const mt=(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
+      +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
     return `<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
       <button class="rtick" data-rowdone="${r.a.id}|${r.lead.id}" aria-label="Mark done"></button>
       <div class="i"><div class="nm">${esc(r.a.name)}</div>
@@ -1424,17 +1501,26 @@ function renderList(rows,isNow){
   return h;
   };
   let html="";
-  const nb=isNow?nearbyHtml(rows):"";
-  if(field.length||nb)html+=group("In the field",field,nb);
-  if(isNow){
-    if(calls.length){
-      const names=calls.slice(0,3).map(r=>r.a.name).join(", ")+(calls.length>3?" +"+(calls.length-3)+" more":"");
-      html+=`<div class="runcard"><div class="rh"><b>Call run</b><span>${calls.length} due</span></div>
+  const office=isNow&&officeDay(today());
+  const nb=(isNow&&!office)?nearbyHtml(rows):"";
+  const runcard=()=>{
+    if(!isNow||!calls.length)return "";
+    const names=calls.slice(0,3).map(r=>r.a.name).join(", ")+(calls.length>3?" +"+(calls.length-3)+" more":"");
+    return `<div class="runcard"><div class="rh"><b>Call run</b><span>${calls.length} due</span></div>
         <p>${esc(names)}</p>
         <button class="runbtn" data-act="run">Start calling</button></div>`;
-    }
-  }else if(calls.length)html+=group("Calls",calls);
-  if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
+  };
+  if(office){
+    /* office day: phones and desk work lead, the field falls in behind */
+    html+=runcard();
+    if(desk.length)html+=group("From the desk",desk);
+    if(field.length)html+=group("Still booked in the field",field);
+  }else{
+    if(field.length||nb)html+=group("In the field",field,nb);
+    if(isNow)html+=runcard();
+    else if(calls.length)html+=group("Calls",calls);
+    if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
+  }
   if(isNow&&!calls.length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
   el.innerHTML=html;
 }
@@ -1458,6 +1544,8 @@ function renderToday(){
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
+  const rl=(D.cfg.rhythm||{})[DOW[d.getDay()]];
+  $("#rhythm").innerHTML=rl?`<span>${esc(rl)}</span>`:"";
   if(isNow){renderNow(rows);renderPace(rows)}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
   renderList(rows,isNow);
   renderWeek(d);
@@ -1584,7 +1672,7 @@ function renderAccount(){
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"";
   const rec=recommend(a),val=dealValue(a);
   const lt=lastTouch(a),le=lastEvent(a);
-  let h=`<div class="eyebrow">${a.type}${a.handedOff?" · handed off":""}</div>
+  let h=`<div class="eyebrow">${TYPELABEL[a.type]||a.type}${a.source?" · via "+esc(a.source):""}${a.handedOff?" · handed off":""}</div>
   <h1 class="ahead2">${esc(a.name)}</h1>
   <div class="ameta">${[a.emps?a.emps+" employees":"",a.city,a.industry].filter(Boolean).join(" · ")}
   ${currentAnnual(a)?`<br>Pays about <b>${$$$(currentAnnual(a))}</b> a year today${(a.today&&a.today.bundle)?" on "+esc(a.today.bundle):""}`:""}</div>
@@ -1611,8 +1699,24 @@ function renderAccount(){
   });
   h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
 
-  h+=discoverySection(a);
+  if(a.type=="prospect"||a.type=="client")h+=discoverySection(a);
 
+  if(isRel(a)){
+    const st=REL.some(([c])=>c==a.rel)?a.rel:"notmet";
+    const r=refStats(a);
+    const lines=[];
+    if(r.total)lines.push(`<b>${r.total}</b> referral${r.total==1?"":"s"} received · ${r.last90} in the last 90 days${r.prior90||r.last90?` · ${r.prior90} in the 90 before`:""}`);
+    else lines.push(`No referrals yet — that's the relationship's next milestone, not a verdict.`);
+    if(r.sourced)lines.push(`Sourced <b>${r.sourced}</b> opportunit${r.sourced==1?"y":"ies"}${r.openV?` · ${k(r.openV)} open`:""}${r.wonV?` · ${k(r.wonV)} won`:""}`);
+    h+=`<div class="sect"><div class="h"><b>Relationship</b><span>${esc((REL.find(([c])=>c==st)||[])[1]||"")}</span></div>
+      <div class="chips" style="margin-top:4px">${REL.map(([c,l])=>`<button class="chip${st==c?" on":""}" data-rel="${c}">${l}</button>`).join("")}</div>
+      <div class="hist" style="margin-top:12px">${lines.join("<br>")}</div>
+      <div class="hist" style="margin-top:8px;color:var(--ink3)">${esc(RELNUDGE[st]||"")}</div></div>`;
+  }
+
+  if(a.type=="cpa"||a.type=="bank"||a.type=="partner"){
+    /* no price ladder for relationships — the currency here is trust and referrals */
+  }else{
   h+=`<div class="sect"><div class="h"><b>Recommendation</b><span>${a.emps?a.emps+" ee":"set employees"}</span></div>`;
   if(!a.emps)h+=`<div class="hist">Add an employee count and the pricing comes alive.</div>`;
   else{
@@ -1631,6 +1735,7 @@ function renderAccount(){
       <div class="est"><div class="n">${$$$(val)}</div><div class="l">${a.type=="client"?"incremental to your number":"annual to your number"}</div></div>`;
   }
   h+=`</div>`;
+  }
 
   if(!isOpen(a)){
     h+=`<div class="sect"><div class="h"><b>${a.outcome=="lost"?"Lost":"Dormant"}</b><span>${esc(a.lostReason||"")}</span></div>
@@ -1641,11 +1746,12 @@ function renderAccount(){
   h+=`<div class="sect"><div class="h"><b>Walking out</b><span></span></div>
     <div class="sa" style="justify-content:flex-start">
       <button class="b" data-log="met">Met</button>
-      <button class="b" data-log="quoted">Quoted</button>
+      ${a.type=="prospect"||a.type=="client"?`<button class="b" data-log="quoted">Quoted</button>`:""}
       <button class="b" data-log="note">Note</button>
-      <button class="b pri" data-log="won">Won</button>
-      <button class="b danger" data-log="lost">Lost</button>
-      <button class="b quiet" data-log="hand">${a.handedOff?"Un-hand off":"Hand off"}</button>
+      ${isRel(a)?`<button class="b" data-log="referral">Referral</button>`:""}
+      ${a.type=="prospect"||a.type=="client"?`<button class="b pri" data-log="won">Won</button>
+      <button class="b danger" data-log="lost">Lost</button>`:`<button class="b quiet" data-log="park">Park</button>`}
+      ${a.type=="prospect"||a.type=="client"?`<button class="b quiet" data-log="hand">${a.handedOff?"Un-hand off":"Hand off"}</button>`:""}
     </div>`;
   const ev=(a.events||[]).slice(-8).reverse();
   h+=`<div class="hist">${ev.length?ev.map(e=>`${fmt(parseD(e.when))} — ${esc(e.kind)}${e.text?": "+esc(e.text):""}`).join("<br>"):"No history yet."}</div></div>`;
@@ -1702,7 +1808,7 @@ function setAnswer(a,id,v){
 }
 
 /* ---------- territory ---------- */
-const TFILTERS=[["open","Working"],["client","Clients"],["prospect","Prospects"],["partner","CPAs"],["never","Never met"],["dormant","Dormant / lost"]];
+const TFILTERS=[["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["dormant","Dormant / lost"]];
 function terrList(){
   const q=norm(terrQ);
   return A().filter(a=>{
@@ -1720,7 +1826,7 @@ function renderTerritory(){
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
     return `<div class="bk" data-open="${a.id}">
-      <div><div class="nm">${esc(a.name)}${isWon(a)?' <span class="tagm w">won</span>':""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
+      <div><div class="nm">${esc(a.name)}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
       <div class="s">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div></div>
       <div class="rd">${dealValue(a)?k(dealValue(a)):"—"}</div></div>`}).join("")
     +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
@@ -1835,6 +1941,9 @@ function renderSetup(){
   set("meName",(c.me||{}).name);set("meEmail",(c.me||{}).email);set("meTitle",(c.me||{}).title);set("mePhone",(c.me||{}).phone);
   const ms=Object.assign({},DEF.mission,c.mission||{});
   set("mVisits",ms.visits);set("mClients",ms.clients);set("mPartners",ms.partners);set("mCalls",ms.calls);set("mFollow",ms.follow);
+  const rh=Object.assign({},DEF.rhythm,c.rhythm||{});
+  set("rMon",rh.mon);set("rTue",rh.tue);set("rWed",rh.wed);set("rThu",rh.thu);set("rFri",rh.fri);
+  set("rOffice",c.officeDays||"fri");
   $("#bakbanner").innerHTML=needsBackup()
     ? `<div class="banner"><b>You haven't exported in ${daysSinceExport()>900?"a while":daysSinceExport()+" days"}</b>, and the data has changed since. One tap and it's on your phone.
        <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="export">Export backup</button></div></div>`
@@ -1860,7 +1969,9 @@ function saveSetup(quiet){
     fy:g("fy"),qEnd:g("qEnd"),goal:+g("goal")||0,rgoal:+g("rgoal")||0,
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
     me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
-    mission:{visits:+g("mVisits")||0,clients:+g("mClients")||0,partners:+g("mPartners")||0,calls:+g("mCalls")||0,follow:+g("mFollow")||0}});
+    mission:{visits:+g("mVisits")||0,clients:+g("mClients")||0,partners:+g("mPartners")||0,calls:+g("mCalls")||0,follow:+g("mFollow")||0},
+    rhythm:{mon:g("rMon"),tue:g("rTue"),wed:g("rWed"),thu:g("rThu"),fri:g("rFri")},
+    officeDays:(g("rOffice")||"fri").toLowerCase()});
   $$("[data-pb]").forEach(el=>{const[bi,f,which]=el.dataset.pb.split("|");const b=D.cfg.book[+bi];
     if(!b||!b.f[f])return;
     if(which=="base")b.f[f].t=b.f[f].t.map((t,i)=>i==0?[t[0],+el.value]:[t[0],+el.value+(t[1]-b.f[f].t[0][1])]);
@@ -1905,7 +2016,7 @@ const kindOf=id=>{const t=$("#"+id);const r=t?nlp(t.value):null;return r?r.kind:
 function newAcctSheet(){
   openSheet(`<h3>New account</h3><div class="sub">Name is the only thing required.</div>
     <label class="f">Name<input class="t" id="naName" autocomplete="off"></label>
-    <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["partner","CPA / partner"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-nt="${v}">${l}</button>`).join("")}</div>
+    <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-nt="${v}">${l}</button>`).join("")}</div>
     <div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number"></label>
       <label class="f">City<input class="t" id="naCity"></label></div>
     <div class="two"><label class="f">Contact<input class="t" id="naContact"></label>
@@ -1940,19 +2051,36 @@ function addNextSheet(){
 }
 function editAcctSheet(){
   const a=acct(curId);
+  const srcs=A().filter(x=>isRel(x)&&x.id!=a.id).map(x=>x.name).sort();
   openSheet(`<h3>Edit ${esc(a.name)}</h3>
     <label class="f">Name<input class="t" id="eName" value="${esc(a.name)}"></label>
+    <div class="chips" id="eType" style="margin-top:2px">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l])=>`<button class="chip${a.type==v?" on":""}" data-et="${v}">${l}</button>`).join("")}</div>
     <div class="two"><label class="f">Employees<input class="t mono" id="eEmps" type="number" value="${a.emps||""}"></label>
       <label class="f">City<input class="t" id="eCity" value="${esc(a.city)}"></label></div>
     <div class="two"><label class="f">Contact<input class="t" id="eContact" value="${esc((a.contact||{}).name)}"></label>
       <label class="f">Phone<input class="t" id="ePhone" type="tel" value="${esc((a.contact||{}).phone)}"></label></div>
     <label class="f">Email<input class="t" id="eEmail" type="email" value="${esc((a.contact||{}).email)}"></label>
+    <label class="f">Referred by<input class="t" id="eSource" list="srcList" value="${esc(a.source||"")}" placeholder="Max Value Payments"><datalist id="srcList">${srcs.map(s=>`<option value="${esc(s)}">`).join("")}</datalist></label>
     <label class="f">What they pay today, annual<input class="t mono" id="eSpend" type="number" value="${(a.today||{}).spend||""}"></label>
     <div class="sa"><button class="b danger" data-act="delacct">Delete</button><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="saveedit">Save</button></div>`);
 }
 function logSheet(kind){
   const a=acct(curId);
   if(kind=="hand"){a.handedOff=!a.handedOff;logEvent(a,"note",a.handedOff?"handed to Major Accounts":"handoff reversed");save();render();toast(a.handedOff?"Handed off — still yours to work.":"Handoff cleared.");return}
+  if(kind=="park"){
+    a.outcome="dormant";a.lostReason="parked — no traction yet";
+    logEvent(a,"note","parked");openActions(a).forEach(n=>n.done=true);
+    save();render();toast("Parked. Nothing deleted — reopen it any time.");return;
+  }
+  if(kind=="referral"){
+    openSheet(`<h3>Referral from ${esc(a.name)}</h3><div class="sub">Name it now, work it tomorrow. The loop closes fast or the referrals stop.</div>
+      <label class="f">Business<input class="t" id="rfName" autocomplete="off" placeholder="Who did they hand you?"></label>
+      <div class="two"><label class="f">City<input class="t" id="rfCity" value="${esc(a.city||"")}"></label>
+        <label class="f">Phone<input class="t" id="rfPhone" type="tel"></label></div>
+      <label class="f">What they said<input class="t" id="rfNote" placeholder="Owner's drowning in payroll, ask for Gina"></label>
+      <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="saveref">Add to pipeline</button></div>`);
+    setTimeout(()=>$("#rfName").focus(),90);return;
+  }
   if(kind=="lost"){
     openSheet(`<h3>Lost</h3><div class="sub">The reason is the only part worth keeping.</div>
       <div class="chips">${["Happy with incumbent","Price","Too small","Wrong timing","Went silent","No compelling event"].map(r=>`<button class="chip" data-lostr="${esc(r)}">${r}</button>`).join("")}</div>
@@ -2035,10 +2163,10 @@ function seedTerritory(){
   const phone=()=>"508-"+(200+R(700))+"-"+String(1000+R(9000));
   const person=()=>pick(SEED.first)+" "+pick(SEED.last);
 
-  const plan=[["client",34],["prospect",40],["partner",8],["dormant",10],["lostacct",8]];
+  const plan=[["client",30],["prospect",38],["cpa",6],["dormant",10],["lostacct",8]];
   plan.forEach(([kind,count])=>{
     for(let i=0;i<count;i++){
-      const isPartner=kind=="partner";
+      const isPartner=kind=="cpa";
       let name,k;
       if(isPartner){name=pick(SEED.cpas)+" "+(R(90)+10);k=["CPA","professional",3,12]}
       else [name,k]=mkName();
@@ -2068,8 +2196,8 @@ function seedTerritory(){
         a.events.push({when:dback(60+R(200)),kind:"met",text:"annual review"});
         if(R(3)==0){a.won={on:dback(30+R(300)),value:1200+R(9000),bundle:a.today.bundle,freq:a.today.freq,disc:R(30)};a.stage="client"}
       }else if(isPartner){
-        a.stage="interested";
-        a.events.push({when:dback(30+R(120)),kind:"visited",text:"dropped off cards"});
+        a.type="cpa";a.rel=pick(["notmet","notmet","intro","building"]);
+        if(a.rel!="notmet")a.events.push({when:dback(30+R(120)),kind:"visited",text:"dropped off cards"});
       }
 
       /* discovery, in codes — some full, some barely started */
@@ -2120,6 +2248,40 @@ function seedTerritory(){
   });
   /* cluster three of them in one town so the travel card has something true to say */
   out.filter(a=>a.outcome=="open").slice(9,13).forEach(a=>a.city="Framingham");
+
+  /* the ecosystem: three bank branches with very different referral pulses, and one true partner */
+  const banks=[["Bank of America — Ashland","Ashland","referring",4],
+               ["Bank of America — Dedham","Dedham","building",2],
+               ["Bank of America — Medfield","Medfield","intro",0]];
+  banks.forEach(([nm,city,rel,refs])=>{
+    const b=blankAcct({name:nm,type:"bank",city,contact:{name:person(),phone:phone(),email:""}});
+    b.rel=rel;b.brief="Weekly huddle branch — referrals come from bankers, not the bank.";
+    b.events.push({when:dback(7),kind:"met",text:"weekly huddle"});
+    for(let i=0;i<refs;i++)b.events.push({when:dback(5+R(85)),kind:"referral",text:"huddle referral"});
+    if(refs)b.events.push({when:dback(95+R(80)),kind:"referral",text:"huddle referral"});
+    b.events.sort((x,y)=>x.when<y.when?-1:1);
+    out.push(b);
+  });
+  const mv=blankAcct({name:"Max Value Payments",type:"partner",city:"Framingham",
+    contact:{name:person(),phone:phone(),email:""}});
+  mv.rel="trusted";mv.brief="Exclusive POS brokerage partnership — their reps open the door, you sell the payroll.";
+  for(let i=0;i<3;i++)mv.events.push({when:dback(10+R(80)),kind:"referral",text:"rep introduction"});
+  mv.events.push({when:dback(100+R(70)),kind:"referral",text:"rep introduction"});
+  mv.events.push({when:dback(14),kind:"met",text:"monthly sync"});
+  mv.events.sort((x,y)=>x.when<y.when?-1:1);
+  mv.next.push({id:uid(),date:dfwd(3+R(5)),why:"Monthly sync — bring the closed-loop numbers",kind:"meet",done:false});
+  out.push(mv);
+
+  /* clients get a relationship stage; a handful have never been met — the Q1 mandate made visible */
+  out.filter(a=>a.type=="client").forEach((a,i)=>{
+    if(i%5==0){a.events=a.events.filter(e=>e.kind!="met"&&e.kind!="visited");a.rel="notmet"}
+    else a.rel=pick(["intro","intro","building","trusted"]);
+  });
+  /* some prospects arrived through the ecosystem — lead sources make the impact visible */
+  const srcs=["Max Value Payments","Bank of America — Ashland","Bank of America — Ashland","Bank of America — Dedham"];
+  out.filter(a=>a.type=="prospect"&&a.outcome=="open").slice(0,8).forEach((a,i)=>{
+    if(i%2==0)a.source=pick(srcs);
+  });
   return out;
 }
 async function loadSample(){
@@ -2134,7 +2296,7 @@ async function loadSample(){
 /* ---------- wiring ---------- */
 let naType="prospect",anKind="call",enKind="call";
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push],[data-nowdone],[data-nowlater],[data-nowskip],[data-rowdone],[data-later],[data-week]");
+  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push],[data-nowdone],[data-nowlater],[data-nowskip],[data-rowdone],[data-later],[data-week],[data-rel],[data-et]");
   if(!t)return;
   const a=curId?acct(curId):null;
 
@@ -2156,6 +2318,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.th){D.cfg.theme=t.dataset.th;save();applyTheme();return}
   if(t.dataset.t){$$("#ityp .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.nt){naType=t.dataset.nt;$$("#naType .chip").forEach(c=>c.classList.toggle("on",c==t));return}
+  if(t.dataset.et){$$("#eType .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.ak){anKind=t.dataset.ak;$$("#anKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.ek){enKind=t.dataset.ek;$$("#enKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.editnext){editNextSheet(t.dataset.editnext);return}
@@ -2169,6 +2332,10 @@ document.addEventListener("click",async e=>{
   if(t.dataset.ans&&t.dataset.v!==undefined&&a){setAnswer(a,t.dataset.ans,t.dataset.v);openQ=null;render();return}
   if(t.dataset.tick&&a){completeAction(a,t.dataset.tick);return}
   if(t.dataset.log){logSheet(t.dataset.log);return}
+  if(t.dataset.rel){const a2=acct(curId);if(a2){
+    const was=a2.rel;a2.rel=t.dataset.rel;
+    if(was!=a2.rel)logEvent(a2,"note","relationship \u2192 "+((REL.find(([c])=>c==a2.rel)||[])[1]||a2.rel).toLowerCase());
+    save();render()}return}
   if(t.dataset.lost){markLost(queue[qi],t.dataset.lost);save();advance();return}
   if(t.dataset.lostr&&a){const before=snapshot(a);markLost(a,t.dataset.lostr);save();closeSheet();render();
     toastUndo("Logged as lost.",()=>restoreAcct(before));return}
@@ -2220,6 +2387,7 @@ document.addEventListener("click",async e=>{
     case"savenew":{
       const nm=$("#naName").value.trim();if(!nm){toast("Needs a name.");break}
       const na=blankAcct({name:nm,type:naType,emps:+$("#naEmps").value||0,city:$("#naCity").value.trim()});
+      if(isRel(na))na.rel="notmet";
       na.contact={name:$("#naContact").value.trim(),phone:$("#naPhone").value.trim(),email:""};
       const dt=dateOf("naNext");
       if(dt)na.next.push({id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false});
@@ -2235,7 +2403,24 @@ document.addEventListener("click",async e=>{
       a.name=$("#eName").value.trim()||a.name;a.emps=+$("#eEmps").value||0;a.city=$("#eCity").value.trim();
       a.contact={name:$("#eContact").value.trim(),phone:$("#ePhone").value.trim(),email:$("#eEmail").value.trim()};
       a.today=a.today||{};a.today.spend=+$("#eSpend").value||0;
+      a.source=($("#eSource")?$("#eSource").value.trim():a.source)||"";
+      const sel=$("#eType .chip.on");
+      if(sel){a.type=sel.dataset.et;
+        if(isRel(a)&&!REL.some(([c])=>c==a.rel))a.rel=lastMet(a)?"intro":"notmet"}
       await save();closeSheet();render();break}
+    case"saveref":{
+      if(!a)break;
+      const nm=$("#rfName").value.trim();if(!nm){toast("Give the business a name.");break}
+      const p=blankAcct({name:nm,type:"prospect",city:$("#rfCity").value.trim(),
+        contact:{name:"",phone:$("#rfPhone").value.trim(),email:""},source:a.name});
+      const said=$("#rfNote").value.trim();
+      if(said){p.brief=said;p.events.push({when:iso(today()),kind:"note",text:said})}
+      p.next.push({id:uid(),date:iso(addDays(today(),1)),why:"Referral from "+a.name+" — first call",kind:"call",done:false});
+      D.accounts.push(p);
+      logEvent(a,"referral",nm);
+      if(a.rel=="notmet"||a.rel=="intro"||a.rel=="building")a.rel="referring";
+      await save();closeSheet();render();
+      toast(nm+" is in your pipeline — call goes out tomorrow.");break}
     case"delacct":{
       if(!a)break;
       D.accounts=D.accounts.filter(x=>x.id!=a.id);await save();closeSheet();go("terr");toast("Deleted.");break}
