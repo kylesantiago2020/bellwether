@@ -39,6 +39,7 @@ font-size:15px;line-height:1.5;padding-bottom:88px;-webkit-font-smoothing:antial
 .said{font-family:'Instrument Serif',Georgia,serif;line-height:1.4}
 .wrap{max-width:640px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 18px 0}
 h1{font-size:25px;font-weight:400;letter-spacing:-.5px;line-height:1.25;margin-top:4px}
+h1 em{display:block;font-style:normal;color:var(--ink3)}
 h2{font-size:13px;font-weight:500;margin-top:28px;color:var(--ink2)}
 .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ac);letter-spacing:.04em;text-transform:uppercase}
 .screen{display:none}.screen.on{display:block;animation:f .28s ease both}
@@ -70,6 +71,21 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
 .rhythm{margin-top:7px;font-size:12.5px;color:var(--ink3)}
 .rhythm span{border-left:2px solid var(--ac);padding-left:8px}
+.warm{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+.whead{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;padding:14px 15px;background:none;border:0;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.whead b{font-size:14.5px;font-weight:600;display:block}
+.whead s{font-size:12px;color:var(--ink3);text-decoration:none;display:block;margin-top:2px}
+.whead .chev{font-size:13px;color:var(--ink3);transition:transform .18s ease}
+.whead .chev.up{transform:rotate(180deg)}
+.wbody{padding:0 15px 15px;animation:f .2s ease both}
+.wsec{padding-top:13px;margin-top:12px;border-top:1px solid var(--rule)}
+.wl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:500}
+.wsay{font-size:13.5px;line-height:1.62;margin-top:6px}
+.wshort{font-size:15px;line-height:1.45;margin-top:6px;font-family:"Instrument Serif",Georgia,serif}
+.wq{font-size:14px;line-height:1.5;margin-top:6px;font-family:"Instrument Serif",Georgia,serif}
+.wa{font-size:13px;line-height:1.6;margin-top:7px;color:var(--ink2);border-left:2px solid var(--ac);padding-left:10px}
+.wdone{width:100%;margin-top:16px;padding:11px;border-radius:10px;border:1px solid var(--rule2);background:var(--sunk);color:var(--ink2);font-size:13.5px;font-family:inherit;cursor:pointer;transition:transform .08s ease}
+.wdone:active{transform:scale(.98)}
 .behind{margin-top:14px;background:var(--sunk);border:1px solid var(--rule2);border-radius:13px;padding:14px 15px}
 .behind b{font-size:14px;font-weight:600;display:block}
 .behind p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
@@ -395,6 +411,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div class="shape" id="shape"></div>
   <div class="rhythm" id="rhythm"></div>
   <div id="catchup"></div>
+  <div id="warm"></div>
   <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
   <div id="now"></div>
   <div id="pace"></div>
@@ -1386,6 +1403,129 @@ function dailyQuote(){
   if(!QUOTES.length)return null;
   return QUOTES[Math.round(today().getTime()/DAY)%QUOTES.length];
 }
+/* ---------- morning warm-up ---------- */
+/* Stretching before the game. Say the openers out loud once, read the rest, go.
+   Content rotates each business day and remembers what it showed so it doesn't repeat. */
+const WARM={
+prospect:[
+ "Hi, I'm Kyle with ADP. I work with businesses right here in MetroWest — my job is taking payroll and HR off your plate so that time goes back into running the place. We pair technology most companies couldn't build themselves with somebody local you can actually get on the phone. I'm not here to sell you anything today, just to introduce myself.",
+ "Kyle, ADP. I cover this area, so I'm the person businesses around here call when payroll or HR gets complicated. What I do is straightforward — cut down the paperwork, help you attract and keep good people, and be a local resource when something comes up. Can I ask how you're handling payroll now?",
+ "I'm Kyle, I'm with ADP and I handle this territory. Most owners I meet aren't up at night about payroll — they're up about finding people and keeping them. That's most of what I help with, plus making sure the compliance side doesn't bite you. Big company behind me, but you'd be dealing with me.",
+ "Hi — Kyle from ADP. Quick version: I help businesses grow by getting the payroll and HR burden off their back, and I'm local, so I'm not a call center. Between the technology and having someone who'll actually show up, most owners find they get a few hours a week back. I'd like to learn what you're dealing with.",
+ "I'm Kyle with ADP. I'm not going to give you a pitch standing in your doorway. What I'll say is this: my role is helping businesses here operate more efficiently — payroll, hiring, keeping people, staying compliant — and I'm the one you'd call, not an 800 number. Who handles payroll for you?"
+],
+cpa:[
+ "Hi, I'm Kyle with ADP. I work alongside accounting firms as an extension of the practice — payroll, HR, compliance, the pieces that eat your team's time all year. The relationships that work best are the ones where we're both making the client's life easier and the client sticks with both of us. How's your firm handling payroll for clients today?",
+ "Kyle, ADP. I partner with accountants in this area. Not looking to get between you and your clients — the opposite. When payroll and HR are handled properly, your job in March gets easier and the client credits you for the referral. I'd like to understand how you like to work with a payroll partner.",
+ "I'm Kyle with ADP. My best working relationships are with accounting firms, because we're solving two halves of the same problem. You handle the numbers side, I take the administrative burden off the client, and neither of us is cleaning up a mess the other one made. What does your firm need most from a payroll partner?",
+ "Hi — Kyle from ADP. I work with CPA firms as a resource for their clients on payroll, HR, and compliance. The point is that your clients get taken care of, your team spends less time chasing payroll records, and the firm looks good for making the connection. Can I ask what's frustrated you about payroll providers before?",
+ "I'm Kyle, ADP. I'd like to be an extension of your firm — the person your clients call for payroll and HR so your team doesn't have to be. I know a referral from you is your reputation on the line, so I'd rather earn it slowly than ask for it today. What would you need to see from me first?"
+],
+client:[
+ "Hi, I'm Kyle — I'm your local ADP representative. I wanted to come by, introduce myself, and make sure you know you've got somebody here you can call. How's everything been running?",
+ "Kyle, ADP. You've been with us a while and you'd never met your rep, so I'm fixing that. I'm local, and if anything ever comes up you call me first. What's been working, and what hasn't?",
+ "Hi — I'm Kyle, your ADP rep for this area. No agenda today. I like to put a face to the account and hear how things are actually going, because you'll tell me things a support ticket never would.",
+ "I'm Kyle with ADP — I handle this territory, which means I'm your person. I wanted to introduce myself before you ever have a reason to need me. How has payroll been going for you lately?",
+ "Hi, Kyle from ADP. I'm the local rep on your account. Two reasons I stopped in: so you know who to call, and so I can ask whether anything's changed in your business that we should be handling differently."
+],
+discovery:[
+ "How are you handling payroll today?",
+ "What's your biggest HR headache right now?",
+ "How long have you been with your current provider?",
+ "If you could fix one thing about payroll, what would it be?",
+ "How are you onboarding new employees today?",
+ "Who else touches payroll besides you?",
+ "How do hours get to whoever runs payroll — paper, spreadsheet, an app?",
+ "What happens if you're out the week payroll is due?",
+ "How's hiring been going this year?",
+ "When was the last time you looked at what you're paying for payroll?",
+ "Has a compliance letter ever landed on your desk?",
+ "Where do you want the business to be in two years, and what would break first?"
+],
+objection:[
+ ["We're happy with our payroll provider.","Good — that's how it should be. Most owners I meet say the same thing, and I'm not asking you to switch. I'd just like you to know who I am, so if anything ever changes you're not starting from scratch."],
+ ["We're too small for ADP.","We run payroll for businesses with one employee. Small is most of what I do around here. The size question usually comes down to what you're paying now versus what you're spending your own time on."],
+ ["Just send me some information.","Happy to — what would actually be useful to you? If I email a brochure it goes in the pile. Tell me the one thing you'd want answered and I'll send that."],
+ ["I don't have time right now.","Understood, I'd rather not catch you mid-something. Is there a slower hour in your week? I'll come back then and keep it to ten minutes."],
+ ["My accountant does it.","A lot of my best relationships came in through accountants. I'm not looking to take work off their desk — usually it's the opposite. Who's the firm? I may already know them."],
+ ["It's too expensive.","It might be. What are you paying now, and does that include the time you or someone here spends on it? That second number is usually where the real cost is hiding."],
+ ["We just switched last year.","Then this is a bad time to switch again, and I wouldn't ask you to. I'd rather be the guy you already know when the contract comes up. When does it renew?"],
+ ["I need to talk to my partner.","Makes sense — I wouldn't decide something like this alone either. What do you think they'd want to know? I'd rather you go in with the right answers than the brochure."],
+ ["We've had a bad experience with a big provider.","That's fair, and I'd want to hear what happened. The reason I do this locally is exactly that — you'd have my number, not a queue. What went wrong?"]
+],
+mindset:[
+ "Build the relationship. The deal follows.",
+ "Ask one more question than feels comfortable.",
+ "Listen more than you talk.",
+ "Every conversation has value, even the ones that go nowhere.",
+ "Leave every business with a next step.",
+ "Help first. Sell second.",
+ "The person at the front desk decides whether you meet the owner.",
+ "You're not interrupting. You're the person they'll wish they'd met.",
+ "Slow is smooth. Smooth is fast.",
+ "Volume covers a lot of mistakes. Make the stops.",
+ "No is information. Get to it faster.",
+ "Be the one who follows up. Almost nobody does."
+],
+challenge:[
+ "Meet one new CPA today.",
+ "Introduce yourself to five businesses you've never walked into.",
+ "Ask every prospect who handles payroll.",
+ "Get one referral before you go home.",
+ "Learn one personal fact about an owner and write it in Key Notes.",
+ "Schedule every follow-up before you leave the parking lot.",
+ "Walk into the business next door to a stop you already planned.",
+ "Ask one client who else they know who's hiring.",
+ "Make three more dials than you feel like making.",
+ "Find one never-met client on your route and shake their hand.",
+ "Ask an owner what they'd fix about payroll — then be quiet.",
+ "Confirm one meeting for next week before noon."
+]};
+const WARMORDER=[["prospect","Walking into a business"],["cpa","Walking into a CPA firm"],
+  ["client","Walking into a client"],["discovery","Ask this today"],["objection","If they say"],
+  ["mindset","Keep in mind"],["challenge","Today's challenge"]];
+
+/* pick fresh content for a new business day, avoiding whatever it showed recently */
+function warmState(){
+  const w=D.cfg.warm=Object.assign({day:"",pick:{},recent:{},open:true},D.cfg.warm||{});
+  const t=today();
+  const fresh=!Object.keys(w.pick||{}).length;
+  /* weekends keep the last field day's card rather than burning a rotation on them —
+     but a card that has never been rolled always gets content */
+  if(!fresh&&(w.day==iso(t)||t.getDay()==0||t.getDay()==6))return w;
+  Object.keys(WARM).forEach(k2=>{
+    const pool=WARM[k2],recent=(w.recent[k2]||[]).slice(0,Math.max(0,Math.min(pool.length-1,Math.ceil(pool.length/2))));
+    let opts=pool.map((_,i)=>i).filter(i=>!recent.includes(i));
+    if(!opts.length)opts=pool.map((_,i)=>i);
+    const chosen=opts[Math.floor(Math.random()*opts.length)];
+    w.pick[k2]=chosen;
+    w.recent[k2]=[chosen].concat(recent);
+  });
+  w.day=iso(t);w.open=true;                 /* a new day opens the card again */
+  save();
+  return w;
+}
+function renderWarm(show){
+  const el=$("#warm");
+  if(!show){el.innerHTML="";return}
+  const w=warmState(),body=w.open;
+  const item=k2=>WARM[k2][Math.min(w.pick[k2]||0,WARM[k2].length-1)];
+  const rows=WARMORDER.map(([k2,label])=>{
+    if(k2=="objection"){const [o,r]=item(k2);
+      return `<div class="wsec"><div class="wl">${label}</div>
+        <div class="wq">&ldquo;${esc(o)}&rdquo;</div><div class="wa">${esc(r)}</div></div>`}
+    const v=item(k2);
+    const cls=(k2=="discovery"||k2=="mindset"||k2=="challenge")?"wshort":"wsay";
+    return `<div class="wsec"><div class="wl">${label}</div><div class="${cls}">${esc(v)}</div></div>`;
+  }).join("");
+  el.innerHTML=`<div class="warm">
+    <button class="whead" data-act="warmtoggle" aria-expanded="${body}">
+      <span><b>Morning warm-up</b><s>two minutes before the first stop</s></span>
+      <span class="chev${body?" up":""}">&#9662;</span></button>
+    ${body?`<div class="wbody">${rows}
+      <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div>`:""}
+  </div>`;
+}
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
 function todayTouches(){
@@ -1520,7 +1660,9 @@ function greeting(){
   const nm=((D.cfg.me||{}).name||"").trim().split(/\s+/)[0];
   const h=new Date().getHours();
   const part=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
-  return nm?`${part}, ${nm}.`:"Here's the day.";
+  /* two short lines rather than one long one — it reads like a briefing on a phone,
+     and it degrades to the old headline when no name is set */
+  return nm?`${part}, ${nm}.<em>Here's your day.</em>`:"Here's the day.";
 }
 function dayShape(rows){
   const c={meet:0,visit:0,call:0,follow:0};
@@ -1606,7 +1748,7 @@ function renderToday(){
   $("#datestr").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   $("#dnToday").style.display=isNow?"none":"";
   const rows=todayRows(d);
-  $("#hd").textContent=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
+  $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
@@ -1619,6 +1761,7 @@ function renderToday(){
        <p>That's more than a day holds. Bellwether can keep the highest-value ones on today, around what you already have booked, and lay the rest across the days ahead &mdash; field work off your office days.</p>
        <button data-act="catchup">Re-plan it</button></div>`
     : "";
+  renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows);if(A().length)renderPace(rows);else $("#pace").innerHTML=""}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
   renderList(rows,isNow);
   renderWeek(d);
@@ -2785,6 +2928,8 @@ document.addEventListener("click",async e=>{
           `<button class="chip${(D.cfg.terrSort||"reco")==v?" on":""}" data-sort="${v}">${l}</button>`).join("")}</div>
         <div class="parse" style="margin-top:12px">Recommended puts the biggest opportunity and the coldest accounts first &mdash; the order Bellwether would work them in.</div>
         <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
+    case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();break}
+    case"warmdone":{const w=warmState();w.open=false;save();render();toast("Go get it.");break}
     case"catchup":catchUp();break;
     case"sample":await loadSample();break;
     case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
