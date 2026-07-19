@@ -71,6 +71,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
 .rhythm{margin-top:7px;font-size:12.5px;color:var(--ink3)}
 .rhythm span{border-left:2px solid var(--ac);padding-left:8px}
+.clk{margin-top:15px;padding-top:13px;border-top:1px solid var(--rule)}
+.cl{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);font-weight:500}
+.ct{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:23px;letter-spacing:-.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+.clk.done .ct{font-family:"Instrument Serif",Georgia,serif;font-size:21px;letter-spacing:0}
+.cs{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.55}
 .warm{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
 .whead{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;padding:14px 15px;background:none;border:0;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
 .whead b{font-size:14.5px;font-weight:600;display:block}
@@ -408,6 +413,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <button class="dnbtn" id="dnNext" aria-label="Next day">&rsaquo;</button>
   </div>
   <h1 id="hd">Loading&hellip;</h1>
+  <div id="clock"></div>
   <div class="shape" id="shape"></div>
   <div class="rhythm" id="rhythm"></div>
   <div id="catchup"></div>
@@ -1403,6 +1409,42 @@ function dailyQuote(){
   if(!QUOTES.length)return null;
   return QUOTES[Math.round(today().getTime()/DAY)%QUOTES.length];
 }
+/* ---------- mission clock ---------- */
+/* The quiet instrument, not a stopwatch. The selling day is finite; this says how
+   much of it is left and what that means per remaining action. No colour, no alarm. */
+const MSTART=8*60+30, MEND=17*60;
+function missionClock(){
+  const now=new Date(),dow=now.getDay();
+  if(dow==0||dow==6)return null;                    /* no selling day on a weekend */
+  const mins=now.getHours()*60+now.getMinutes();
+  const span=(m)=>{const h=Math.floor(m/60),r=m%60;return h?`${h}h ${r}m`:`${r}m`};
+  if(mins<MSTART){
+    const d=MSTART-mins;
+    return {label:"Mission starts in",time:d>=60?span(d):d+(d==1?" minute":" minutes"),sub:""};
+  }
+  if(mins>=MEND){
+    const t=touchesOn(today());
+    return {label:"Mission complete",time:"Great work today.",done:true,
+      sub:t?`${t} touch${t==1?"":"es"} logged.`:""};
+  }
+  const left=MEND-mins,rows=todayRows(today()).length,done=touchesOn(today());
+  let sub="";
+  if(rows){
+    const per=Math.floor(left/rows);
+    sub=`${rows} left${done?` · ${done} done`:""} · about ${per<1?"under a minute":span(per)} each`;
+  }else sub=done?`${done} done. Nothing owed.`:"Nothing owed today.";
+  return {label:"Mission time remaining",time:span(left),sub};
+}
+function renderClock(show){
+  const el=$("#clock");if(!el)return;
+  const m=show?missionClock():null;
+  if(!m){el.innerHTML="";return}
+  el.innerHTML=`<div class="clk${m.done?" done":""}">
+    <div class="cl">${m.label}</div>
+    <div class="ct">${esc(m.time)}</div>
+    ${m.sub?`<div class="cs">${esc(m.sub)}</div>`:""}</div>`;
+}
+
 /* ---------- morning warm-up ---------- */
 /* Stretching before the game. Say the openers out loud once, read the rest, go.
    Content rotates each business day and remembers what it showed so it doesn't repeat. */
@@ -1761,6 +1803,7 @@ function renderToday(){
        <p>That's more than a day holds. Bellwether can keep the highest-value ones on today, around what you already have booked, and lay the rest across the days ahead &mdash; field work off your office days.</p>
        <button data-act="catchup">Re-plan it</button></div>`
     : "";
+  renderClock(isNow);
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows);if(A().length)renderPace(rows);else $("#pace").innerHTML=""}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
   renderList(rows,isNow);
@@ -3093,6 +3136,16 @@ if(markEl)markEl.addEventListener("click",()=>{
   if(markTaps>=5){markTaps=0;diagnostics()}
 });
 
+/* one interval for the life of the app — the clock repaints itself, nothing else moves.
+   Phones suspend timers when the screen sleeps, so a wake also refreshes it. */
+let clockT=null;
+function startClock(){
+  if(clockT)return;
+  const tick=()=>renderClock(screen=="today"&&viewDate&&iso(viewDate)==iso(today()));
+  clockT=setInterval(tick,20000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
+  window.addEventListener("focus",tick);
+}
 (async function init(){
   probeStorage();
   const rep2=await load();
@@ -3100,6 +3153,7 @@ if(markEl)markEl.addEventListener("click",()=>{
   document.body.dataset.s="today";
   applyTheme();
   render();
+  startClock();
   if(!storageOK)setTimeout(()=>toast("Storage is blocked — nothing will save. Check private browsing."),400);
   else if(rep2.recovered)setTimeout(()=>toast("Data was unreadable — restored from "+rep2.source+"."),600);
   else if(rep2.steps)setTimeout(()=>toast("Updated storage "+rep2.steps+". Backup taken."),600);
