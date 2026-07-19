@@ -33,7 +33,7 @@ body.dark[data-s="review"]{--ac:#2BB0A9;--acs:#0F332F}
 body.dark[data-s="set"]{--ac:#9098A8;--acs:#262A33}
 body.dark[data-s="acct"]{--ac:#9B7BE0;--acs:#2A2140}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--paper);color:var(--ink);
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;touch-action:manipulation;background:var(--paper);color:var(--ink);
 font-size:15px;line-height:1.5;padding-bottom:88px;-webkit-font-smoothing:antialiased;transition:background .3s}
 .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
 .said{font-family:'Instrument Serif',Georgia,serif;line-height:1.4}
@@ -103,7 +103,7 @@ button{font-family:inherit;cursor:pointer}
 /* call block */
 .callwrap{position:fixed;inset:0;background:var(--paper);z-index:70;display:none;flex-direction:column;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
 .callwrap.on{display:flex}
-.ctopbar{display:flex;justify-content:space-between;align-items:center}
+.ctopbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .ctopbar .pg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
 .ccard{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:20px 0}
 .ccard .co{font-size:27px;font-weight:500;letter-spacing:-.6px;line-height:1.2}
@@ -138,7 +138,9 @@ button{font-family:inherit;cursor:pointer}
 .act:last-child{border-bottom:none}
 .tick{width:21px;height:21px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);flex:none;padding:0}
 .tick:active{transform:scale(.9)}
-.act .i{min-width:0;flex:1}
+.act .i{min-width:0;flex:1;cursor:pointer}
+.push{flex:none;background:none;border:1px solid var(--rule2);border-radius:7px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 8px}
+.push:active{transform:scale(.94)}
 .act .i b{display:block;font-size:14px;font-weight:400}
 .act .i s{display:block;text-decoration:none;font-size:11.5px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;margin-top:1px}
 .act.due .i s{color:var(--amb)}
@@ -221,7 +223,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .hero .s{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink2)}
 .wall{margin-top:18px;background:var(--ambsoft);border-radius:11px;padding:15px 17px;font-size:13.5px;color:var(--amb);line-height:1.6}
 .ptab{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;align-items:center;margin-top:8px}
-.ptab input{font-family:inherit;font-size:14px;padding:8px 9px;border:1px solid var(--rule2);border-radius:7px;background:var(--card);color:var(--ink);width:100%}
+.ptab input{font-family:inherit;font-size:16px;padding:8px 9px;border:1px solid var(--rule2);border-radius:7px;background:var(--card);color:var(--ink);width:100%}
 .ptabhead{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-top:14px;font-size:11px;color:var(--ink3)}
 
 /* sheet, nav, toast */
@@ -240,6 +242,67 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:25px;background:var(--ac);color:#fff;border:none;font-size:26px;line-height:0;box-shadow:0 8px 20px -8px currentColor;z-index:41}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
+.toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
+.toast .undo{background:none;border:none;color:var(--paper);font-family:inherit;font-size:13px;font-weight:500;text-decoration:underline;padding:0}
+/* quote */
+.quote{margin-top:14px;padding:15px 17px;border-left:2px solid var(--ac);background:var(--acs);border-radius:0 10px 10px 0}
+.quote .said{font-size:17px;line-height:1.45}
+.quote .who{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ac)}
+
+/* mission */
+.mission{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:15px 17px}
+.mission .mh{display:flex;justify-content:space-between;align-items:baseline}
+.mission .mh b{font-size:13px;font-weight:500}
+.mission .mh span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.mrow:last-child{border-bottom:none}
+.mdot{width:9px;height:9px;border-radius:50%;background:var(--sunk);border:1.5px solid var(--rule2);flex:none}
+.mdot.done{background:var(--grn);border-color:var(--grn)}
+.mdot.part{background:var(--amb);border-color:var(--amb)}
+.mrow .mt2{flex:1;font-size:13.5px}
+.mrow .mn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none}
+.mission .foot{margin-top:11px;font-size:12px;color:var(--ink3);line-height:1.6}
+
+/* cluster */
+.cluster{margin-top:16px;background:var(--sunk);border-radius:12px;padding:15px 17px}
+.cluster .ch{font-size:13px;font-weight:500}
+.cluster p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
+.cluster .cl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;cursor:pointer}
+.cluster .cl:last-child{border-bottom:none}
+.cluster .cl s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+
+/* date field */
+.dfield{display:flex;gap:7px;align-items:stretch;margin-top:6px}
+.dfield .t{margin-top:0;flex:1}
+.dfield .cal{width:44px;flex:none;border:1px solid var(--rule2);border-radius:8px;background:var(--card);color:var(--ink2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.dfield .cal svg{width:19px;height:19px;pointer-events:none}
+.dfield .cal input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;background:none}
+
+/* banners + diagnostics */
+.banner{margin-top:16px;border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.6;background:var(--ambsoft);color:var(--amb)}
+.banner.bad{background:var(--redsoft);color:var(--red)}
+.banner b{font-weight:500}
+.banner .sa{margin-top:10px}
+.diag{font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.9;color:var(--ink2);margin-top:12px}
+.diag b{color:var(--ink);font-weight:500;float:right}
+.diag .row{border-bottom:1px solid var(--rule);overflow:hidden}
+.baks{margin-top:12px}
+.bak{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.bak s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);display:block}
+.tagm.w{background:var(--grnsoft);color:var(--grn)}
+
+/* discovery */
+.langbar{margin-top:12px}
+.chip.sm{font-size:11.5px;padding:5px 10px}
+.qc.open{border-color:var(--ac)}
+.qen{margin-top:5px;font-size:12.5px;color:var(--ink3);line-height:1.4}
+.qhint{margin-top:6px;font-size:11.5px;color:var(--ink3);line-height:1.5}
+.opt em{display:block;font-style:normal;font-size:11.5px;opacity:.72;margin-top:2px}
+.qdone{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 2px;border-bottom:1px solid var(--rule);cursor:pointer}
+.qdone .qq{font-size:12.5px;color:var(--ink3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qdone b{font-size:13px;font-weight:500;flex:none;max-width:52%;text-align:right}
+.qstub{padding:10px 2px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink3);cursor:pointer}
+.qstub:before{content:"+ ";color:var(--ac)}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -257,7 +320,10 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   </div>
   <h1 id="hd">Loading&hellip;</h1>
   <button class="b quiet" id="dnToday" style="display:none;margin-top:4px">Jump to today</button>
+  <div id="quote"></div>
   <div id="counter"></div>
+  <div id="mission"></div>
+  <div id="cluster"></div>
   <div id="blocks"></div>
 </section>
 
@@ -312,6 +378,20 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Queue shows at once<input class="t mono" id="pageSize" type="number" min="3"></label>
   </div>
   <label class="f">Callback cadence &mdash; days between attempts<input class="t mono" id="cadence" placeholder="3, 4, 7, 14, 21"></label>
+
+  <h2>Today&rsquo;s mission &mdash; what a full day looks like</h2>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">The plan on the Today screen is built from these. Set them to a day you could actually repeat.</p>
+  <div class="two">
+    <label class="f">Business drop-ins<input class="t mono" id="mVisits" type="number" min="0"></label>
+    <label class="f">Client visits<input class="t mono" id="mClients" type="number" min="0"></label>
+  </div>
+  <div class="two">
+    <label class="f">CPA / partner stops<input class="t mono" id="mPartners" type="number" min="0"></label>
+    <label class="f">Outbound calls<input class="t mono" id="mCalls" type="number" min="0"></label>
+  </div>
+  <label class="f">Follow-ups cleared<input class="t mono" id="mFollow" type="number" min="0"></label>
+
+  <div id="bakbanner"></div>
 
   <h2>Your year</h2>
   <div class="two">
@@ -374,6 +454,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div class="ctopbar">
     <button class="b quiet" id="cexit">Done</button>
     <span class="pg" id="cpg"></span>
+    <button class="b quiet" id="cskip">Skip &rsaquo;</button>
   </div>
   <div class="ccard" id="ccard"></div>
   <div class="cbtns">
@@ -396,9 +477,11 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
+const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
+const SCHEMA=4;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
-const TOUCH=["met","called","texted","emailed"];
-let D={accounts:[],cfg:{},v:2}, viewDate=null, screen="today", curId=null, terrFilter="open", terrQ="", pageN=1;
+const TOUCH=["met","visited","called","texted","emailed"];
+let D={accounts:[],cfg:{},v:SCHEMA}, viewDate=null, screen="today", curId=null, terrFilter="open", terrQ="", terrPage=1;
 
 const PRICEBOOK=[
  {n:"HR Pro", f:{
@@ -420,6 +503,9 @@ const PRICEBOOK=[
 ];
 const DEF={fy:"",qEnd:"",goal:0,rgoal:0,o1:40,o2:20,o3:8,me:{},theme:"system",
  touchTarget:40,pageSize:10,cadence:"3, 4, 7, 14, 21",
+ mission:{visits:3,clients:2,partners:1,calls:12,follow:2},
+ dlang:"en",dual:false,
+ lastExport:"",dirtySince:"",
  book:JSON.parse(JSON.stringify(PRICEBOOK)),
  addons:[{n:"Time & Attendance",b:0,p:0},{n:"Retirement 401(k)",b:0,p:0},
          {n:"Workers' Comp",b:0,p:0},{n:"Hiring / ATS",b:0,p:0}]};
@@ -437,32 +523,214 @@ const esc=s=>String(s==null?"":s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","
 const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
 
+const MON=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const DOW=["sun","mon","tue","wed","thu","fri","sat"];
+/* the verb tells you what kind of touch it is — "visit doyle tuesday" is a drop-in, not a dial */
+function nlpKind(txt){
+  const t=(txt||"").toLowerCase();
+  if(/\b(visit|drop in|drop by|stop by|swing by|walk in)\b/.test(t))return"visit";
+  if(/\b(meet|meeting|appointment|demo|presentation|lunch|coffee)\b/.test(t))return"meet";
+  if(/\b(email|send|proposal|quote|text|paperwork|contract)\b/.test(t))return"follow";
+  return"call";
+}
 function nlp(txt){
-  const t=(txt||"").toLowerCase().trim(),n=today();let d=null,prec="day";
-  const add=(v,u)=>{const x=new Date(n);u=="d"?x.setDate(x.getDate()+v):u=="w"?x.setDate(x.getDate()+v*7):x.setMonth(x.getMonth()+v);return x};
-  const M=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];let m;
-  if(/^today/.test(t))d=new Date(n);
-  else if(/^tomorrow/.test(t))d=add(1,"d");
+  const raw=(txt||"").toLowerCase().trim();if(!raw)return null;
+  const n=today();let d=null,prec="day",m;
+  const mk=(y,mo,da)=>{const x=new Date(y,mo,da);x.setHours(0,0,0,0);return x};
+  const add=(v,u)=>{const x=new Date(n);u=="d"?x.setDate(x.getDate()+v):u=="w"?x.setDate(x.getDate()+v*7):x.setMonth(x.getMonth()+v);x.setHours(0,0,0,0);return x};
+  /* strip the verb and the account name — "call doyle on the 28th" */
+  const t=raw.replace(/^(call|ring|dial|visit|see|meet( with)?|stop by|drop in( on)?|drop by|swing by|follow up( with)?|email|text|check in( with)?|touch base( with)?)\s+/,"").trim();
+
+  if(/^(today|this afternoon|later today|tonight)\b/.test(t))d=new Date(n);
+  else if(/^tomorrow|^tmrw|^tom\b/.test(t))d=add(1,"d");
+  else if(/\bday after tomorrow\b/.test(t))d=add(2,"d");
+  /* 7/28/26, 7-28, 07/28/2026 */
+  else if(m=t.match(/\b(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?\b/)){
+    let y=m[3]?+m[3]:n.getFullYear();if(y<100)y+=2000;
+    d=mk(y,+m[1]-1,+m[2]);
+    if(!m[3]&&d<n)d=mk(y+1,+m[1]-1,+m[2]);
+  }
+  /* july 28, jul 28th, 28 july */
+  else if(m=t.match(new RegExp("\\b("+MON.join("|")+")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?\\b"))){
+    const mo=MON.indexOf(m[1]);let y=m[3]?+m[3]:n.getFullYear();
+    d=mk(y,mo,+m[2]);if(!m[3]&&d<n)d=mk(y+1,mo,+m[2]);
+  }
+  else if(m=t.match(new RegExp("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?("+MON.join("|")+")[a-z]*\\b"))){
+    const mo=MON.indexOf(m[2]);d=mk(n.getFullYear(),mo,+m[1]);if(d<n)d=mk(n.getFullYear()+1,mo,+m[1]);
+  }
+  /* the 28th — this month unless it's past, then next */
+  else if(m=t.match(/\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\b/)||(m=t.match(/^(\d{1,2})(?:st|nd|rd|th)\b/))){
+    const da=+m[1];
+    d=mk(n.getFullYear(),n.getMonth(),da);
+    if(d<n||d.getDate()!=da)d=mk(n.getFullYear(),n.getMonth()+1,da);
+  }
+  else if(m=t.match(/\b(\d+)\s*(day|week|month|year|yr|mo|wk)s?\b/)){
+    const u=m[2][0],v=+m[1];
+    d=u=="d"?add(v,"d"):u=="w"?add(v,"w"):u=="y"||m[2]=="yr"?add(v*12,"m"):add(v,"m");
+    prec=(u=="m"||u=="y")?"month":"day";
+  }
+  /* tuesday, next tuesday — anchored so "months" can't read as Monday */
+  else if(m=t.match(/\b(?:next\s+|this\s+|on\s+)?(sunday|sun|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat)\b/)){
+    const want=DOW.indexOf(m[1].slice(0,3));let delta=(want-n.getDay()+7)%7;
+    if(delta==0)delta=7;                       /* "tuesday" on a Tuesday means the next one */
+    d=add(delta,"d");
+  }
+  else if(/end of (the )?month|month.?end/.test(t)){d=mk(n.getFullYear(),n.getMonth()+1,0);prec="month"}
   else if(/^next week/.test(t))d=add(1,"w"),prec="week";
-  else if(m=t.match(/(\d+)\s*(day|week|month|year)/))d=add(+m[1]*(m[2]=="year"?12:1),m[2][0]=="d"?"d":m[2][0]=="w"?"w":"m"),prec=m[2][0]=="m"||m[2][0]=="y"?"month":"day";
-  else if(/jan(uary)?\s*1|new year|first of the year|start of the year/.test(t)){d=new Date(n.getFullYear(),0,1);if(d<n)d.setFullYear(d.getFullYear()+1)}
-  else if(m=t.match(/q([1-4])/)){d=new Date(n.getFullYear(),(+m[1]-1)*3,1);if(d<n)d.setFullYear(d.getFullYear()+1);prec="month"}
-  else if(/renewal|anniversar/.test(t)&&!/month|week|day/.test(t))d=add(12,"m"),prec="month";
-  else for(let i=0;i<12;i++)if(t.includes(M[i])){d=new Date(n.getFullYear(),i,1);if(d<n)d.setFullYear(d.getFullYear()+1);prec="month";break}
-  if(/spring/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>2?1:0),3,1),prec="month";
-  if(/summer/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>5?1:0),6,1),prec="month";
-  if(/fall|autumn/.test(t))d=new Date(n.getFullYear()+(n.getMonth()>8?1:0),9,1),prec="month";
-  if(/end of (the )?year|year.?end/.test(t))d=new Date(n.getFullYear(),11,1),prec="month";
-  if(!d)return null;d.setHours(0,0,0,0);return{date:iso(d),prec};
+  else if(/^next month/.test(t))d=add(1,"m"),prec="month";
+  else if(/\b(a|one)\s+week\b/.test(t))d=add(1,"w");
+  else if(/jan(uary)?\s*1|new year|first of the year|start of the year/.test(t)){d=mk(n.getFullYear(),0,1);if(d<n)d=mk(n.getFullYear()+1,0,1)}
+  else if(m=t.match(/\bq([1-4])\b/)){d=mk(n.getFullYear(),(+m[1]-1)*3,1);if(d<n)d=mk(n.getFullYear()+1,(+m[1]-1)*3,1);prec="month"}
+  else if(/renewal|anniversar/.test(t))d=add(12,"m"),prec="month";
+  else if(/spring/.test(t))d=mk(n.getFullYear()+(n.getMonth()>2?1:0),3,1),prec="month";
+  else if(/summer/.test(t))d=mk(n.getFullYear()+(n.getMonth()>5?1:0),6,1),prec="month";
+  else if(/fall|autumn/.test(t))d=mk(n.getFullYear()+(n.getMonth()>8?1:0),9,1),prec="month";
+  else if(/end of (the )?year|year.?end/.test(t))d=mk(n.getFullYear(),11,1),prec="month";
+  else{
+    for(let i=0;i<12;i++)if(new RegExp("\\b"+MON[i]+"[a-z]*\\b").test(t)){
+      d=mk(n.getFullYear(),i,1);if(d<n)d=mk(n.getFullYear()+1,i,1);prec="month";break}
+  }
+  if(!d)return null;
+  d.setHours(0,0,0,0);
+  return{date:iso(d),prec,kind:nlpKind(raw)};
 }
 
-/* ---------- storage + migration ---------- */
+/* ---------- storage ---------- */
+let storeWarn="";
 async function rawGet(key){
   try{ if(window.storage){const r=await window.storage.get(key);return r&&r.value?r.value:null}
        return localStorage.getItem(key) }catch(e){return null}
 }
+let storageOK=true;
+function probeStorage(){
+  try{localStorage.setItem("bw-probe","1");const v=localStorage.getItem("bw-probe");localStorage.removeItem("bw-probe");storageOK=v=="1"}
+  catch(e){storageOK=false;storeWarn="This browser is blocking storage (private browsing?). Nothing will be saved."}
+  return storageOK;
+}
 async function rawSet(key,val){
-  try{ if(window.storage)await window.storage.set(key,val); else localStorage.setItem(key,val) }catch(e){}
+  try{ if(window.storage)await window.storage.set(key,val); else localStorage.setItem(key,val); return true }
+  catch(e){
+    /* out of room: drop the oldest backup and try once more before ever failing a real save */
+    if(await dropOldestBackup()){
+      try{ if(window.storage)await window.storage.set(key,val); else localStorage.setItem(key,val); return true }catch(e2){}
+    }
+    storeWarn="Storage is full — export a backup and clear old ones.";
+    return false;
+  }
+}
+async function rawDel(key){
+  try{ if(window.storage)await window.storage.delete(key); else localStorage.removeItem(key) }catch(e){}
+}
+
+/* ---------- backups: last 5, newest first ---------- */
+async function bakIndex(){
+  try{const r=await rawGet(BAKINDEX);const a=r?JSON.parse(r):[];return Array.isArray(a)?a:[]}catch(e){return[]}
+}
+async function setBakIndex(ix){await rawSet(BAKINDEX,JSON.stringify(ix))}
+async function dropOldestBackup(){
+  const ix=await bakIndex();if(!ix.length)return false;
+  const old=ix.pop();await rawDel(BAKPREFIX+old.id);await setBakIndex(ix);return true;
+}
+async function makeBackup(reason,snapshot){
+  const body=JSON.stringify(snapshot||D);
+  const id=uid(),ix=await bakIndex();
+  const ok=await rawSet(BAKPREFIX+id,body);
+  if(!ok)return null;
+  ix.unshift({id,on:new Date().toISOString(),reason,accounts:(snapshot||D).accounts?(snapshot||D).accounts.length:0,size:body.length,v:(snapshot||D).v||SCHEMA});
+  while(ix.length>MAXBAK){const g=ix.pop();await rawDel(BAKPREFIX+g.id)}
+  await setBakIndex(ix);
+  return id;
+}
+async function readBackup(id){
+  const r=await rawGet(BAKPREFIX+id);if(!r)return null;
+  try{const j=JSON.parse(r);return validShape(j)?j:null}catch(e){return null}
+}
+async function newestValidBackup(){
+  for(const b of await bakIndex()){const j=await readBackup(b.id);if(j)return{meta:b,data:j}}
+  return null;
+}
+
+/* ---------- validation and repair ---------- */
+const validShape=j=>!!(j&&typeof j=="object"&&Array.isArray(j.accounts));
+let repairLog=[];
+function repairAccount(a){
+  const w=[];
+  if(!a.id){a.id=uid();w.push("account with no id")}
+  if(typeof a.name!="string"){a.name=String(a.name||"(unnamed)");w.push(a.id+": name")}
+  if(!["client","prospect","partner"].includes(a.type))a.type="prospect";
+  a.emps=+a.emps||0;
+  a.city=a.city||"";a.industry=a.industry||"";
+  a.contact=(a.contact&&typeof a.contact=="object")?a.contact:{name:"",email:"",phone:""};
+  ["name","email","phone"].forEach(f=>a.contact[f]=a.contact[f]||"");
+  a.today=(a.today&&typeof a.today=="object")?a.today:{bundle:"",freq:"",addons:[],spend:0};
+  a.today.addons=Array.isArray(a.today.addons)?a.today.addons:[];
+  a.next=Array.isArray(a.next)?a.next.filter(n=>n&&n.date):[];
+  a.next.forEach(n=>{n.id=n.id||uid();n.why=n.why||"Follow up";n.kind=n.kind||"call";n.done=!!n.done});
+  a.events=Array.isArray(a.events)?a.events.filter(e=>e&&e.when):[];
+  a.discovery=(a.discovery&&typeof a.discovery=="object")?a.discovery:{answers:{},updated:""};
+  a.discovery.answers=a.discovery.answers||{};
+  if(!["open","won","lost","dormant"].includes(a.outcome))a.outcome="open";
+  a.handedOff=!!a.handedOff;
+  a.stage=a.stage||"callback";
+  return w;
+}
+function validate(d){
+  repairLog=[];
+  if(!validShape(d))return false;
+  d.accounts=d.accounts.filter(a=>a&&typeof a=="object");
+  d.accounts.forEach(a=>repairLog.push(...repairAccount(a)));
+  d.batches=Array.isArray(d.batches)?d.batches:[];
+  d.cfg=Object.assign({},DEF,d.cfg&&typeof d.cfg=="object"?d.cfg:{});
+  d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
+  if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=JSON.parse(JSON.stringify(PRICEBOOK));repairLog.push("price book restored to defaults")}
+  /* de-dupe ids — two accounts sharing an id makes edits land on the wrong one */
+  const seen=new Set();
+  d.accounts.forEach(a=>{if(seen.has(a.id)){a.id=uid();repairLog.push("duplicate id reassigned")}seen.add(a.id)});
+  return true;
+}
+
+/* ---------- migrations: one small step per version, never one big leap ---------- */
+const MIGRATIONS={
+  2:function(d){
+    /* v2 → v3: won is a lifecycle stage, not a graveyard. Won prospects become clients. */
+    d.accounts.forEach(a=>{
+      if(a.outcome=="won"){
+        a.won={on:(lastEvent(a,["won"])||{}).when||iso(today()),value:+a.wonValue||0,bundle:(a.quote||{}).bundle||""};
+        a.type="client";
+        a.outcome="open";
+        if(a.quote&&a.quote.bundle){a.today=a.today||{};a.today.bundle=a.quote.bundle;a.today.freq=a.quote.freq||a.today.freq}
+      }
+      a.next.forEach(n=>{if(n.kind=="meet"&&/visit|drop/i.test(n.why||""))n.kind="visit"});
+    });
+    d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
+    return d;
+  }
+  ,
+  3:function(d){
+    /* v3 → v4: discovery answers stored the English label; store the code instead
+       so switching language can never alter saved data. */
+    d.accounts.forEach(a=>{
+      const ans=(a.discovery||{}).answers||{};
+      Object.keys(ans).forEach(id=>{
+        const q=qById(id);if(!q||!q.o)return;
+        const hit=q.o.find(o=>o.t.en==ans[id]);
+        if(hit)ans[id]=hit.c;
+      });
+    });
+    d.cfg.dlang=d.cfg.dlang||"en";
+    return d;
+  }
+};
+async function runMigrations(d){
+  let from=+d.v||1,steps=[];
+  while(from<SCHEMA){
+    const step=MIGRATIONS[from];
+    if(!step){d.v=SCHEMA;break}
+    d=step(d)||d;from++;d.v=from;steps.push((from-1)+"→"+from);
+  }
+  d.v=SCHEMA;
+  if(steps.length){d.lastMigration={on:new Date().toISOString(),steps:steps.join(", ")}}
+  return {d,steps};
 }
 function blankAcct(o){
   return Object.assign({id:uid(),name:"",type:"prospect",city:"",emps:0,industry:"",
@@ -471,7 +739,8 @@ function blankAcct(o){
     next:[],outcome:"open",handedOff:false,stage:"callback",
     discovery:{answers:{},updated:""},quote:null,events:[],batch:""},o||{});
 }
-function migrate(old){
+/* the one-time lift from the old horizon app — produces schema 2, then the chain takes over */
+function migrateLegacy(old){
   const accounts=[],by={};
   (old.accts||[]).forEach(x=>{
     const a=blankAcct({id:String(x.id||uid()),name:x.name||"",type:x.type||"client",city:x.city||"",
@@ -512,33 +781,83 @@ function migrate(old){
       touchTarget:40,pageSize:10
     }),v:2,batches:old.batches||[],migratedOn:iso(today())};
 }
+let loadReport={source:"",steps:"",recovered:false,warnings:0};
 async function load(){
-  let raw=await rawGet(KEY);
-  if(raw){ try{D=JSON.parse(raw)}catch(e){D={accounts:[],cfg:{},v:2}} }
-  else{
+  const raw=await rawGet(KEY);
+  let parsed=null;
+
+  if(raw){
+    try{parsed=JSON.parse(raw)}catch(e){parsed=null}
+    if(!validShape(parsed)){
+      /* the file is there but unreadable — do NOT start empty on top of it */
+      const bk=await newestValidBackup();
+      if(bk){
+        parsed=bk.data;loadReport.recovered=true;loadReport.source="backup "+fmtWhen(bk.meta.on);
+        if(raw)await rawSet(BAKPREFIX+"corrupt-"+uid(),raw);   /* keep the bad blob for forensics */
+      }else{
+        parsed={accounts:[],cfg:{},v:SCHEMA};loadReport.source="unreadable, no backup";
+      }
+    }else loadReport.source="storage";
+  }else{
     const oldRaw=await rawGet(OLDKEY);
     if(oldRaw){
       try{
         const old=JSON.parse(oldRaw);
-        await rawSet(BAKKEY,oldRaw);          // recoverable pre-migration blob
-        D=migrate(old);
-        await save();
-        setTimeout(()=>toast(`Migrated ${D.accounts.length} accounts from v1.`),700);
-      }catch(e){console.error("migration failed",e);D={accounts:[],cfg:{},v:2}}
-    }
+        await rawSet(BAKKEY,oldRaw);
+        parsed=migrateLegacy(old);
+        loadReport.source="migrated from the old app";
+      }catch(e){parsed={accounts:[],cfg:{},v:SCHEMA};loadReport.source="old data unreadable"}
+    }else{parsed={accounts:[],cfg:{},v:SCHEMA};loadReport.source="first run"}
   }
-  D.accounts=D.accounts||[];D.batches=D.batches||[];
-  D.cfg=Object.assign({},DEF,D.cfg||{});
-  if(!D.cfg.book||!D.cfg.book[0]||!D.cfg.book[0].f)D.cfg.book=JSON.parse(JSON.stringify(PRICEBOOK));
-  D.accounts.forEach(a=>{a.next=a.next||[];a.events=a.events||[];
-    a.contact=a.contact||{name:"",email:"",phone:""};
-    a.today=a.today||{bundle:"",freq:"",addons:[],spend:0};
-    a.discovery=a.discovery||{answers:{},updated:""};
-    if(!a.outcome)a.outcome="open"});
+
+  validate(parsed);
+  loadReport.warnings=repairLog.length;
+  /* back up before touching anything, then migrate one version at a time */
+  if((+parsed.v||1)<SCHEMA&&parsed.accounts.length){
+    await makeBackup("before migration to v"+SCHEMA,parsed);
+  }
+  const {d,steps}=await runMigrations(parsed);
+  D=d;
+  validate(D);
+  loadReport.steps=steps.join(", ");
+  loadReport.warnings+=repairLog.length;
+
   if(!D.cfg.fy){const n=new Date();D.cfg.fy=iso(new Date(n.getFullYear()+(n.getMonth()>=6?1:0),5,30))}
   if(!D.cfg.qEnd){const n=new Date();D.cfg.qEnd=iso(new Date(n.getFullYear(),n.getMonth()<9?8:11,30))}
+
+  /* daily safety net: one automatic backup per day, regardless of migrations */
+  const ix=await bakIndex();
+  if(D.accounts.length&&(!ix.length||ix[0].on.slice(0,10)!=iso(today())))await makeBackup("daily");
+
+  if(steps.length||loadReport.recovered)await save();
+  return loadReport;
 }
-async function save(){await rawSet(KEY,JSON.stringify(D))}
+let saveT=null;
+async function save(){
+  D.v=SCHEMA;calcRev++;
+  D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
+  const body=JSON.stringify(D);
+  const ok=await rawSet(KEY,body);
+  /* read it back — a save that didn't land is worse than one that failed loudly */
+  if(ok&&!window.storage){
+    const back=localStorage.getItem(KEY);
+    if(!back||back.length!=body.length){storeWarn="A save didn't land. Export a backup now.";toast(storeWarn);return false}
+  }
+  if(!ok)toast(storeWarn||"Save failed — export a backup now.");
+  D.cfg.lastSave=new Date().toISOString();
+  return ok;
+}
+const fmtWhen=s=>{try{const d=new Date(s);return d.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" "+d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}catch(e){return s||"—"}};
+function daysSinceExport(){
+  if(!D.cfg.lastExport)return 999;
+  return Math.floor((Date.now()-new Date(D.cfg.lastExport).getTime())/DAY);
+}
+function needsBackup(){
+  if(!D.accounts.length)return false;
+  if(!D.cfg.dirtySince)return false;
+  if(!D.cfg.lastExport)return true;
+  return daysSinceExport()>=7&&new Date(D.cfg.dirtySince)>new Date(D.cfg.lastExport);
+}
 
 /* ---------- theme ---------- */
 const sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)");
@@ -580,14 +899,28 @@ function currentAnnual(a){
     return annual({emps:a.emps,bundle:a.today.bundle,freq:a.today.freq||"Bi-weekly",addons:a.today.addons||[],disc:0});
   return 0;
 }
-/* what this deal is worth to Kyle's quota: clients credit the delta, everyone else the full annual */
+/* recomputing a quote for every comparison in a sort is what makes big lists feel slow */
+let calcRev=0;
+const _memo={v:-1,d:{},s:{}};
+function memoReady(){if(_memo.v!==calcRev){_memo.v=calcRev;_memo.d={};_memo.s={}}}
 function dealValue(a,over){
+  if(over)return dealValueRaw(a,over);
+  memoReady();
+  if(_memo.d[a.id]===undefined)_memo.d[a.id]=dealValueRaw(a);
+  return _memo.d[a.id];
+}
+function score(a){
+  memoReady();
+  if(_memo.s[a.id]===undefined)_memo.s[a.id]=scoreRaw(a);
+  return _memo.s[a.id];
+}
+function dealValueRaw(a,over){
   const q=quoteAnnual(a,over);if(!q)return 0;
   if(a.type=="client"){const cur=currentAnnual(a);return Math.max(0,q-cur)}
   return q;
 }
 function learnedRate(stage){
-  const w=D.accounts.filter(a=>a.outcome=="won"&&(a.stage||"callback")==stage).length;
+  const w=D.accounts.filter(a=>isWon(a)&&(a.wonStage||a.stage||"callback")==stage).length;
   const l=D.accounts.filter(a=>a.outcome=="lost"&&(a.stage||"callback")==stage).length;
   return (w+l)>=10?w/(w+l):null;
 }
@@ -603,6 +936,9 @@ function odds(a){
 const A=()=>D.accounts;
 const acct=id=>D.accounts.find(a=>a.id==id);
 const isOpen=a=>a.outcome=="open";
+/* won is a lifecycle stage, not a graveyard: the account lives on as a client */
+const isWon=a=>!!a.won;
+const isWorking=a=>isOpen(a)&&!isWon(a);
 const openActions=a=>(a.next||[]).filter(n=>!n.done);
 const dueActions=(a,d)=>openActions(a).filter(n=>n.date<=iso(d));
 const lastEvent=(a,kinds)=>{const e=(a.events||[]).filter(x=>!kinds||kinds.includes(x.kind));return e.length?e[e.length-1]:null};
@@ -620,8 +956,8 @@ function cadenceDays(attempt){
   return arr[Math.min(attempt,arr.length-1)];
 }
 const attemptsOn=a=>(a.events||[]).filter(e=>e.kind=="called").length;
-function pipeline(){return A().filter(a=>isOpen(a)&&a.quote&&a.emps)}
-function score(a){
+function pipeline(){return A().filter(a=>isWorking(a)&&a.emps)}
+function scoreRaw(a){
   let s=dealValue(a)/1000;
   const lt=lastTouch(a);
   s+=lt?Math.min(30,days(parseD(lt),today())/4):40;
@@ -633,76 +969,185 @@ function score(a){
 }
 
 /* ---------- discovery bank ---------- */
-/* order per design review: situation and story first, numbers last */
+/* Order per design review: situation and story first, numbers last.
+   Answers are stored as stable CODES, never as display text — so switching
+   language changes what you see and nothing about what's saved. */
+const LANGS=[["en","EN","English"],["es","ES","Espa\u00f1ol"],["pt","PT","Portugu\u00eas"]];
 const QCORE=[
- {id:"payday",q:"Walk me through payroll day — what actually happens?",
-  o:[["I do it myself","owner"],["Office manager or bookkeeper",""],["Our CPA runs it","cpa"],["It moves around — nobody owns it","chaos"]]},
- {id:"hours",q:"Start to finish, how long does that take?",
-  o:[["Under an hour",""],["One to three hours","pain"],["Half a day","pain"],["A full day or more","pain bigpain"]]},
- {id:"time",q:"How do people's hours get to you?",
-  o:[["Paper or handwritten","ta"],["Spreadsheet or text message","ta"],["A clock that isn't connected to payroll","ta"],["It flows in automatically",""]]},
- {id:"change",q:"What's changed in the business the last 12 months?",
-  o:[["We added people","growth"],["We're in a new state now","multistate"],["About the same",""],["We got smaller",""]]},
- {id:"exit",q:"When someone leaves badly, what happens?",
-  o:[["We've had one and it was ugly","hr"],["Nothing yet, but I think about it","hr"],["Our paperwork is out of date","hr handbook"],["We're covered there",""]]},
- {id:"orig",q:"When you first signed with them, what were you trying to fix?",k:"text",
-  hint:"The unmet original need. Write what they actually said."},
- {id:"benefits",q:"What would you offer people if cost weren't a factor?",
-  o:[["Real health coverage","peo"],["Retirement match","401k"],["Health plus someone to handle HR","peo hr"],["We're good where we are",""]]},
- {id:"inaction",q:"If nothing changes, what does this look like a year from now?",
-  o:[["Same as today — it works","noevent"],["Worse — this already breaks at busy times","event"],["Something has to change before then","event"]]},
- {id:"cost",q:"All in, what are you paying today?",k:"num",hint:"Annual. Ask this now — not first."},
- {id:"process",q:"Last time you changed a system or a vendor, who ended up being part of that?",
-  o:[["Just me","solo"],["Me and my spouse or partner","multi"],["Our CPA weighed in","cpa multi"],["Partners or a board","multi"]]},
+ {id:"payday",k:"opt",
+  t:{en:"Walk me through payroll day \u2014 what actually happens?",
+     es:"Cu\u00e9nteme c\u00f3mo es el d\u00eda de n\u00f3mina \u2014 \u00bfqu\u00e9 pasa exactamente?",
+     pt:"Me conta como \u00e9 o dia do pagamento \u2014 o que acontece na pr\u00e1tica?"},
+  o:[{c:"self",f:"owner",t:{en:"I do it myself",es:"Yo mismo lo hago",pt:"Eu mesmo fa\u00e7o"}},
+     {c:"staff",f:"",t:{en:"Office manager or bookkeeper",es:"La persona de oficina o el contador interno",pt:"A pessoa do escrit\u00f3rio ou o financeiro"}},
+     {c:"cpa",f:"cpa",t:{en:"Our CPA runs it",es:"Lo maneja nuestro contador",pt:"Nosso contador cuida disso"}},
+     {c:"chaos",f:"chaos",t:{en:"It moves around \u2014 nobody owns it",es:"Va cambiando \u2014 nadie lo tiene fijo",pt:"Vai mudando \u2014 ningu\u00e9m \u00e9 dono disso"}}]},
+ {id:"hours",k:"opt",
+  t:{en:"Start to finish, how long does that take?",
+     es:"De principio a fin, \u00bfcu\u00e1nto tiempo le toma?",
+     pt:"Do in\u00edcio ao fim, quanto tempo leva?"},
+  o:[{c:"lt1",f:"",t:{en:"Under an hour",es:"Menos de una hora",pt:"Menos de uma hora"}},
+     {c:"1to3",f:"pain",t:{en:"One to three hours",es:"Entre una y tres horas",pt:"De uma a tr\u00eas horas"}},
+     {c:"half",f:"pain",t:{en:"Half a day",es:"Media jornada",pt:"Meio dia"}},
+     {c:"full",f:"pain bigpain",t:{en:"A full day or more",es:"Un d\u00eda completo o m\u00e1s",pt:"Um dia inteiro ou mais"}}]},
+ {id:"time",k:"opt",
+  t:{en:"How do people's hours get to you?",
+     es:"\u00bfC\u00f3mo le llegan las horas de los empleados?",
+     pt:"Como as horas dos funcion\u00e1rios chegam at\u00e9 voc\u00ea?"},
+  o:[{c:"paper",f:"ta",t:{en:"Paper or handwritten",es:"En papel o escritas a mano",pt:"No papel ou escritas \u00e0 m\u00e3o"}},
+     {c:"sheet",f:"ta",t:{en:"Spreadsheet or text message",es:"En una hoja de c\u00e1lculo o por mensaje",pt:"Em planilha ou por mensagem"}},
+     {c:"clock",f:"ta",t:{en:"A clock that isn't connected to payroll",es:"Un reloj checador que no est\u00e1 conectado a la n\u00f3mina",pt:"Um rel\u00f3gio de ponto que n\u00e3o conversa com a folha"}},
+     {c:"auto",f:"",t:{en:"It flows in automatically",es:"Llegan solas al sistema",pt:"Entram sozinhas no sistema"}}]},
+ {id:"change",k:"opt",
+  t:{en:"What's changed in the business the last 12 months?",
+     es:"\u00bfQu\u00e9 ha cambiado en el negocio en los \u00faltimos 12 meses?",
+     pt:"O que mudou no neg\u00f3cio nos \u00faltimos 12 meses?"},
+  o:[{c:"grew",f:"growth",t:{en:"We added people",es:"Contratamos m\u00e1s gente",pt:"Contratamos mais gente"}},
+     {c:"state",f:"multistate",t:{en:"We're in a new state now",es:"Ahora operamos en otro estado",pt:"Agora operamos em outro estado"}},
+     {c:"flat",f:"",t:{en:"About the same",es:"M\u00e1s o menos igual",pt:"Praticamente igual"}},
+     {c:"shrank",f:"",t:{en:"We got smaller",es:"Nos hicimos m\u00e1s peque\u00f1os",pt:"Diminu\u00edmos"}}]},
+ {id:"exit",k:"opt",
+  t:{en:"When someone leaves badly, what happens?",
+     es:"Cuando alguien se va en malos t\u00e9rminos, \u00bfqu\u00e9 pasa?",
+     pt:"Quando algu\u00e9m sai de forma ruim, o que acontece?"},
+  o:[{c:"had",f:"hr",t:{en:"We've had one and it was ugly",es:"Ya nos pas\u00f3 y fue feo",pt:"J\u00e1 aconteceu e foi feio"}},
+     {c:"worry",f:"hr",t:{en:"Nothing yet, but I think about it",es:"Todav\u00eda no, pero lo pienso",pt:"Ainda n\u00e3o, mas eu penso nisso"}},
+     {c:"stale",f:"hr handbook",t:{en:"Our paperwork is out of date",es:"Nuestros papeles est\u00e1n desactualizados",pt:"Nossa papelada est\u00e1 desatualizada"}},
+     {c:"fine",f:"",t:{en:"We're covered there",es:"Estamos cubiertos en eso",pt:"Estamos cobertos nisso"}}]},
+ {id:"orig",k:"text",hint:"The unmet original need. Write what they actually said.",
+  t:{en:"When you first signed with them, what were you trying to fix?",
+     es:"Cuando los contrat\u00f3 por primera vez, \u00bfqu\u00e9 estaba tratando de resolver?",
+     pt:"Quando voc\u00ea fechou com eles, o que estava tentando resolver?"}},
+ {id:"benefits",k:"opt",
+  t:{en:"What would you offer people if cost weren't a factor?",
+     es:"Si el costo no fuera problema, \u00bfqu\u00e9 le dar\u00eda a su gente?",
+     pt:"Se custo n\u00e3o fosse problema, o que voc\u00ea ofereceria para sua equipe?"},
+  o:[{c:"health",f:"peo",t:{en:"Real health coverage",es:"Un buen seguro m\u00e9dico",pt:"Um bom plano de sa\u00fade"}},
+     {c:"401k",f:"401k",t:{en:"Retirement match",es:"Plan de retiro con aportaci\u00f3n",pt:"Previd\u00eancia com contribui\u00e7\u00e3o da empresa"}},
+     {c:"both",f:"peo hr",t:{en:"Health plus someone to handle HR",es:"Seguro m\u00e9dico y alguien que maneje recursos humanos",pt:"Plano de sa\u00fade e algu\u00e9m cuidando do RH"}},
+     {c:"none",f:"",t:{en:"We're good where we are",es:"Estamos bien as\u00ed",pt:"Estamos bem do jeito que est\u00e1"}}]},
+ {id:"inaction",k:"opt",
+  t:{en:"If nothing changes, what does this look like a year from now?",
+     es:"Si nada cambia, \u00bfc\u00f3mo se ve esto dentro de un a\u00f1o?",
+     pt:"Se nada mudar, como isso fica daqui a um ano?"},
+  o:[{c:"same",f:"noevent",t:{en:"Same as today \u2014 it works",es:"Igual que hoy \u2014 funciona",pt:"Igual a hoje \u2014 funciona"}},
+     {c:"worse",f:"event",t:{en:"Worse \u2014 this already breaks at busy times",es:"Peor \u2014 ya se rompe cuando hay mucho trabajo",pt:"Pior \u2014 j\u00e1 trava quando aperta"}},
+     {c:"must",f:"event",t:{en:"Something has to change before then",es:"Algo tiene que cambiar antes de eso",pt:"Algo tem que mudar antes disso"}}]},
+ {id:"cost",k:"num",hint:"Annual, all in. Ask this now \u2014 not first.",
+  t:{en:"All in, what are you paying today?",
+     es:"Con todo incluido, \u00bfcu\u00e1nto paga hoy?",
+     pt:"Com tudo inclu\u00eddo, quanto voc\u00ea paga hoje?"}},
+ {id:"process",k:"opt",
+  t:{en:"Last time you changed a system or a vendor, who ended up being part of that?",
+     es:"La \u00faltima vez que cambi\u00f3 de sistema o de proveedor, \u00bfqui\u00e9n termin\u00f3 participando?",
+     pt:"Da \u00faltima vez que trocou de sistema ou fornecedor, quem acabou participando?"},
+  o:[{c:"solo",f:"solo",t:{en:"Just me",es:"Solo yo",pt:"S\u00f3 eu"}},
+     {c:"spouse",f:"multi",t:{en:"Me and my spouse or partner",es:"Mi esposo(a) o socio(a) y yo",pt:"Eu e meu c\u00f4njuge ou s\u00f3cio"}},
+     {c:"cpa2",f:"cpa multi",t:{en:"Our CPA weighed in",es:"Nuestro contador opin\u00f3",pt:"Nosso contador opinou"}},
+     {c:"board",f:"multi",t:{en:"Partners or a board",es:"Socios o junta directiva",pt:"S\u00f3cios ou conselho"}}]},
 ];
 const QFOLLOW=[
- {id:"f_cpa",when:"cpa",q:"Would it help if I looped your CPA in directly?",
-  o:[["Yes — introduce us","addpartner"],["Send me something to forward",""],["No",""]]},
- {id:"f_states",when:"multistate",q:"How many states, and who handles the registrations?",k:"text"},
- {id:"f_growth",when:"growth",q:"Where does headcount land twelve months out?",
-  o:[["Roughly here",""],["Ten to twenty more",""],["Past fifty","major"]]},
- {id:"f_ta",when:"ta",q:"If hours landed in payroll on their own, what does that save you?",k:"text"},
- {id:"f_hand",when:"hr",q:"Handbook — do you have one, and when was it last touched?",
-  o:[["No handbook","handbook"],["Yes, but it's old","handbook"],["Current",""]]},
- {id:"f_worth",when:"bigpain",q:"What's an hour of your time worth?",k:"num",hint:"Used to price the pain."},
- {id:"f_health",when:"peo",q:"Have you ever priced group health?",
-  o:[["Never","peo"],["Priced it, too expensive","peo"],["We have a plan",""]]},
- {id:"f_why",when:"event",q:"What's driving the timing?",k:"text",hint:"This is the compelling event. No event, no deal."},
- {id:"f_renew",when:"",q:"",k:"skip"},
+ {id:"f_cpa",when:"cpa",after:"payday",k:"opt",
+  t:{en:"Would it help if I looped your CPA in directly?",
+     es:"\u00bfLe ayudar\u00eda si hablo directamente con su contador?",
+     pt:"Ajudaria se eu falasse direto com seu contador?"},
+  o:[{c:"intro",f:"addpartner",t:{en:"Yes \u2014 introduce us",es:"S\u00ed \u2014 pres\u00e9ntenos",pt:"Sim \u2014 nos apresente"}},
+     {c:"fwd",f:"",t:{en:"Send me something to forward",es:"M\u00e1ndeme algo para reenviarle",pt:"Me manda algo para eu encaminhar"}},
+     {c:"no",f:"",t:{en:"No",es:"No",pt:"N\u00e3o"}}]},
+ {id:"f_states",when:"multistate",after:"change",k:"text",
+  t:{en:"How many states, and who handles the registrations?",
+     es:"\u00bfEn cu\u00e1ntos estados, y qui\u00e9n maneja los registros?",
+     pt:"Em quantos estados, e quem cuida dos registros?"}},
+ {id:"f_growth",when:"growth",after:"change",k:"opt",
+  t:{en:"Where does headcount land twelve months out?",
+     es:"\u00bfCu\u00e1nta gente cree tener en doce meses?",
+     pt:"Quantas pessoas voc\u00ea acha que ter\u00e1 em doze meses?"},
+  o:[{c:"same",f:"",t:{en:"Roughly here",es:"M\u00e1s o menos igual",pt:"Mais ou menos igual"}},
+     {c:"plus",f:"",t:{en:"Ten to twenty more",es:"Diez o veinte m\u00e1s",pt:"Dez ou vinte a mais"}},
+     {c:"fifty",f:"major",t:{en:"Past fifty",es:"M\u00e1s de cincuenta",pt:"Mais de cinquenta"}}]},
+ {id:"f_ta",when:"ta",after:"time",k:"text",
+  t:{en:"If hours landed in payroll on their own, what does that save you?",
+     es:"Si las horas entraran solas a la n\u00f3mina, \u00bfcu\u00e1nto le ahorrar\u00eda?",
+     pt:"Se as horas entrassem sozinhas na folha, quanto isso te pouparia?"}},
+ {id:"f_hand",when:"hr",after:"exit",k:"opt",
+  t:{en:"Handbook \u2014 do you have one, and when was it last touched?",
+     es:"El manual del empleado \u2014 \u00bftiene uno, y cu\u00e1ndo lo actualiz\u00f3?",
+     pt:"Manual do funcion\u00e1rio \u2014 voc\u00ea tem um, e quando foi atualizado?"},
+  o:[{c:"none",f:"handbook",t:{en:"No handbook",es:"No tenemos",pt:"N\u00e3o temos"}},
+     {c:"old",f:"handbook",t:{en:"Yes, but it's old",es:"S\u00ed, pero est\u00e1 viejo",pt:"Temos, mas est\u00e1 velho"}},
+     {c:"current",f:"",t:{en:"Current",es:"Est\u00e1 al d\u00eda",pt:"Est\u00e1 em dia"}}]},
+ {id:"f_worth",when:"bigpain",after:"hours",k:"num",hint:"Used to price the pain.",
+  t:{en:"What's an hour of your time worth?",
+     es:"\u00bfCu\u00e1nto vale una hora de su tiempo?",
+     pt:"Quanto vale uma hora do seu tempo?"}},
+ {id:"f_health",when:"peo",after:"benefits",k:"opt",
+  t:{en:"Have you ever priced group health?",
+     es:"\u00bfAlguna vez ha cotizado seguro m\u00e9dico grupal?",
+     pt:"Voc\u00ea j\u00e1 cotou plano de sa\u00fade coletivo?"},
+  o:[{c:"never",f:"peo",t:{en:"Never",es:"Nunca",pt:"Nunca"}},
+     {c:"pricey",f:"peo",t:{en:"Priced it, too expensive",es:"Lo cotic\u00e9 y sali\u00f3 muy caro",pt:"Cotei e achei caro demais"}},
+     {c:"have",f:"",t:{en:"We have a plan",es:"Ya tenemos plan",pt:"J\u00e1 temos plano"}}]},
+ {id:"f_why",when:"event",after:"inaction",k:"text",hint:"This is the compelling event. No event, no deal.",
+  t:{en:"What's driving the timing?",
+     es:"\u00bfQu\u00e9 hace que sea justo ahora?",
+     pt:"O que faz ser agora?"}},
 ];
+const ALLQ=QCORE.concat(QFOLLOW);
+const qById=id=>ALLQ.find(q=>q.id==id);
+const dlang=()=>(D.cfg&&D.cfg.dlang)||"en";
+const qt=(o,lang)=>(o.t&&(o.t[lang||dlang()]||o.t.en))||"";
+const ans_v=(a,id)=>((a.discovery||{}).answers||{})[id];
+const answered=a=>ALLQ.filter(q=>{const v=ans_v(a,q.id);return v!==undefined&&v!==""}).length;
+function optOf(q,code){return (q.o||[]).find(o=>o.c==code)}
 function qFlags(a){
   const ans=(a.discovery&&a.discovery.answers)||{},set=new Set();
-  QCORE.concat(QFOLLOW).forEach(q=>{
+  ALLQ.forEach(q=>{
     const v=ans[q.id];if(!v||!q.o)return;
-    const hit=q.o.find(x=>x[0]==v);if(hit&&hit[1])hit[1].split(" ").forEach(f=>f&&set.add(f));
+    const hit=optOf(q,v);
+    if(hit&&hit.f)hit.f.split(" ").forEach(f=>f&&set.add(f));
   });
   return set;
 }
-const answered=a=>Object.keys((a.discovery&&a.discovery.answers)||{}).filter(k=>ans_v(a,k)).length;
-const ans_v=(a,id)=>((a.discovery||{}).answers||{})[id];
-function visibleFollow(a){const f=qFlags(a);return QFOLLOW.filter(q=>q.when&&f.has(q.when))}
+function visibleFollow(a){const f=qFlags(a);return QFOLLOW.filter(q=>f.has(q.when))}
 function recommend(a){
   const f=qFlags(a);
   let bundle="Enhanced",why=[];
   if(f.has("hr")||f.has("handbook")||f.has("peo")){bundle="HR Pro";
-    if(f.has("hr"))why.push("Termination and handbook exposure — HR Pro carries the HR support");
+    if(f.has("hr"))why.push("Termination and handbook exposure \u2014 HR Pro carries the HR support");
     if(f.has("peo"))why.push("Benefits ambition points at PEO; HR Pro is the on-ramp");}
   else if(f.has("ta")||f.has("401k")||f.has("growth")||f.has("multistate")){bundle="Complete & HR Plus";
-    if(f.has("ta"))why.push("Hours arrive by hand — time tracking attaches here");
+    if(f.has("ta"))why.push("Hours arrive by hand \u2014 time tracking attaches here");
     if(f.has("multistate"))why.push("Multi-state filing is handled, not homework");
     if(f.has("growth"))why.push("Headcount is moving; this is the bundle that holds");}
-  else why.push("Straight payroll pain — no HR trigger surfaced yet");
+  else why.push("Straight payroll pain \u2014 no HR trigger surfaced yet");
   if(f.has("pain"))why.push("Payroll is eating real hours every cycle");
-  if(!f.has("event"))why.push("⚠ No compelling event captured — this one slips unless you find it");
+  if(!f.has("event"))why.push("\u26a0 No compelling event captured \u2014 this one slips unless you find it");
   return {bundle,why,peo:f.has("peo")&&a.emps>=5,major:f.has("major")||a.emps>=50,partner:f.has("addpartner")};
 }
 
 /* ---------- small ui ---------- */
-let toastT;
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2100)}
+let toastT,undoFn=null;
+function toast(m){const t=$("#toast");undoFn=null;t.innerHTML=esc(m);t.classList.remove("act");t.classList.add("on");
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2100)}
+/* anything destructive gets six seconds of second thoughts */
+function toastUndo(m,fn){
+  const t=$("#toast");undoFn=fn;
+  t.innerHTML=esc(m)+'<button class="undo" data-act="undo">Undo</button>';
+  t.classList.add("on","act");
+  clearTimeout(toastT);toastT=setTimeout(()=>{t.classList.remove("on","act");undoFn=null},6000);
+}
+function snapshot(a){return JSON.parse(JSON.stringify(a))}
+function restoreAcct(snap){
+  const i=D.accounts.findIndex(x=>x.id==snap.id);
+  if(i>=0)D.accounts[i]=snap;else D.accounts.push(snap);
+  save();render();toast("Undone.");
+}
+function markDirty(){if(!D.cfg.dirtySince)D.cfg.dirtySince=new Date().toISOString()}
 function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on")}
 function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML=""}
-function go(s,id){
+let backTo="today";
+function go(s,id,from){
+  if(s=="acct"&&from&&from!="acct")backTo=from;
   screen=s;if(id!==undefined)curId=id;
   document.body.dataset.s=s;
   $$(".screen").forEach(x=>x.classList.remove("on"));
@@ -724,8 +1169,8 @@ function render(){
 }
 
 /* ---------- today ---------- */
-const BLOCKS=[["meet","Meetings","Scheduled, walk in prepared"],["call","Calls","Worked in a run"],["follow","Follow-ups","Desk work"]];
-function actionBlock(n){return n.kind=="meet"?"meet":n.kind=="follow"?"follow":"call"}
+const BLOCKS=[["meet","Meetings","Scheduled — walk in prepared"],["visit","In the field","Drop-ins and stop-bys"],["call","Calls","Worked in a run"],["follow","Follow-ups","Desk work"]];
+function actionBlock(n){const k2=n.kind||"call";return ["meet","visit","follow","call"].includes(k2)?k2:"call"}
 /* one account, one row per day — the highest-priority due action decides the block */
 function todayRows(d){
   const isNow=iso(d)==iso(today()),rows=[];
@@ -734,11 +1179,105 @@ function todayRows(d){
     const due=openActions(a).filter(n=>isNow?n.date<=iso(d):n.date==iso(d));
     if(!due.length)return;
     due.sort((x,y)=>x.date<y.date?-1:1);
-    const rank={meet:0,call:1,follow:2};
+    const rank={meet:0,visit:1,call:2,follow:3};
     const lead=due.slice().sort((x,y)=>rank[actionBlock(x)]-rank[actionBlock(y)])[0];
     rows.push({a,due,lead,block:actionBlock(lead),over:due[0].date<iso(today())});
   });
   return rows.sort((x,y)=>score(y.a)-score(x.a));
+}
+/* ---------- the daily game plan ---------- */
+const QUOTES=[
+ ["Nothing in this world can take the place of persistence.","Calvin Coolidge"],
+ ["The successful warrior is the average man, with laser-like focus.","Bruce Lee"],
+ ["Discipline equals freedom.","Jocko Willink"],
+ ["You don't have to be great to start, but you have to start to be great.","Zig Ziglar"],
+ ["Amateurs sit and wait for inspiration. The rest of us just get up and go to work.","Stephen King"],
+ ["It's not the will to win that matters. Everyone has that. It's the will to prepare to win.","Bear Bryant"],
+ ["Hard choices, easy life. Easy choices, hard life.","Jerzy Gregorek"],
+ ["The best time to plant a tree was twenty years ago. The second best time is now.","Proverb"],
+ ["Success is the sum of small efforts repeated day in and day out.","Robert Collier"],
+ ["Everyone has a plan until they get punched in the mouth.","Mike Tyson"],
+ ["You do not rise to the level of your goals. You fall to the level of your systems.","James Clear"],
+ ["Do the hard jobs first. The easy jobs will take care of themselves.","Dale Carnegie"],
+ ["Fortune favors the prepared mind.","Louis Pasteur"],
+ ["A year from now you may wish you had started today.","Karen Lamb"],
+ ["Don't wish it were easier. Wish you were better.","Jim Rohn"],
+ ["What gets measured gets managed.","Peter Drucker"],
+ ["The obstacle is the way.","Marcus Aurelius"],
+ ["Confidence comes from evidence, and evidence comes from doing the work.","Unknown"],
+ ["Motivation gets you started. Habit keeps you going.","Jim Ryun"],
+ ["Sell to the person in front of you, not the quota behind you.","Unknown"],
+ ["The sale is made in the follow-up.","Unknown"],
+ ["Be so good they can't ignore you.","Steve Martin"],
+ ["Slow is smooth, smooth is fast.","Unknown"],
+ ["Own the outcome. Every part of it.","Unknown"],
+ ["Small disciplines repeated with consistency lead to great achievements.","John Maxwell"],
+ ["The man who moves a mountain begins by carrying away small stones.","Confucius"],
+ ["Quality is not an act, it is a habit.","Aristotle"],
+ ["Talent is cheaper than table salt. What separates the talented from the successful is hard work.","Stephen King"],
+ ["You can't build a reputation on what you're going to do.","Henry Ford"],
+ ["If it is important to you, you will find a way. If not, you'll find an excuse.","Unknown"],
+];
+let quoteI=-1;
+function pickQuote(){
+  if(!QUOTES.length)return null;
+  let i;do{i=Math.floor(Math.random()*QUOTES.length)}while(QUOTES.length>1&&i==quoteI);
+  quoteI=i;return QUOTES[i];
+}
+const MISSION=[["visits","Drop in on a business","prospect"],["clients","See a client","client"],
+  ["partners","Stop by a CPA","partner"],["calls","Outbound calls",""],["follow","Clear a follow-up",""]];
+function todayTouches(){
+  const s=iso(today()),out=[];
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))out.push({a,e})}));
+  return out;
+}
+function missionDone(){
+  const t=todayTouches(),inField=x=>x.e.kind=="visited"||x.e.kind=="met";
+  return {
+    visits:t.filter(x=>inField(x)&&x.a.type=="prospect").length,
+    clients:t.filter(x=>inField(x)&&x.a.type=="client").length,
+    partners:t.filter(x=>x.a.type=="partner").length,
+    calls:t.filter(x=>x.e.kind=="called").length,
+    follow:t.filter(x=>x.e.kind=="emailed"||x.e.kind=="texted").length
+  };
+}
+function renderMission(rows){
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone();
+  const booked=rows.filter(r=>r.block=="meet").length;
+  const plan=Object.assign({},m);
+  /* a booked day is not a cold-call day — scheduled work eats the dial time first */
+  if(booked>=2)plan.calls=Math.max(4,Math.round(m.calls*.6));
+  const rowsHtml=MISSION.filter(([k2])=>plan[k2]>0).map(([k2,label])=>{
+    const d2=done[k2]||0,tg=plan[k2],cls=d2>=tg?"done":d2?"part":"";
+    return `<div class="mrow"><span class="mdot ${cls}"></span><span class="mt2">${label}${tg>1?" ×"+tg:""}</span><span class="mn">${d2} / ${tg}</span></div>`;
+  }).join("");
+  const total=MISSION.reduce((s,[k2])=>s+(plan[k2]||0),0),got=MISSION.reduce((s,[k2])=>s+Math.min(done[k2]||0,plan[k2]||0),0);
+  $("#mission").innerHTML=`<div class="mission">
+    <div class="mh"><b>Today's mission</b><span>${got} / ${total}</span></div>
+    ${rowsHtml}
+    <div class="foot">${booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}</div>
+  </div>`;
+}
+function renderCluster(rows){
+  const el=$("#cluster");
+  const inPlay=new Set(rows.map(r=>r.a.id));
+  /* where are you already going today? that town gets the drop-ins */
+  const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
+  const byTown={};
+  A().forEach(a=>{if(!isWorking(a)||!a.city||inPlay.has(a.id))return;
+    (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
+  let town=anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null;
+  if(!town){const best=Object.keys(byTown).sort((x,y)=>byTown[y].length-byTown[x].length)[0];
+    if(best&&byTown[best].length>=3)town=best}
+  if(!town){el.innerHTML="";return}
+  const list=byTown[town].sort((x,y)=>score(y)-score(x)).slice(0,4);
+  el.innerHTML=`<div class="cluster">
+    <div class="ch">While you're in ${esc(town)}</div>
+    <p>${anchorTown?`You're already headed there for ${esc(anchorTown.name)}.`:`${byTown[town].length} accounts you're working sit in ${esc(town)}.`} Windshield time is the expensive part — spend it once.</p>
+    ${list.map(a=>{const lt=lastTouch(a);
+      return `<div class="cl" data-addvisit="${a.id}"><span>${esc(a.name)}</span>
+        <s>${[a.emps?a.emps+" ee":"",lt?days(parseD(lt),today())+"d":"never"].filter(Boolean).join(" · ")} &nbsp;+ add</s></div>`}).join("")}
+  </div>`;
 }
 function renderToday(){
   const d=viewDate||today(),isNow=iso(d)==iso(today());
@@ -746,6 +1285,9 @@ function renderToday(){
   $("#dnToday").style.display=isNow?"none":"";
   const rows=todayRows(d),tgt=+D.cfg.touchTarget||40,got=touchesOn(d);
   $("#hd").textContent=isNow?(rows.length?"Here's the day.":"Nothing owed today."):(rows.length?rows.length+" owed":"Clear");
+  const q=isNow?pickQuote():null;
+  $("#quote").innerHTML=q?`<div class="quote"><div class="said">${esc(q[0])}</div><div class="who">${esc(q[1])}</div></div>`:"";
+  if(isNow){renderMission(rows);renderCluster(rows)}else{$("#mission").innerHTML="";$("#cluster").innerHTML=""}
 
   const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
   const wk=weekAvg();
@@ -762,7 +1304,7 @@ function renderToday(){
       ${isNow?'<button class="runbtn" data-act="run">Start a call run</button>':""}</div>`;
     return;
   }
-  const per=+D.cfg.pageSize||10;let html="",shown=0;
+  const per=showAllRows?999:(+D.cfg.pageSize||10);let html="",shown=0;
   BLOCKS.forEach(([key,title,sub])=>{
     const list=rows.filter(r=>r.block==key);if(!list.length)return;
     html+=`<div class="block"><div class="bh"><span class="t">${title}</span><span class="n">${list.length}</span></div>`;
@@ -776,7 +1318,7 @@ function renderToday(){
         <div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>
       </div>`;
     });
-    if(list.length>per)html+=`<div class="more"><span class="n" style="font-size:11.5px;color:var(--ink3)">+${list.length-per} more — clear these first</span></div>`;
+    if(list.length>per)html+=`<div class="more"><button class="b quiet" data-act="morerows">Show ${list.length-per} more</button></div>`;
     if(key=="call")html+=`<button class="runbtn" data-act="run">Run calls${list.length?" ("+list.length+" due)":""}</button>`;
     html+=`</div>`;
   });
@@ -793,7 +1335,7 @@ let queue=[],qi=0;
 function buildQueue(){
   const due=todayRows(today()).filter(r=>r.block=="call").map(r=>r.a);
   const have=new Set(due.map(a=>a.id));
-  const pool=A().filter(a=>isOpen(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
+  const pool=A().filter(a=>isWorking(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>score(y)-score(x));
   const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(today()));
   return due.concat(pool.slice(0,Math.max(10,need)));
@@ -839,9 +1381,9 @@ function callOutcome(c){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
       <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
-      <label class="f" style="text-align:left">When next?<input class="t" id="cnext" placeholder="next tuesday, 3 weeks, march"><div class="parse" id="cparse"></div></label>
+      <label class="f" style="text-align:left">When next?</label>${dateField("cnext","next tuesday, the 28th")}
       <div class="sa"><button class="b quiet" data-c="cancel">Back</button><button class="b pri" data-c="savetalk">Save &amp; next</button></div>`;
-    $("#cnext").addEventListener("input",e=>{const r=nlp(e.target.value);$("#cparse").textContent=r?fmt(parseD(r.date)):""});
+    wireDate("cnext");
     setTimeout(()=>$("#csaid").focus(),80);return;
   }
   if(c=="notint"){
@@ -854,12 +1396,11 @@ function callOutcome(c){
   }
   if(c=="cancel"){drawCard();return}
   if(c=="savetalk"){
-    const said=$("#csaid").value.trim(),wn=$("#cnext").value.trim();
+    const said=$("#csaid").value.trim(),dt=dateOf("cnext");
     logEvent(a,"called",said||"talked");
     if(said)a.brief=said;
-    const r=wn?nlp(wn):null;
     openActions(a).filter(n=>actionBlock(n)=="call").forEach(n=>n.done=true);
-    if(r)a.next.push({id:uid(),date:r.date,why:said?said.slice(0,60):"Follow up",kind:"call",done:false});
+    if(dt)a.next.push({id:uid(),date:dt,why:said?said.slice(0,60):"Follow up",kind:kindOf("cnext"),done:false});
     if(a.stage=="callback")a.stage="interested";
     save();advance();return;
   }
@@ -896,15 +1437,13 @@ function renderAccount(){
   if(!openActions(a).length)h+=`<div class="hist">Nothing scheduled. That's how accounts go quiet.</div>`;
   openActions(a).sort((x,y)=>x.date<y.date?-1:1).forEach(n=>{
     const od=n.date<iso(today());
-    h+=`<div class="act${od?" due":""}"><button class="tick" data-tick="${n.id}" aria-label="Done"></button>
-      <div class="i"><b>${esc(n.why)}</b><s>${fmt(parseD(n.date))}${od?" · overdue":""} · ${n.kind||"call"}</s></div></div>`;
+    h+=`<div class="act${od?" due":""}"><button class="tick" data-tick="${n.id}" aria-label="Mark done"></button>
+      <div class="i" data-editnext="${n.id}"><b>${esc(n.why)}</b><s>${fmt(parseD(n.date))}${od?" · overdue":""} · ${n.kind||"call"}</s></div>
+      <button class="push" data-push="${n.id}" aria-label="Push a week">+7d</button></div>`;
   });
   h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
 
-  h+=`<div class="sect"><div class="h"><b>Discovery</b><span>${answered(a)} answered</span></div>`;
-  QCORE.forEach(q=>{h+=qCard(a,q);
-    visibleFollow(a).filter(f=>followsAfter(f,q)).forEach(f=>{h+=`<div class="qsdiv">revealed</div>`+qCard(a,f)})});
-  h+=`</div>`;
+  h+=discoverySection(a);
 
   h+=`<div class="sect"><div class="h"><b>Recommendation</b><span>${a.emps?a.emps+" ee":"set employees"}</span></div>`;
   if(!a.emps)h+=`<div class="hist">Add an employee count and the pricing comes alive.</div>`;
@@ -925,6 +1464,12 @@ function renderAccount(){
   }
   h+=`</div>`;
 
+  if(!isOpen(a)){
+    h+=`<div class="sect"><div class="h"><b>${a.outcome=="lost"?"Lost":"Dormant"}</b><span>${esc(a.lostReason||"")}</span></div>
+      <div class="hist">Nothing was deleted. Reopen it and the whole history comes back with it.</div>
+      <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
+    $("#acctbody").innerHTML=h;return;
+  }
   h+=`<div class="sect"><div class="h"><b>Walking out</b><span></span></div>
     <div class="sa" style="justify-content:flex-start">
       <button class="b" data-log="met">Met</button>
@@ -938,24 +1483,54 @@ function renderAccount(){
   h+=`<div class="hist">${ev.length?ev.map(e=>`${fmt(parseD(e.when))} — ${esc(e.kind)}${e.text?": "+esc(e.text):""}`).join("<br>"):"No history yet."}</div></div>`;
   $("#acctbody").innerHTML=h;
 }
-function followsAfter(f,q){
-  const map={f_cpa:"payday",f_states:"change",f_growth:"change",f_ta:"time",f_hand:"exit",f_worth:"hours",f_health:"benefits",f_why:"inaction"};
-  return map[f.id]==q.id;
+let openQ=null,showAllQ=false,showAllRows=false;
+/* the whole discovery flow: one open question at a time, answered ones collapse */
+function discoverySection(a){
+  const lang=dlang(),dual=!!D.cfg.dual&&lang!="en";
+  const order=[];
+  QCORE.forEach(q=>{order.push(q);
+    visibleFollow(a).filter(f=>f.after==q.id).forEach(f=>order.push(f))});
+  const isAns=q=>{const v=ans_v(a,q.id);return v!==undefined&&v!==""};
+  const open=(openQ&&order.find(q=>q.id==openQ))||order.find(q=>!isAns(q));
+  const showAll=showAllQ;
+  let h=`<div class="sect"><div class="h"><b>Discovery</b><span>${answered(a)} / ${order.length}</span></div>
+    <div class="langbar">
+      <div class="chips">${LANGS.map(([c,short])=>`<button class="chip sm${lang==c?" on":""}" data-lang="${c}">${short}</button>`).join("")}
+        ${lang!="en"?`<button class="chip sm${D.cfg.dual?" on":""}" data-dual="1">EN too</button>`:""}</div>
+    </div>`;
+  order.forEach(q=>{
+    const done=isAns(q);
+    if(done&&!showAll&&q!=open){h+=qDone(a,q,lang);return}
+    if(!done&&q!=open&&!showAll){h+=qStub(a,q,lang);return}
+    h+=qCard(a,q,lang,dual);
+  });
+  h+=`<div class="sa" style="justify-content:flex-start"><button class="b quiet" data-act="allq">${showAll?"Collapse answered":"Show every question"}</button></div></div>`;
+  return h;
 }
-function qCard(a,q){
-  if(q.k=="skip")return"";
-  const v=ans_v(a,q.id)||"";
+function qDone(a,q,lang){
+  const v=ans_v(a,q.id),o=optOf(q,v);
+  const label=o?qt(o,lang):String(v);
+  return `<div class="qdone" data-reopen="${q.id}"><span class="qq">${esc(qt(q,lang))}</span><b>${esc(label)}</b></div>`;
+}
+function qStub(a,q,lang){
+  return `<div class="qstub" data-reopen="${q.id}">${esc(qt(q,lang))}</div>`;
+}
+function qCard(a,q,lang,dual){
+  const v=ans_v(a,q.id);
+  lang=lang||dlang();
   let inner;
-  if(q.k=="text")inner=`<textarea class="t" rows="2" data-ans="${q.id}" placeholder="Their words">${esc(v)}</textarea>`;
-  else if(q.k=="num")inner=`<input class="t mono" type="number" data-ans="${q.id}" value="${esc(v)}" placeholder="0">`;
-  else inner=`<div class="opts">${q.o.map(o=>`<button class="opt${v==o[0]?" on":""}" data-ans="${q.id}" data-v="${esc(o[0])}">${esc(o[0])}</button>`).join("")}</div>`;
-  return `<div class="qc"><div class="qt">${esc(q.q)}</div>${q.hint?`<div class="mt" style="font-size:11.5px;color:var(--ink3);margin-top:4px">${esc(q.hint)}</div>`:""}${inner}</div>`;
+  if(q.k=="text")inner=`<textarea class="t" rows="2" data-ans="${q.id}" placeholder="Their words">${esc(v||"")}</textarea>`;
+  else if(q.k=="num")inner=`<input class="t mono" type="number" inputmode="decimal" data-ans="${q.id}" value="${esc(v||"")}" placeholder="0">`;
+  else inner=`<div class="opts">${q.o.map(o=>`<button class="opt${v==o.c?" on":""}" data-ans="${q.id}" data-v="${o.c}">${esc(qt(o,lang))}${dual?`<em>${esc(qt(o,"en"))}</em>`:""}</button>`).join("")}</div>`;
+  return `<div class="qc open"><div class="qt">${esc(qt(q,lang))}</div>
+    ${dual?`<div class="qen">${esc(qt(q,"en"))}</div>`:""}
+    ${q.hint?`<div class="qhint">${esc(q.hint)}</div>`:""}${inner}</div>`;
 }
 function setAnswer(a,id,v){
   a.discovery=a.discovery||{answers:{},updated:""};
   a.discovery.answers[id]=v;a.discovery.updated=iso(today());
   if(id=="cost"&&+v){a.today=a.today||{};a.today.spend=+v}
-  save();
+  markDirty();save();
 }
 
 /* ---------- territory ---------- */
@@ -966,22 +1541,26 @@ function terrList(){
     if(q&&!norm(a.name).includes(q)&&!norm((a.contact||{}).name||"").includes(q)&&!norm(a.city||"").includes(q))return false;
     if(terrFilter=="dormant")return !isOpen(a);
     if(!isOpen(a))return false;
-    if(terrFilter=="open")return true;
+    if(terrFilter=="open")return isWorking(a);
     if(terrFilter=="never")return !lastMet(a);
     return a.type==terrFilter;
   }).sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
 }
 function renderTerritory(){
   $("#tfilters").innerHTML=TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}</button>`).join("");
-  const list=terrList(),cap=60;
+  const list=terrList(),cap=60*terrPage;
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
     return `<div class="bk" data-open="${a.id}">
-      <div><div class="nm">${esc(a.name)}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
+      <div><div class="nm">${esc(a.name)}${isWon(a)?' <span class="tagm w">won</span>':""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
       <div class="s">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div></div>
       <div class="rd">${dealValue(a)?k(dealValue(a)):"—"}</div></div>`}).join("")
-    +(list.length>cap?`<div class="more"><span style="font-size:11.5px;color:var(--ink3)">+${list.length-cap} more — search to narrow</span></div>`:"")
-    :`<div class="hist" style="margin-top:16px">Nothing here. Import below, or tap + to add one.</div>`;
+    +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
+    :(terrQ.trim()
+      ? `<div class="empty" style="margin-top:18px"><div class="said">No match for &ldquo;${esc(terrQ.trim())}&rdquo;</div>
+         <p>If you're standing in front of it, add it now — you won't remember tonight.</p>
+         <button class="runbtn" data-act="newfromsearch">Add ${esc(terrQ.trim())}</button></div>`
+      : `<div class="hist" style="margin-top:16px">Nothing here. Import below, or tap + to add one.</div>`);
   const b=D.batches||[];
   $("#batches").innerHTML=b.length?`<div class="hist" style="margin-top:8px">Imported: ${b.map(x=>esc(x.name)+" ("+x.n+")").join(" · ")}</div>`:"";
 }
@@ -1063,7 +1642,7 @@ function renderReview(){
     <div class="fig"><em>Touches, 7d</em><strong>${[0,1,2,3,4,5,6].reduce((s,i)=>s+touchesOn(addDays(today(),-i)),0)}</strong></div>
     <div class="fig"><em>Avg / day</em><strong>${weekAvg()}</strong></div>
     <div class="fig"><em>Connect rate</em><strong>${conn}%</strong></div>`;
-  const won=A().filter(a=>a.outcome=="won"),rev=won.reduce((s,a)=>s+(a.wonValue||dealValue(a)),0);
+  const won=A().filter(isWon),rev=won.reduce((s,a)=>s+(+((a.won||{}).value)||0),0);
   const wtd=pipeline().reduce((s,a)=>s+dealValue(a)*odds(a),0);
   $("#hero").innerHTML=`<div class="hero"><div class="n">${$$$(rev)}</div><div class="l">booked this year · ${won.length} deals</div>
     <div class="s">Weighted open pipeline ${$$$(wtd)} across ${pipeline().length} accounts.</div></div>`;
@@ -1086,6 +1665,12 @@ function renderSetup(){
   set("fy",c.fy);set("qEnd",c.qEnd);set("goal",c.goal);set("rgoal",c.rgoal);
   set("o1",c.o1);set("o2",c.o2);set("o3",c.o3);
   set("meName",(c.me||{}).name);set("meEmail",(c.me||{}).email);set("meTitle",(c.me||{}).title);set("mePhone",(c.me||{}).phone);
+  const ms=Object.assign({},DEF.mission,c.mission||{});
+  set("mVisits",ms.visits);set("mClients",ms.clients);set("mPartners",ms.partners);set("mCalls",ms.calls);set("mFollow",ms.follow);
+  $("#bakbanner").innerHTML=needsBackup()
+    ? `<div class="banner"><b>You haven't exported in ${daysSinceExport()>900?"a while":daysSinceExport()+" days"}</b>, and the data has changed since. One tap and it's on your phone.
+       <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="export">Export backup</button></div></div>`
+    : (D.cfg.lastExport?`<div class="hist" style="margin-top:14px">Last export ${fmtWhen(D.cfg.lastExport)}.</div>`:"");
   $("#pbook").innerHTML=(c.book||PRICEBOOK).map((b,bi)=>`<div style="margin-top:14px"><b style="font-size:13px">${esc(b.n)}</b>
     ${Object.keys(b.f).map(f=>`<div class="ptab"><span style="font-size:12.5px;color:var(--ink2)">${esc(f)}</span>
       <input type="number" step="0.01" data-pb="${bi}|${esc(f)}|base" value="${b.f[f].t[0][1]}">
@@ -1096,21 +1681,57 @@ function renderSetup(){
     <input type="number" step="0.01" data-ad="${i}|p" value="${a.p}"></div>`).join("");
   const l1=learnedRate("quoted"),l3=learnedRate("callback");
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
-  $("#dangerzone").innerHTML=`Accounts: ${A().length}. <button class="b danger" data-act="wipe" style="margin-left:6px">Erase everything</button>`;
+  $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA}.
+    <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
+    <button class="b danger" data-act="wipe">Erase everything</button>`;
 }
-function saveSetup(){
+let setupT=null;
+function saveSetup(quiet){
   const g=id=>{const e=$("#"+id);return e?e.value:""};
   Object.assign(D.cfg,{touchTarget:+g("touchTarget")||40,pageSize:+g("pageSize")||10,cadence:g("cadence")||"3, 4, 7, 14, 21",
     fy:g("fy"),qEnd:g("qEnd"),goal:+g("goal")||0,rgoal:+g("rgoal")||0,
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
-    me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")}});
+    me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
+    mission:{visits:+g("mVisits")||0,clients:+g("mClients")||0,partners:+g("mPartners")||0,calls:+g("mCalls")||0,follow:+g("mFollow")||0}});
   $$("[data-pb]").forEach(el=>{const[bi,f,which]=el.dataset.pb.split("|");const b=D.cfg.book[+bi];
     if(!b||!b.f[f])return;
     if(which=="base")b.f[f].t=b.f[f].t.map((t,i)=>i==0?[t[0],+el.value]:[t[0],+el.value+(t[1]-b.f[f].t[0][1])]);
     else b.f[f].o=+el.value});
   $$("[data-ad]").forEach(el=>{const[i,fld]=el.dataset.ad.split("|");const a=D.cfg.addons[+i];if(a)a[fld]=fld=="n"?el.value:+el.value});
-  save();toast("Saved.");render();
+  save();
+  if(!quiet)toast("Saved.");
+  if(!quiet)render();
 }
+
+/* ---------- date field: type it or pick it, always in sync ---------- */
+const CALICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>';
+function dateField(id,ph){
+  return `<div class="dfield">
+    <input class="t" id="${id}" placeholder="${ph||"tuesday, the 28th, 7/28/26"}" autocomplete="off">
+    <label class="cal">${CALICON}<input type="date" id="${id}_pick" aria-label="Pick a date"></label>
+  </div><div class="parse" id="${id}_out"></div>`;
+}
+/* the field owns one resolved date; typing and picking both write to it */
+const dateVals={};
+function wireDate(id){
+  const txt=$("#"+id),pick=$("#"+id+"_pick"),out=$("#"+id+"_out");
+  if(!txt)return;
+  dateVals[id]="";
+  const show=(d,note)=>{
+    dateVals[id]=d||"";
+    if(pick)pick.value=d||"";
+    out.textContent=d?parseD(d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+(note?" · "+note:""):(txt.value.trim()?"Not a date I know — use the calendar":"");
+  };
+  txt.addEventListener("input",()=>{const r=nlp(txt.value);show(r?r.date:"",r&&r.kind&&r.kind!="call"?r.kind:"")});
+  if(pick)pick.addEventListener("change",()=>{
+    if(!pick.value)return;
+    dateVals[id]=pick.value;
+    txt.value=parseD(pick.value).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+    out.textContent=parseD(pick.value).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  });
+}
+const dateOf=id=>dateVals[id]||"";
+const kindOf=id=>{const t=$("#"+id);const r=t?nlp(t.value):null;return r?r.kind:"call"};
 
 /* ---------- sheets ---------- */
 function newAcctSheet(){
@@ -1121,18 +1742,32 @@ function newAcctSheet(){
       <label class="f">City<input class="t" id="naCity"></label></div>
     <div class="two"><label class="f">Contact<input class="t" id="naContact"></label>
       <label class="f">Phone<input class="t" id="naPhone" type="tel"></label></div>
-    <label class="f">First next action<input class="t" id="naNext" placeholder="call tuesday"><div class="parse" id="naParse"></div></label>
+    <label class="f">First next action</label>${dateField("naNext","call tuesday")}
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savenew">Add</button></div>`);
-  $("#naNext").addEventListener("input",e=>{const r=nlp(e.target.value);$("#naParse").textContent=r?fmt(parseD(r.date)):""});
+  wireDate("naNext");
   setTimeout(()=>$("#naName").focus(),90);
+}
+function editNextSheet(nid){
+  const a=acct(curId),n=(a.next||[]).find(x=>x.id==nid);if(!n)return;
+  openSheet(`<h3>Edit action</h3><div class="sub">${esc(a.name)}</div>
+    <label class="f">What<input class="t" id="enWhy" value="${esc(n.why)}"></label>
+    <label class="f">When</label>${dateField("enWhen","friday, the 28th")}
+    <div class="chips" id="enKind">${[["call","Call"],["visit","Drop-in"],["meet","Meeting"],["follow","Follow-up"]].map(([v,l])=>`<button class="chip${(n.kind||"call")==v?" on":""}" data-ek="${v}">${l}</button>`).join("")}</div>
+    <div class="sa"><button class="b danger" data-act="delnext" data-n="${nid}">Delete</button>
+      <button class="b quiet" data-act="close">Cancel</button>
+      <button class="b pri" data-act="saveedit-next" data-n="${nid}">Save</button></div>`);
+  wireDate("enWhen");
+  $("#enWhen").value=parseD(n.date).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  dateVals.enWhen=n.date;$("#enWhen_pick").value=n.date;
+  enKind=n.kind||"call";
 }
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
     <label class="f">What<input class="t" id="anWhy" placeholder="Send the proposal"></label>
-    <label class="f">When<input class="t" id="anWhen" placeholder="friday, 3 weeks, march"><div class="parse" id="anParse"></div></label>
-    <div class="chips" id="anKind">${[["call","Call"],["meet","Meeting"],["follow","Follow-up"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-ak="${v}">${l}</button>`).join("")}</div>
+    <label class="f">When</label>${dateField("anWhen","friday, the 28th, 3 weeks")}
+    <div class="chips" id="anKind">${[["call","Call"],["visit","Drop-in"],["meet","Meeting"],["follow","Follow-up"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-ak="${v}">${l}</button>`).join("")}</div>
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="saveaction">Add</button></div>`);
-  $("#anWhen").addEventListener("input",e=>{const r=nlp(e.target.value);$("#anParse").textContent=r?fmt(parseD(r.date)):""});
+  wireDate("anWhen");anKind="call";
   setTimeout(()=>$("#anWhy").focus(),90);
 }
 function editAcctSheet(){
@@ -1156,45 +1791,246 @@ function logSheet(kind){
       <div class="sa"><button class="b quiet" data-act="close">Cancel</button></div>`);return;
   }
   if(kind=="won"){
-    const v=dealValue(a);
-    a.outcome="won";a.wonValue=v;logEvent(a,"won",$$$(v));
-    openActions(a).forEach(n=>n.done=true);save();render();toast(`Won — ${$$$(v)} to your number.`);return;
+    const v=dealValue(a),q=a.quote||{},wasProspect=a.type!="client";
+    a.won={on:iso(today()),value:v,bundle:q.bundle||recommend(a).bundle,freq:q.freq||"Bi-weekly",disc:+q.disc||0};
+    a.wonStage=a.stage||"callback";
+    a.type="client";                       /* same account, new lifecycle — nothing is lost */
+    a.outcome="open";                      /* still yours to work: onboarding, add-ons, referrals */
+    a.stage="client";
+    a.today=Object.assign({},a.today||{},{bundle:a.won.bundle,freq:a.won.freq,spend:quoteAnnual(a)});
+    logEvent(a,"won",$$$(v)+" · "+a.won.bundle);
+    openActions(a).forEach(n=>n.done=true);
+    /* a new client is the best referral source you will ever have — don't let it go quiet */
+    a.next.push({id:uid(),date:iso(addDays(today(),14)),why:"First payroll check-in",kind:"call",done:false});
+    a.next.push({id:uid(),date:iso(addDays(today(),90)),why:"Add-on review — and ask who else they know",kind:"visit",done:false});
+    save();render();
+    toast(wasProspect?`Won — now a client. ${$$$(v)} to your number.`:`Won — ${$$$(v)} to your number.`);return;
   }
   const label={met:"Met",quoted:"Quoted",note:"Note"}[kind];
   openSheet(`<h3>${label}</h3>
     <label class="f">What happened<textarea class="t" id="lgText" rows="3" placeholder="Their words"></textarea></label>
-    <label class="f">Next action — when<input class="t" id="lgWhen" placeholder="two weeks"><div class="parse" id="lgParse"></div></label>
+    <label class="f">Next action — when</label>${dateField("lgWhen","two weeks")}
     <label class="f">Next action — what<input class="t" id="lgWhy" placeholder="Send the proposal"></label>
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savelog" data-k="${kind}">Log</button></div>`);
-  $("#lgWhen").addEventListener("input",e=>{const r=nlp(e.target.value);$("#lgParse").textContent=r?fmt(parseD(r.date)):""});
+  wireDate("lgWhen");
   setTimeout(()=>$("#lgText").focus(),90);
 }
 
+
+/* ---------- sample territory: for practice, never mixed into real data without a backup ---------- */
+const SEED={
+ towns:["Framingham","Natick","Ashland","Marlborough","Hopkinton","Southborough","Westborough","Holliston","Milford","Sudbury","Wayland","Hudson","Northborough","Franklin","Medway"],
+ first:["Dave","Maria","Tom","Ana","Rick","Joanne","Paul","Lisa","Marcos","Kathy","Steve","Nilda","Greg","Denise","Carlos","Beth","Ray","Sofia","Mike","Ellen","Jorge","Pam","Vinny","Rosa","Dan","Karen","Luis","Trish","Ed","Angela"],
+ last:["Doyle","Sousa","Kelleher","Ramos","Barbosa","Whitcomb","Ferreira","O'Neil","Sabatini","Nguyen","Cardoso","Mullen","Silva","Grasso","Teixeira","Hurley","Almeida","Pereira","Casey","Moniz","Rinaldi","Vieira","Duarte","Fontaine","Correia"],
+ kinds:[
+  ["Landscaping","landscape",8,34],["Plumbing & Heating","trades",6,28],["Electric","trades",7,30],
+  ["Auto Body","auto",5,22],["Automotive","auto",6,18],["Dental","medical",8,26],
+  ["Family Dentistry","medical",7,20],["Physical Therapy","medical",9,24],["Veterinary","medical",10,30],
+  ["Pizzeria","food",12,45],["Restaurant Group","food",18,60],["Bakery","food",8,26],
+  ["Cleaning Services","services",14,55],["Staffing","services",11,40],["Machine","manufacturing",15,58],
+  ["Precision Manufacturing","manufacturing",20,70],["Construction","construction",12,48],
+  ["Roofing","construction",9,32],["HVAC","trades",10,36],["Insurance Agency","professional",5,18],
+  ["Law Offices","professional",4,16],["Realty","professional",6,24],["Fitness","services",7,26],
+  ["Daycare","services",12,38],["Liquors","retail",6,20],["Hardware","retail",8,28],
+  ["Market","retail",15,50],["Flooring","trades",7,24],["Painting","trades",6,22],["Excavation","construction",8,30]],
+ cpas:["Sullivan & Roche CPAs","MetroWest Tax Advisors","Barros Accounting","Kendall CPA Group","Nashoba Financial","Blue Heron Bookkeeping","Rossi & Associates","Charles River Tax"],
+ notes:[
+  "Owner does payroll Sunday nights at the kitchen table. Hates it.",
+  "Bookkeeper retiring in the spring — that's the opening.",
+  "Got hit with a late filing penalty last year and still brings it up.",
+  "Wants time clocks integrated before the busy season.",
+  "Says their guy is fine but couldn't name what they pay.",
+  "Two locations now, second one opened in March.",
+  "Lost a manager badly last year, no handbook, still nervous about it.",
+  "Asked about health insurance for the crew, unprompted.",
+  "Uses their CPA for everything. CPA is the real decision maker.",
+  "Growing fast — added six people since we first talked.",
+  "Seasonal, dead in January, don't bother before February.",
+  "Owner's wife does the books and is the actual gatekeeper.",
+  "Quoted last year, went with the incumbent on price. Worth another look.",
+  "Wants to get off spreadsheets before year end.",
+  "Multi-state now — picked up work in Rhode Island."],
+ lost:["Happy with incumbent","Price","Too small","Wrong timing","Went silent","No compelling event"]
+};
+function seedTerritory(){
+  const R=(n)=>Math.floor(Math.random()*n), pick=a=>a[R(a.length)];
+  const usedNames=new Set(), out=[];
+  const dback=n=>iso(addDays(today(),-n)), dfwd=n=>iso(addDays(today(),n));
+  const mkName=()=>{
+    for(let i=0;i<40;i++){
+      const k=pick(SEED.kinds);
+      const nm=(R(2)?pick(SEED.last)+" ":pick(SEED.towns)+" ")+k[0];
+      if(!usedNames.has(nm)){usedNames.add(nm);return[nm,k]}
+    }
+    return[pick(SEED.last)+" "+pick(SEED.kinds)[0]+" "+R(99),pick(SEED.kinds)];
+  };
+  const phone=()=>"508-"+(200+R(700))+"-"+String(1000+R(9000));
+  const person=()=>pick(SEED.first)+" "+pick(SEED.last);
+
+  const plan=[["client",34],["prospect",40],["partner",8],["dormant",10],["lostacct",8]];
+  plan.forEach(([kind,count])=>{
+    for(let i=0;i<count;i++){
+      const isPartner=kind=="partner";
+      let name,k;
+      if(isPartner){name=pick(SEED.cpas)+" "+(R(90)+10);k=["CPA","professional",3,12]}
+      else [name,k]=mkName();
+      const emps=k[2]+R(k[3]-k[2]);
+      const a=blankAcct({
+        name,type:isPartner?"partner":(kind=="client"?"client":"prospect"),
+        city:pick(SEED.towns),emps,industry:k[1],
+        contact:{name:person(),phone:phone(),email:""}
+      });
+      a.contact.email=a.contact.name.toLowerCase().replace(/[^a-z]/g,".")+"@"+name.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12)+".com";
+
+      /* history: between three and fifteen touches over the past year */
+      const touches=3+R(13);
+      for(let e=0;e<touches;e++){
+        const ago=20+R(330);
+        a.events.push({when:dback(ago),
+          kind:pick(["called","called","called","emailed","texted","met","visited","note"]),
+          text:R(4)?"":pick(SEED.notes)});
+      }
+      a.events.sort((x,y)=>x.when<y.when?-1:1);
+      a.brief=pick(SEED.notes);
+
+      if(kind=="client"){
+        a.today={bundle:pick(["Enhanced","Enhanced","Complete & HR Plus","HR Pro"]),
+                 freq:pick(["Weekly","Bi-weekly","Bi-weekly","Semi-monthly"]),addons:[],spend:0};
+        a.today.spend=Math.round(annual({emps,bundle:a.today.bundle,freq:a.today.freq,addons:[],disc:0}));
+        a.events.push({when:dback(60+R(200)),kind:"met",text:"annual review"});
+        if(R(3)==0){a.won={on:dback(30+R(300)),value:1200+R(9000),bundle:a.today.bundle,freq:a.today.freq,disc:R(30)};a.stage="client"}
+      }else if(isPartner){
+        a.stage="interested";
+        a.events.push({when:dback(30+R(120)),kind:"visited",text:"dropped off cards"});
+      }
+
+      /* discovery, in codes — some full, some barely started */
+      const depth=R(10);
+      if(depth>2&&!isPartner){
+        const ans={};
+        const setQ=(id)=>{const q=qById(id);if(q&&q.o)ans[id]=pick(q.o).c};
+        ["payday","hours","time","change","exit"].forEach(setQ);
+        if(depth>5){["benefits","inaction","process"].forEach(setQ);
+          ans.orig=pick(["Wanted the tax filings off my plate","Our old bookkeeper quit","We outgrew the spreadsheet"]);
+          ans.cost=String(1800+R(9000));}
+        a.discovery={answers:ans,updated:dback(10+R(120))};
+      }
+
+      /* stage, quote, next actions */
+      if(kind=="prospect"){
+        a.stage=pick(["callback","callback","interested","quoted"]);
+        if(a.stage=="quoted"){
+          a.quote={bundle:recommend(a).bundle,freq:pick(["Weekly","Bi-weekly","Semi-monthly"]),
+                   addons:[],disc:R(45),sentOn:dback(5+R(60))};
+          a.events.push({when:a.quote.sentOn,kind:"quoted",text:"proposal sent"});
+        }
+      }
+      if(kind=="dormant"){a.outcome="dormant";a.events.push({when:dback(120+R(200)),kind:"note",text:"went quiet"})}
+      if(kind=="lostacct"){a.outcome="lost";a.lostReason=pick(SEED.lost);
+        a.events.push({when:dback(40+R(280)),kind:"lost",text:a.lostReason})}
+
+      if(a.outcome=="open"){
+        const n=1+(R(4)==0?1:0);
+        for(let j=0;j<n;j++){
+          const when=R(5)==0?dback(1+R(9)):dfwd(R(80));      /* one in five is overdue, like real life */
+          a.next.push({id:uid(),date:when,
+            why:pick(["Follow up on the proposal","Call back","Drop in","Check on the time clock question",
+                      "Send the comparison","Ask about the CPA intro","Renewal timing","Second meeting"]),
+            kind:pick(["call","call","call","visit","meet","follow"]),done:false});
+        }
+      }
+      if(a.handedOff===undefined)a.handedOff=false;
+      if(emps>=50&&R(2))a.handedOff=true;
+      out.push(a);
+    }
+  });
+  /* a handful of things due today so the Today screen isn't empty on arrival */
+  out.filter(a=>a.outcome=="open").slice(0,9).forEach((a,i)=>{
+    a.next.push({id:uid(),date:iso(today()),
+      why:pick(["Call back","Drop in while you're nearby","Send the proposal","Second meeting","Check in"]),
+      kind:["call","call","call","call","visit","visit","meet","follow","call"][i],done:false});
+  });
+  /* cluster three of them in one town so the travel card has something true to say */
+  out.filter(a=>a.outcome=="open").slice(9,13).forEach(a=>a.city="Framingham");
+  return out;
+}
+async function loadSample(){
+  if(!confirm("Load ~100 sample accounts? Your current data is backed up first and restorable from Diagnostics."))return;
+  await makeBackup("before sample data");
+  D.accounts=seedTerritory();
+  D.batches=[{name:"sample territory",n:D.accounts.length,on:iso(today())}];
+  validate(D);await save();closeSheet();render();
+  toast(D.accounts.length+" sample accounts loaded.");
+}
+
 /* ---------- wiring ---------- */
-let naType="prospect",anKind="call";
+let naType="prospect",anKind="call",enKind="call";
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t]");
+  const t=e.target.closest("[data-open],[data-act],[data-tick],[data-log],[data-go],[data-tf],[data-ru],[data-nt],[data-ak],[data-ek],[data-ans],[data-rung],[data-c],[data-lost],[data-lostr],[data-th],[data-t],[data-addvisit],[data-restore],[data-lang],[data-dual],[data-reopen],[data-editnext],[data-push]");
   if(!t)return;
   const a=curId?acct(curId):null;
 
   if(t.dataset.go){go(t.dataset.go);return}
-  if(t.dataset.open){go("acct",t.dataset.open);return}
+  if(t.dataset.open){openQ=null;showAllQ=false;go("acct",t.dataset.open,screen);return}
   if(t.dataset.tf){terrFilter=t.dataset.tf;render();return}
   if(t.dataset.ru){rUnit=t.dataset.ru;render();return}
   if(t.dataset.th){D.cfg.theme=t.dataset.th;save();applyTheme();return}
   if(t.dataset.t){$$("#ityp .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.nt){naType=t.dataset.nt;$$("#naType .chip").forEach(c=>c.classList.toggle("on",c==t));return}
   if(t.dataset.ak){anKind=t.dataset.ak;$$("#anKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
+  if(t.dataset.ek){enKind=t.dataset.ek;$$("#enKind .chip").forEach(c=>c.classList.toggle("on",c==t));return}
+  if(t.dataset.editnext){editNextSheet(t.dataset.editnext);return}
+  if(t.dataset.push&&a){const n=(a.next||[]).find(x=>x.id==t.dataset.push);
+    if(n){const was=n.date;n.date=iso(addDays(parseD(n.date),7));save();render();
+      toastUndo("Pushed to "+fmt(parseD(n.date))+".",()=>{n.date=was;save();render()})}return}
   if(t.dataset.rung&&a){a.quote=Object.assign({freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0},a.quote||{},{bundle:t.dataset.rung});save();render();return}
-  if(t.dataset.ans&&t.dataset.v!==undefined&&a){setAnswer(a,t.dataset.ans,t.dataset.v);render();return}
-  if(t.dataset.tick&&a){const n=(a.next||[]).find(x=>x.id==t.dataset.tick);if(n){n.done=true;logEvent(a,"note","completed: "+n.why);save();render();toast("Done.")}return}
+  if(t.dataset.lang){D.cfg.dlang=t.dataset.lang;save();render();return}
+  if(t.dataset.dual){D.cfg.dual=!D.cfg.dual;save();render();return}
+  if(t.dataset.reopen){openQ=t.dataset.reopen;render();return}
+  if(t.dataset.ans&&t.dataset.v!==undefined&&a){setAnswer(a,t.dataset.ans,t.dataset.v);openQ=null;render();return}
+  if(t.dataset.tick&&a){const n=(a.next||[]).find(x=>x.id==t.dataset.tick);
+    if(n){const before=snapshot(a);n.done=true;
+      const kmap={visit:"visited",meet:"met",follow:"emailed",call:"called"};
+      logEvent(a,kmap[n.kind]||"note",n.why);markDirty();save();render();
+      toastUndo("Logged.",()=>restoreAcct(before))}return}
   if(t.dataset.log){logSheet(t.dataset.log);return}
   if(t.dataset.lost){markLost(queue[qi],t.dataset.lost);save();advance();return}
-  if(t.dataset.lostr&&a){markLost(a,t.dataset.lostr);save();closeSheet();render();toast("Logged as lost.");return}
+  if(t.dataset.lostr&&a){const before=snapshot(a);markLost(a,t.dataset.lostr);save();closeSheet();render();
+    toastUndo("Logged as lost.",()=>restoreAcct(before));return}
   if(t.dataset.c){callOutcome(t.dataset.c);return}
+  if(t.dataset.restore){
+    if(!confirm("Restore this backup? Your current data is backed up first."))return;
+    await makeBackup("before restore");
+    const j=await readBackup(t.dataset.restore);
+    if(!j){toast("That backup won't parse.");return}
+    D=j;validate(D);const rr=await runMigrations(D);D=rr.d;
+    await save();closeSheet();render();toast("Restored.");return}
+  if(t.dataset.addvisit){const v=acct(t.dataset.addvisit);
+    if(v){v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
+      save();render();toast("Added to today.")}return}
 
   switch(t.dataset.act){
+    case"undo":{const f=undoFn;undoFn=null;$("#toast").classList.remove("on","act");if(f)f();break}
+    case"delnext":{
+      if(!a)break;const before=snapshot(a);
+      a.next=a.next.filter(x=>x.id!=t.dataset.n);
+      save();closeSheet();render();toastUndo("Deleted.",()=>restoreAcct(before));break}
+    case"saveedit-next":{
+      if(!a)break;const n=(a.next||[]).find(x=>x.id==t.dataset.n);if(!n)break;
+      n.why=$("#enWhy").value.trim()||n.why;
+      n.date=dateOf("enWhen")||n.date;n.kind=enKind;
+      save();closeSheet();render();toast("Updated.");break}
+    case"morerows":showAllRows=true;render();break;
+    case"moreterr":terrPage++;renderTerritory();break;
+    case"newfromsearch":{newAcctSheet();const el=$("#naName");if(el)el.value=terrQ.trim();break}
+    case"reopen":{
+      if(!a)break;
+      a.outcome="open";a.lostReason="";
+      logEvent(a,"note","reopened");
+      if(!openActions(a).length)a.next.push({id:uid(),date:iso(today()),why:"Reopened — make contact",kind:"call",done:false});
+      save();render();toast("Reopened. It's back in the queue.");break}
     case"run":startRun();break;
+    case"allq":showAllQ=!showAllQ;openQ=null;render();break;
     case"close":closeSheet();break;
     case"addnext":addNextSheet();break;
     case"editacct":editAcctSheet();break;
@@ -1202,15 +2038,15 @@ document.addEventListener("click",async e=>{
       const nm=$("#naName").value.trim();if(!nm){toast("Needs a name.");break}
       const na=blankAcct({name:nm,type:naType,emps:+$("#naEmps").value||0,city:$("#naCity").value.trim()});
       na.contact={name:$("#naContact").value.trim(),phone:$("#naPhone").value.trim(),email:""};
-      const r=nlp($("#naNext").value.trim());
-      if(r)na.next.push({id:uid(),date:r.date,why:"First contact",kind:"call",done:false});
+      const dt=dateOf("naNext");
+      if(dt)na.next.push({id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false});
       D.accounts.push(na);await save();closeSheet();go("acct",na.id);toast("Added.");break}
     case"saveaction":{
       if(!a)break;
-      const r=nlp($("#anWhen").value.trim());
-      if(!r){toast("Couldn't read that date.");break}
-      a.next.push({id:uid(),date:r.date,why:$("#anWhy").value.trim()||"Follow up",kind:anKind,done:false});
-      await save();closeSheet();render();toast("Scheduled "+fmt(parseD(r.date))+".");break}
+      const dt=dateOf("anWhen");
+      if(!dt){toast("Pick a date — the calendar button is right there.");break}
+      a.next.push({id:uid(),date:dt,why:$("#anWhy").value.trim()||"Follow up",kind:anKind,done:false});
+      await save();closeSheet();render();toast("Scheduled "+fmt(parseD(dt))+".");break}
     case"saveedit":{
       if(!a)break;
       a.name=$("#eName").value.trim()||a.name;a.emps=+$("#eEmps").value||0;a.city=$("#eCity").value.trim();
@@ -1226,12 +2062,21 @@ document.addEventListener("click",async e=>{
       logEvent(a,kind=="met"?"met":kind=="quoted"?"quoted":"note",txt);
       if(txt)a.brief=txt;
       if(kind=="quoted")a.stage="quoted";else if(kind=="met"&&a.stage=="callback")a.stage="interested";
-      const r=nlp($("#lgWhen").value.trim());
-      if(r)a.next.push({id:uid(),date:r.date,why:$("#lgWhy").value.trim()||"Follow up",kind:"follow",done:false});
+      const dt=dateOf("lgWhen");
+      if(dt)a.next.push({id:uid(),date:dt,why:$("#lgWhy").value.trim()||"Follow up",kind:kindOf("lgWhen"),done:false});
       await save();closeSheet();render();toast("Logged.");break}
+    case"export":await exportBackup();break;
+    case"diag":await diagnostics();break;
+    case"sample":await loadSample();break;
+    case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
+    case"impmerge":await applyImport("merge");break;
+    case"impreplace":{
+      if(!confirm("Replace every account you have with the file's? Your current data is backed up first."))break;
+      await applyImport("replace");break}
     case"wipe":{
-      if(!confirm("Erase every account and start clean? Export first."))break;
-      D={accounts:[],cfg:D.cfg,v:2,batches:[]};await save();render();toast("Cleared.");break}
+      if(!confirm("Erase every account and start clean? A backup is taken first, and it's restorable from Diagnostics."))break;
+      await makeBackup("before erase");
+      D={accounts:[],cfg:D.cfg,v:SCHEMA,batches:[]};await save();render();toast("Cleared — restorable from Diagnostics.");break}
   }
 });
 document.addEventListener("input",e=>{
@@ -1241,15 +2086,17 @@ document.addEventListener("input",e=>{
     a.quote=Object.assign({bundle:recommend(a).bundle,freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[]},a.quote||{},{disc:+t.value});
     save();
     const lab=t.closest("label");if(lab)lab.firstChild.nodeValue="Discount — "+t.value+"% ";}
-  if(t.id=="q"){terrQ=t.value;renderTerritory()}
+  if(t.id=="q"){terrQ=t.value;terrPage=1;renderTerritory()}
+  if(screen=="set"&&t.closest&&t.closest("#s-set")&&t.id!="q"){clearTimeout(setupT);setupT=setTimeout(()=>{saveSetup(true)},700)}
 });
 document.addEventListener("change",e=>{if(e.target.id=="disc"&&curId)render()});
 $("#veil").addEventListener("click",e=>{if(e.target.id=="veil")closeSheet()});
 $("#fab").addEventListener("click",newAcctSheet);
-$("#aback").addEventListener("click",()=>go("today"));
+$("#aback").addEventListener("click",()=>go(backTo||"today"));
 $("#cexit").addEventListener("click",endRun);
-$("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);render()});
-$("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);render()});
+$("#cskip").addEventListener("click",()=>{if(qi<queue.length){advance()}});
+$("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);showAllRows=false;render()});
+$("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
 $("#dnToday").addEventListener("click",()=>{viewDate=today();render()});
 $("#save").addEventListener("click",saveSetup);
 $("#doimp").addEventListener("click",()=>{
@@ -1262,19 +2109,101 @@ $("#pickfile").addEventListener("click",()=>{
     rd.onload=()=>{$("#pastebox").value=rd.result;toast("Loaded — check it, then Import.")};rd.readAsText(f)};
   i.click();
 });
-$("#exp").addEventListener("click",()=>{
-  const blob=new Blob([JSON.stringify(D)],{type:"application/json"});
+async function exportBackup(){
+  const snap=Object.assign({app:"bellwether",exportedOn:new Date().toISOString()},D);
+  const blob=new Blob([JSON.stringify(snap)],{type:"application/json"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download="bellwether-"+iso(today())+".json";a.click();URL.revokeObjectURL(url);
-});
-$("#impj").addEventListener("click",()=>{
+  D.cfg.lastExport=new Date().toISOString();D.cfg.dirtySince="";
+  await save();render();toast("Exported.");
+}
+let pendingImport=null;
+function importFile(){
   const i=document.createElement("input");i.type="file";i.accept=".json";
   i.onchange=()=>{const f=i.files[0];if(!f)return;const rd=new FileReader();
-    rd.onload=async()=>{try{const j=JSON.parse(rd.result);if(!j.accounts)throw 0;
-      D=j;D.cfg=Object.assign({},DEF,D.cfg||{});await save();render();toast("Restored.")}catch(e){toast("That file didn't parse.")}};
+    rd.onload=()=>{
+      let j=null;try{j=JSON.parse(rd.result)}catch(e){}
+      /* validate before anything is replaced — a bad file must never reach storage */
+      if(!validShape(j)){toast("That file isn't a Bellwether backup.");return}
+      const copy=JSON.parse(JSON.stringify(j));validate(copy);
+      pendingImport=copy;
+      const mine=A().length;
+      openSheet(`<h3>Import ${copy.accounts.length} accounts</h3>
+        <div class="sub">From ${copy.exportedOn?fmtWhen(copy.exportedOn):"an older file"} · schema v${copy.v||"?"}${repairLog.length?" · "+repairLog.length+" fields repaired":""}</div>
+        <p class="read">You have <b>${mine}</b> accounts right now. A backup of them is taken either way.</p>
+        <div class="sa" style="justify-content:flex-start">
+          <button class="b pri" data-act="impmerge">Merge into mine</button>
+          <button class="b danger" data-act="impreplace">Replace mine</button>
+          <button class="b quiet" data-act="close">Cancel</button></div>
+        <p class="read" style="font-size:12px">Merge keeps both, matching on account name; anything only in the file is added, and your notes win on conflicts.</p>`);
+    };
     rd.readAsText(f)};
   i.click();
-});
+}
+async function applyImport(mode){
+  if(!pendingImport)return;
+  await makeBackup("before import");
+  if(mode=="replace"){D=pendingImport}
+  else{
+    const by={};A().forEach(a=>{if(a.name)by[norm(a.name)]=a});
+    let add=0,merged=0;
+    pendingImport.accounts.forEach(inc=>{
+      const mine=by[norm(inc.name||"")];
+      if(!mine){D.accounts.push(inc);add++;return}
+      merged++;
+      /* union the history, keep mine where both have something */
+      const seen=new Set((mine.events||[]).map(e=>e.when+"|"+e.kind+"|"+(e.text||"")));
+      (inc.events||[]).forEach(e=>{if(!seen.has(e.when+"|"+e.kind+"|"+(e.text||"")))mine.events.push(e)});
+      const nk=new Set((mine.next||[]).map(n=>n.date+"|"+n.why));
+      (inc.next||[]).forEach(n=>{if(!n.done&&!nk.has(n.date+"|"+n.why))mine.next.push(n)});
+      ["emps","city","industry"].forEach(f=>{if(!mine[f]&&inc[f])mine[f]=inc[f]});
+      ["name","phone","email"].forEach(f=>{if(!(mine.contact||{})[f]&&(inc.contact||{})[f])mine.contact[f]=inc.contact[f]});
+      mine.discovery.answers=Object.assign({},inc.discovery&&inc.discovery.answers||{},mine.discovery.answers);
+      if(!mine.won&&inc.won)mine.won=inc.won;
+    });
+    toast(`${add} added, ${merged} merged.`);
+  }
+  validate(D);const r=await runMigrations(D);D=r.d;
+  await save();closeSheet();pendingImport=null;render();
+  if(mode=="replace")toast("Replaced.");
+}
+async function diagnostics(){
+  const ix=await bakIndex();
+  const size=JSON.stringify(D).length;
+  const row=(l,v)=>`<div class="row">${l}<b>${v}</b></div>`;
+  openSheet(`<h3>Diagnostics</h3><div class="sub">Nothing here changes your data unless you press it.</div>
+    <div class="diag">
+      ${row("schema version","v"+(D.v||SCHEMA))}
+      ${row("accounts",A().length)}
+      ${row("prospects",A().filter(a=>a.type=="prospect").length)}
+      ${row("clients",A().filter(a=>a.type=="client").length)}
+      ${row("won",A().filter(isWon).length)}
+      ${row("cpa / partners",A().filter(a=>a.type=="partner").length)}
+      ${row("open actions",A().reduce((s,a)=>s+openActions(a).length,0))}
+      ${row("events",A().reduce((s,a)=>s+(a.events||[]).length,0))}
+      ${row("backups",ix.length)}
+      ${row("last backup",ix.length?fmtWhen(ix[0].on):"none")}
+      ${row("last migration",D.lastMigration?D.lastMigration.steps+" · "+fmtWhen(D.lastMigration.on):"none")}
+      ${row("loaded from",loadReport.source||"—")}
+      ${row("storage size",(size/1024).toFixed(1)+" kB")}
+      ${row("repairs on load",loadReport.warnings)}
+      ${row("last export",D.cfg.lastExport?fmtWhen(D.cfg.lastExport):"never")}
+    </div>
+    ${storeWarn?`<div class="banner bad">${esc(storeWarn)}</div>`:""}
+    ${repairLog.length?`<p class="read" style="font-size:12px">Repaired: ${esc(repairLog.slice(0,6).join("; "))}${repairLog.length>6?" …":""}</p>`:""}
+    <h2 style="margin-top:22px">Backups</h2>
+    <div class="baks">${ix.length?ix.map(b=>`<div class="bak">
+        <div>${esc(b.reason||"backup")}<s>${fmtWhen(b.on)} · ${b.accounts} accounts · ${(b.size/1024).toFixed(0)} kB</s></div>
+        <button class="b" data-restore="${b.id}">Restore</button></div>`).join("")
+      :`<div class="hist">No backups yet. One is taken automatically each day you open the app.</div>`}</div>
+    <div class="sa" style="justify-content:flex-start;margin-top:16px">
+      <button class="b pri" data-act="export">Export backup</button>
+      <button class="b" data-act="baknow">Back up now</button>
+      <button class="b quiet" data-act="sample">Load sample territory</button>
+      <button class="b quiet" data-act="close">Close</button></div>`);
+}
+$("#exp").addEventListener("click",exportBackup);
+$("#impj").addEventListener("click",importFile);
 if(sysDark&&sysDark.addEventListener)sysDark.addEventListener("change",applyTheme);
 /* swipe between days on Today */
 let sx=0,sy=0;
@@ -1285,12 +2214,31 @@ document.addEventListener("touchend",e=>{
   if(Math.abs(dx)>70&&Math.abs(dy)<50){viewDate=addDays(viewDate||today(),dx<0?1:-1);render()}
 },{passive:true});
 
+/* iOS suspends and kills tabs without warning — write once more on the way out */
+function flush(){try{if(!window.storage)localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+window.addEventListener("pagehide",flush);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState=="hidden")flush()});
+
+/* five taps on the wordmark opens diagnostics */
+let markTaps=0,markT=null;
+const markEl=document.querySelector(".hdr");
+if(markEl)markEl.addEventListener("click",()=>{
+  markTaps++;clearTimeout(markT);markT=setTimeout(()=>markTaps=0,1200);
+  if(markTaps>=5){markTaps=0;diagnostics()}
+});
+
 (async function init(){
-  await load();
+  probeStorage();
+  const rep2=await load();
   viewDate=today();
   document.body.dataset.s="today";
   applyTheme();
   render();
+  if(!storageOK)setTimeout(()=>toast("Storage is blocked — nothing will save. Check private browsing."),400);
+  else if(rep2.recovered)setTimeout(()=>toast("Data was unreadable — restored from "+rep2.source+"."),600);
+  else if(rep2.steps)setTimeout(()=>toast("Updated storage "+rep2.steps+". Backup taken."),600);
+  else if(rep2.warnings)setTimeout(()=>toast(rep2.warnings+" fields repaired on load."),600);
+  else if(needsBackup())setTimeout(()=>toast("Worth exporting a backup — it's been a while."),1200);
 })();
 </script>
 </body>
