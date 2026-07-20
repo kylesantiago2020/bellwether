@@ -2095,7 +2095,8 @@ function bundlePanel(a,q,rec,val){
   </div>`;
 
   /* ── price strip: the two controls you actually use ──────── */
-  h+=`<div class="bdstrip"><div class="ladder">${dec.options.slice().reverse().map(r=>{
+  const ord=dec.options.slice().reverse();   /* high \u2192 low, everywhere */
+  h+=`<div class="bdstrip"><div class="ladder">${ord.map(r=>{
       const v=yr(r);
       return `<div class="rung${r==sel?" pick":""}" data-rung="${esc(r)}"><em>${esc(short(r))}</em><strong>${k2(v)}</strong></div>`}).join("")}</div>
     ${bSafe?"":`<label class="bddisc">Discount <b>${+q.disc||0}%</b><input type="range" id="disc" min="0" max="59" value="${+q.disc||0}"></label>`}</div>`;
@@ -2146,10 +2147,10 @@ function bundlePanel(a,q,rec,val){
   const diffRows=BFEAT.map(g=>{
     const rows=g.i.filter(f=>!(f.E===f.C&&f.C===f.P));
     return rows.length?`<div class="bdgh">${esc(g.g)}</div>`+rows.map(f=>
-      `<div class="bdr"><span>${esc(f.n)}</span>${dec.options.map(b=>
+      `<div class="bdr"><span>${esc(f.n)}</span>${ord.map(b=>
         `<u class="${b==sel?"on":""}">${bTick(f[dec.key[b]])}</u>`).join("")}</div>`).join(""):""}).join("");
   h+=bRefSec("cmp","What's different",`<div class="bdtbl"><div class="bdhead"><span></span>${
-      dec.options.map(b=>`<em class="${b==sel?"on":""}">${esc(short(b))}</em>`).join("")}</div>${diffRows}</div>
+      ord.map(b=>`<em class="${b==sel?"on":""}">${esc(short(b))}</em>`).join("")}</div>${diffRows}</div>
       <div class="bdnote">Only the rows that differ. Everything else is in all three.</div>`);
   h+=bRefSec("inc","Everything in "+short(sel),BFEAT.map(g=>{
     const rows=g.i.filter(f=>f[k]&&f[k]!==0);
