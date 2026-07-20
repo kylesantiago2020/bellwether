@@ -439,6 +439,16 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .doneday li{font-size:13.5px;line-height:1.5;padding:6px 0;border-bottom:1px solid var(--rule)}
 .doneday li:last-child{border-bottom:0}
 .doneday li b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;margin-right:5px}
+.edref{margin-top:24px;text-align:left}
+.edhint{font-size:11.5px;color:var(--ink3);margin-top:8px}
+.dref{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule2)}
+.dr{margin-top:9px}
+.dr s{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);text-decoration:none;font-weight:500}
+.dr p{font-size:13.5px;line-height:1.55;margin-top:3px}
+.carry{margin-top:14px;background:var(--sunk);border-radius:12px;padding:12px 14px}
+.carry s{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);text-decoration:none;font-weight:500}
+.carry p{font-size:13.5px;line-height:1.55;margin-top:4px}
+.wkline{margin-top:13px;padding-top:12px;border-top:1px solid var(--rule);font-family:"Instrument Serif",Georgia,serif;font-size:16px;line-height:1.45}
 .wk{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:15px 16px}
 .wk .wh{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);font-weight:500}
 .wkd{display:flex;justify-content:space-between;gap:6px;margin-top:11px}
@@ -467,6 +477,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="clock"></div>
   <div class="shape" id="shape"></div>
   <div class="rhythm" id="rhythm"></div>
+  <div id="carry"></div>
   <div id="catchup"></div>
   <div id="warm"></div>
   <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
@@ -1549,6 +1560,16 @@ function debriefLines(s){
   return L.join("");
 }
 const sealed=d=>(D.days||{})[iso(d)]||null;
+/* the note you left yourself, surfaced on the morning it was written for.
+   It clears itself once you close today, or after a few days if you don't. */
+function carryNote(){
+  for(let i=1;i<=4;i++){
+    const d=addDays(today(),-i),r=sealed(d);
+    if(r&&r.tomorrow)return {d,text:r.tomorrow};
+    if(r)return null;                 /* a closed day with no note means nothing is owed */
+  }
+  return null;
+}
 const fmtFull=d=>d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
 /* the five weekdays of the week you're looking at, so Monday's recap reads the same as Friday's */
 function weekDays(ref){
@@ -1562,7 +1583,37 @@ function doneCard(rec,d){
     <div class="dh"><i>&#10003;</i> Completed</div>
     <div class="dw">${fmtFull(d)} &middot; mission ended ${esc(rec.ended)}</div>
     ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
-      :`<div class="dw" style="margin-top:11px">Nothing was logged that day.</div>`}</div>`;
+      :`<div class="dw" style="margin-top:11px">Nothing was logged that day.</div>`}
+    ${(rec.win||rec.tomorrow)?`<div class="dref">
+      ${rec.win?`<div class="dr"><s>Biggest win</s><p>${esc(rec.win)}</p></div>`:""}
+      ${rec.tomorrow?`<div class="dr"><s>To remember</s><p>${esc(rec.tomorrow)}</p></div>`:""}
+    </div>`:""}</div>`;
+}
+/* One sentence about the week, read off the numbers — no cleverness, just rules in
+   priority order. The first that fits wins, so the most distinctive thing gets said. */
+function weekSentence(t,daysDone){
+  const rel=t.cpas+t.banks+t.partners;
+  const R=[
+    [t.deals>=2, "Two deals in one week. That's a closing week."],
+    [t.deals>=1&&t.revenue>=5000, "You closed real revenue this week."],
+    [t.deals>=1, "You closed the week with a deal on the board."],
+    [t.referrals>=3, "Your relationships did the selling this week."],
+    [rel>=6, "Strong week for relationship building."],
+    [t.cpas>=3, "Strong week for CPA introductions."],
+    [t.banks>=3, "You showed up for the bankers this week."],
+    [t.referrals>=1&&rel>=3, "You worked the referral network and it paid."],
+    [t.meetings>=5, "A week built on meetings, not just stops."],
+    [t.scheduled>=t.actions&&t.actions>=15, "You closed the week with excellent follow-up discipline."],
+    [t.visits>=25, "You covered a lot of ground this week."],
+    [t.visits>=t.calls*2&&t.visits>=12, "You spent most of this week in the field."],
+    [t.calls>=t.visits*2&&t.calls>=30, "A phone-heavy week — you kept the top of the funnel moving."],
+    [t.scheduled>=20, "You created great pipeline momentum this week."],
+    [daysDone>=5, "Five days closed out. That consistency is the whole job."],
+    [t.actions>=60, "A high-volume week. The activity was there."],
+    [t.actions>=20, "You consistently followed up on prospects this week."],
+    [true, "A quieter week — the book is still moving forward."]
+  ];
+  return (R.find(([test])=>test)||[])[1]||"";
 }
 function weekRecap(ref,cur){
   const days=weekDays(ref),recs=days.map(x=>({d:x,r:sealed(x)}));
@@ -1573,9 +1624,15 @@ function weekRecap(ref,cur){
     ["referrals","referral","referrals"],["deals","deal won","deals won"]]
     .map(([k,one,many])=>{const v=sum(k);return v?`<div><b>${v}</b>${v==1?one:many}</div>`:""}).filter(Boolean).join("");
   const rev=sum("revenue");
+  const daysDone=recs.filter(x=>x.r).length;
+  const tot={};["actions","visits","calls","meetings","referrals","deals","cpas","banks",
+    "partners","scheduled","revenue"].forEach(k=>tot[k]=sum(k));
+  /* a single day isn't a week — wait until there's a shape to describe */
+  const line=daysDone>=2?weekSentence(tot,daysDone):"";
   return `<div class="wk"><div class="wh">This week</div>
     <div class="wkd">${recs.map(x=>`<span class="${x.r?"did":""}"><i>${x.r?"&#10003;":"&#9675;"}</i>${x.d.toLocaleDateString(undefined,{weekday:"short"})}</span>`).join("")}</div>
-    ${bits||rev?`<div class="wktot">${bits}${rev?`<div><b>${$$$(rev)}</b>booked</div>`:""}</div>`:""}</div>`;
+    ${bits||rev?`<div class="wktot">${bits}${rev?`<div><b>${$$$(rev)}</b>booked</div>`:""}</div>`:""}
+    ${line?`<div class="wkline">${esc(line)}</div>`:""}</div>`;
 }
 function endDay(){
   const s=iso(today());
@@ -1609,6 +1666,13 @@ function showDebrief(s,animate){
         <div class="edwhen">${fmtFull(parseD(s))} &middot; ended ${esc(rec.ended)}</div>
         ${lines?`<div class="edsub">Today you</div><ul class="edlist">${lines}</ul>`
                :`<div class="edsub">Nothing logged today. Some days are like that &mdash; the day is closed either way.</div>`}
+        <div class="edref">
+          <label class="f">What was today's biggest win?<input class="t" id="edWin" autocomplete="off"
+            placeholder="Finally reached the owner at Doyle" value="${esc(rec.win||"")}"></label>
+          <label class="f">What should I remember tomorrow?<input class="t" id="edTom" autocomplete="off"
+            placeholder="Call Mike before 9" value="${esc(rec.tomorrow||"")}"></label>
+          <div class="edhint">Both optional. Skip them and the day still closes.</div>
+        </div>
         <button class="edok" data-act="edclose">Done</button>
       </div>
     </div></div>`;
@@ -1966,7 +2030,7 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
+    ["#shape","#rhythm","#carry","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
     $("#blocks").innerHTML=doneCard(rec,d);
     $("#endbtn").innerHTML=`<button class="endbtn" data-act="reopenday">Reopen this day</button>`;
     renderWeek(d);
@@ -1980,6 +2044,10 @@ function renderToday(){
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
   const rl=(D.cfg.rhythm||{})[DOW[d.getDay()]];
   $("#rhythm").innerHTML=rl?`<span>${esc(rl)}</span>`:"";
+  const cn=isNow?carryNote():null;
+  $("#carry").innerHTML=cn
+    ? `<div class="carry"><s>You wanted to remember &mdash; ${cn.d.toLocaleDateString(undefined,{weekday:"long"})}</s><p>${esc(cn.text)}</p></div>`
+    : "";
   /* a two-week backlog presented as "here's the day" is a lie the rep stops believing */
   const over=isNow?rows.filter(r=>r.over).length:0,cap=dayCapacity();
   $("#catchup").innerHTML=(over&&rows.length>cap)
@@ -3165,7 +3233,12 @@ document.addEventListener("click",async e=>{
     case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();break}
     case"warmdone":{const w=warmState();w.open=false;save();render();toast("Go get it.");break}
     case"endday":endDay();break;
-    case"edclose":{$("#endday").classList.remove("on");$("#endday").innerHTML="";render();
+    case"edclose":{
+      /* the numbers are a record; these two lines are the story. Written once, at the close. */
+      const key=iso(today()),rec=(D.days||{})[key];
+      if(rec){const wv=$("#edWin"),tv=$("#edTom");
+        rec.win=wv?wv.value.trim():"";rec.tomorrow=tv?tv.value.trim():"";await save()}
+      $("#endday").classList.remove("on");$("#endday").innerHTML="";render();
       toast("Day closed. Tomorrow starts fresh.");break}
     case"reopenday":{
       const key=iso(viewDate||today());
