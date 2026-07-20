@@ -399,6 +399,55 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .qdone b{font-size:13px;font-weight:500;flex:none;max-width:52%;text-align:right}
 .qstub{padding:10px 2px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink3);cursor:pointer}
 .qstub:before{content:"+ ";color:var(--ac)}
+/* ---- end of day ---- */
+#endday{position:fixed;inset:0;z-index:80;display:none;background:var(--paper);overflow-y:auto}
+#endday.on{display:block;animation:f .22s ease both}
+.edwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 22px 34px}
+.edcard{width:100%;max-width:420px;text-align:center}
+.edseal{width:64px;height:64px;margin:0 auto}
+.edseal svg{width:100%;height:100%;overflow:visible}
+.edtrack{fill:none;stroke:var(--rule);stroke-width:3}
+.edring{fill:none;stroke:var(--grn);stroke-width:3;stroke-linecap:round;
+  stroke-dasharray:169.6;stroke-dashoffset:169.6;transform:rotate(-90deg);transform-origin:32px 32px}
+.edtick{fill:none;stroke:var(--grn);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:32;stroke-dashoffset:32}
+.edseal.go .edring{animation:edclose .62s cubic-bezier(.32,.72,.3,1) forwards}
+.edseal.go .edtick{animation:edcheck .34s cubic-bezier(.4,0,.2,1) .54s forwards}
+.edseal.set .edring{stroke-dashoffset:0}
+.edseal.set .edtick{stroke-dashoffset:0}
+@keyframes edclose{to{stroke-dashoffset:0}}
+@keyframes edcheck{to{stroke-dashoffset:0}}
+.edbody{animation:edup .42s cubic-bezier(.3,.8,.35,1) .58s both}
+.edseal.set+.edbody{animation:none}
+@keyframes edup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.edbody h2{font-family:"Instrument Serif",Georgia,serif;font-size:27px;font-weight:400;margin-top:22px;letter-spacing:-.3px}
+.edwhen{font-size:12px;color:var(--ink3);margin-top:7px;font-family:"IBM Plex Mono",monospace}
+.edsub{font-size:12.5px;color:var(--ink2);margin-top:22px;line-height:1.6}
+.edlist{list-style:none;margin-top:10px;text-align:left;display:inline-block}
+.edlist li{font-size:14px;line-height:1.5;padding:7px 0;border-bottom:1px solid var(--rule)}
+.edlist li:last-child{border-bottom:0}
+.edlist b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;margin-right:5px}
+.edok{margin-top:26px;width:100%;padding:13px;border-radius:11px;border:0;background:var(--ink);color:var(--paper);font-size:15px;font-family:inherit;cursor:pointer;transition:transform .08s ease}
+.edok:active{transform:scale(.98)}
+.endbtn{width:100%;margin-top:20px;padding:13px;border-radius:11px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-size:14.5px;font-family:inherit;cursor:pointer;transition:transform .08s ease}
+.endbtn:active{transform:scale(.98)}
+.doneday{margin-top:16px;background:var(--sunk);border:1px solid var(--rule2);border-radius:14px;padding:16px 17px}
+.doneday .dh{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600}
+.doneday .dh i{font-style:normal;color:var(--grn)}
+.doneday .dw{font-size:11.5px;color:var(--ink3);margin-top:3px;font-family:"IBM Plex Mono",monospace}
+.doneday ul{list-style:none;margin-top:12px}
+.doneday li{font-size:13.5px;line-height:1.5;padding:6px 0;border-bottom:1px solid var(--rule)}
+.doneday li:last-child{border-bottom:0}
+.doneday li b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;margin-right:5px}
+.wk{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:15px 16px}
+.wk .wh{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);font-weight:500}
+.wkd{display:flex;justify-content:space-between;gap:6px;margin-top:11px}
+.wkd span{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:4px}
+.wkd span i{font-style:normal;font-size:13px;color:var(--ink3)}
+.wkd span.did i{color:var(--grn)}
+.wktot{margin-top:13px;padding-top:12px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:7px 14px}
+.wktot div{font-size:12.5px;color:var(--ink2)}
+.wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -424,6 +473,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="now"></div>
   <div id="pace"></div>
   <div id="blocks"></div>
+  <div id="endbtn"></div>
   <div id="week"></div>
   <div id="quote"></div>
 </section>
@@ -583,13 +633,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <button class="nb" data-go="review"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-3"/></svg><span>Review</span></button>
   <button class="nb" data-go="set"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Setup</span></button>
 </nav>
+<div id="endday"></div>
 <div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const SCHEMA=6;                       /* bump this and add a step to MIGRATIONS */
+const SCHEMA=7;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -822,6 +873,7 @@ function validate(d){
   d.cfg.rhythm=Object.assign({},DEF.rhythm,d.cfg.rhythm&&typeof d.cfg.rhythm=="object"?d.cfg.rhythm:{});
   if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=clone(PRICEBOOK);repairLog.push("price book restored to defaults")}
   if(!Array.isArray(d.cfg.addons))d.cfg.addons=clone(DEF.addons);
+  if(!d.days||typeof d.days!="object"||Array.isArray(d.days))d.days={};
   /* de-dupe ids — two accounts sharing an id makes edits land on the wrong one */
   const seen=new Set();
   d.accounts.forEach(a=>{if(seen.has(a.id)){a.id=uid();repairLog.push("duplicate id reassigned")}seen.add(a.id)});
@@ -857,6 +909,15 @@ const MIGRATIONS={
       });
     });
     d.cfg.dlang=d.cfg.dlang||"en";
+    return d;
+  }
+  ,
+  6:function(d){
+    /* v6 → v7: completed days are journal entries, immutable once sealed.
+       Existing actions get a blank stamp — we can't know when they were made,
+       and guessing would inflate the first debrief. */
+    d.days=d.days&&typeof d.days=="object"?d.days:{};
+    d.accounts.forEach(a=>(a.next||[]).forEach(n=>{if(n.made===undefined)n.made=""}));
     return d;
   }
   ,
@@ -995,6 +1056,10 @@ async function load(){
 }
 async function save(){
   D.v=SCHEMA;calcRev++;
+  /* every action gets a made-on date the first time it's saved. Doing it here instead of
+     at each push site means a new scheduler can never forget to stamp. */
+  const st=iso(today());
+  (D.accounts||[]).forEach(a=>(a.next||[]).forEach(n=>{if(n.made===undefined)n.made=st}));
   D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
   const body=JSON.stringify(D);
   const ok=await rawSet(KEY,body);
@@ -1447,6 +1512,109 @@ function renderClock(show){
     ${m.sub?`<div class="cs">${esc(m.sub)}</div>`:""}</div>`;
 }
 
+/* ---------- ending the day ---------- */
+/* A day is a chapter. Sealing one saves what happened, never what changes later —
+   the snapshot is written once and read forever after. */
+function daySummary(d){
+  const s=iso(d),ev=[];
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s)ev.push({e,a})}));
+  const touches=ev.filter(x=>TOUCH.includes(x.e.kind));
+  const kind=k=>ev.filter(x=>x.e.kind==k).length;
+  const people=t=>new Set(touches.filter(x=>x.a.type==t).map(x=>x.a.id)).size;
+  const won=A().filter(a=>a.won&&a.won.on==s);
+  let sched=0;A().forEach(a=>(a.next||[]).forEach(n=>{if(n.made==s&&n.date>s)sched++}));
+  return {date:s,actions:touches.length,visits:kind("visited"),calls:kind("called"),
+    meetings:kind("met"),emails:kind("emailed"),prospects:people("prospect"),
+    clients:people("client"),cpas:people("cpa"),banks:people("bank"),partners:people("partner"),
+    logged:ev.length,scheduled:sched,deals:won.length,
+    revenue:won.reduce((t,a)=>t+(+((a.won||{}).value)||0),0),referrals:kind("referral")};
+}
+/* one line per thing that actually happened — a zero is simply left out */
+function debriefLines(s){
+  const L=[],add=(n,one,many)=>{if(n>0)L.push(`<li><b>${n}</b> ${n==1?one:(many||one)}</li>`)};
+  add(s.actions,"action completed","actions completed");
+  add(s.visits,"business visited","businesses visited");
+  add(s.calls,"call made","calls made");
+  add(s.meetings,"meeting held","meetings held");
+  add(s.prospects,"prospect seen","prospects seen");
+  add(s.clients,"client spoken with","clients spoken with");
+  add(s.cpas,"CPA firm visited","CPA firms visited");
+  add(s.banks,"bank branch visited","bank branches visited");
+  add(s.partners,"referral partner seen","referral partners seen");
+  add(s.logged,"interaction logged","interactions logged");
+  add(s.scheduled,"future follow-up scheduled","future follow-ups scheduled");
+  add(s.deals,"deal closed","deals closed");
+  if(s.revenue>0)L.push(`<li><b>${$$$(s.revenue)}</b> in annual revenue</li>`);
+  add(s.referrals,"referral earned","referrals earned");
+  return L.join("");
+}
+const sealed=d=>(D.days||{})[iso(d)]||null;
+const fmtFull=d=>d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+/* the five weekdays of the week you're looking at, so Monday's recap reads the same as Friday's */
+function weekDays(ref){
+  let m=new Date(ref.getTime());
+  while(m.getDay()!=1)m=addDays(m,-1);
+  return [0,1,2,3,4].map(i=>addDays(m,i));
+}
+/* a completed day, rendered as a journal entry rather than a task list */
+function doneCard(rec,d){
+  return `<div class="doneday">
+    <div class="dh"><i>&#10003;</i> Completed</div>
+    <div class="dw">${fmtFull(d)} &middot; mission ended ${esc(rec.ended)}</div>
+    ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
+      :`<div class="dw" style="margin-top:11px">Nothing was logged that day.</div>`}</div>`;
+}
+function weekRecap(ref,cur){
+  const days=weekDays(ref),recs=days.map(x=>({d:x,r:sealed(x)}));
+  if(!recs.some(x=>x.r))return "";
+  const sum=k=>recs.reduce((t,x)=>t+(x.r?(+x.r.stats[k]||0):0),0);
+  const bits=[["actions","action completed","actions completed"],["visits","business visited","businesses visited"],
+    ["calls","call","calls"],["meetings","meeting","meetings"],
+    ["referrals","referral","referrals"],["deals","deal won","deals won"]]
+    .map(([k,one,many])=>{const v=sum(k);return v?`<div><b>${v}</b>${v==1?one:many}</div>`:""}).filter(Boolean).join("");
+  const rev=sum("revenue");
+  return `<div class="wk"><div class="wh">This week</div>
+    <div class="wkd">${recs.map(x=>`<span class="${x.r?"did":""}"><i>${x.r?"&#10003;":"&#9675;"}</i>${x.d.toLocaleDateString(undefined,{weekday:"short"})}</span>`).join("")}</div>
+    ${bits||rev?`<div class="wktot">${bits}${rev?`<div><b>${$$$(rev)}</b>booked</div>`:""}</div>`:""}</div>`;
+}
+function endDay(){
+  const s=iso(today());
+  if((D.days||{})[s])return;
+  const now=new Date();
+  const hh=now.getHours(),mm=String(now.getMinutes()).padStart(2,"0");
+  const t12=`${((hh+11)%12)+1}:${mm} ${hh<12?"AM":"PM"}`;
+  (D.days=D.days||{})[s]={ended:t12,stats:daySummary(today())};
+  save();
+  showDebrief(s,true);
+}
+
+/* the ring closes, the check draws, then the day's record fades up. About a second,
+   then it holds still — closure, not celebration. */
+function showDebrief(s,animate){
+  const rec=(D.days||{})[s];if(!rec)return;
+  const nm=((D.cfg.me||{}).name||"").trim().split(/\s+/)[0];
+  const lines=debriefLines(rec.stats);
+  const el=$("#endday");
+  el.innerHTML=`<div class="edwrap">
+    <div class="edcard">
+      <div class="edseal${animate?" go":" set"}">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle class="edtrack" cx="32" cy="32" r="27"/>
+          <circle class="edring" cx="32" cy="32" r="27"/>
+          <path class="edtick" d="M20.5 32.8l7.6 7.4 15.4-15.6"/>
+        </svg>
+      </div>
+      <div class="edbody">
+        <h2>${nm?`Great work today, ${esc(nm)}.`:"Great work today."}</h2>
+        <div class="edwhen">${fmtFull(parseD(s))} &middot; ended ${esc(rec.ended)}</div>
+        ${lines?`<div class="edsub">Today you</div><ul class="edlist">${lines}</ul>`
+               :`<div class="edsub">Nothing logged today. Some days are like that &mdash; the day is closed either way.</div>`}
+        <button class="edok" data-act="edclose">Done</button>
+      </div>
+    </div></div>`;
+  el.classList.add("on");
+}
+
 /* ---------- morning warm-up ---------- */
 /* Stretching before the game. Say the openers out loud once, read the rest, go.
    Content rotates each business day and remembers what it showed so it doesn't repeat. */
@@ -1781,17 +1949,31 @@ function renderWeek(cur){
   while(ds.length<5){if(d.getDay()!=0&&d.getDay()!=6)ds.push(d);d=addDays(d,1)}
   $("#week").innerHTML=`<div class="block"><div class="bh"><span class="t">This week</span><span class="n">tap a day</span></div>
     <div class="wgrid">${ds.map(x=>{
-      const n=todayRows(x).length,on=iso(x)==iso(cur);
+      const n=todayRows(x).length,on=iso(x)==iso(cur),done=!!sealed(x);
       return `<button class="wd${on?" on":""}" data-week="${iso(x)}" aria-label="${x.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}">
         <em>${x.toLocaleDateString(undefined,{weekday:"short"})}</em><b>${x.getDate()}</b>
-        <s class="${n?"has":""}">${n||"·"}</s></button>`}).join("")}
+        <s class="${done?"":n?"has":""}">${done?"&#10003;":(n||"·")}</s></button>`}).join("")}
     </div></div>`;
 }
 function renderToday(){
   const d=viewDate||today(),isNow=iso(d)==iso(today());
-  $("#datestr").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  const rec=sealed(d);
+  $("#datestr").textContent=fmtFull(d);
   $("#dnToday").style.display=isNow?"none":"";
   const rows=todayRows(d);
+  const quiet=s=>{$(s).innerHTML=""};
+
+  /* a sealed day is a journal entry — it doesn't take instructions any more */
+  if(rec){
+    $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
+    ["#shape","#rhythm","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
+    $("#blocks").innerHTML=doneCard(rec,d);
+    $("#endbtn").innerHTML=`<button class="endbtn" data-act="reopenday">Reopen this day</button>`;
+    renderWeek(d);
+    $("#quote").innerHTML=weekRecap(d,d);
+    return;
+  }
+
   $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
@@ -1807,11 +1989,16 @@ function renderToday(){
     : "";
   renderClock(isNow);
   renderWarm(isNow&&A().length>0);
-  if(isNow){renderNow(rows);if(A().length)renderPace(rows);else $("#pace").innerHTML=""}else{$("#now").innerHTML="";$("#pace").innerHTML=""}
+  if(isNow){renderNow(rows);if(A().length)renderPace(rows);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderList(rows,isNow);
+  /* the button appears once the day is actually under way — not at 6am */
+  const mins=new Date().getHours()*60+new Date().getMinutes();
+  $("#endbtn").innerHTML=(isNow&&A().length&&mins>=MSTART)
+    ? `<button class="endbtn" data-act="endday">End my day</button>` : "";
   renderWeek(d);
   const q=isNow?dailyQuote():null;
-  $("#quote").innerHTML=q?`<div class="quote"><div class="said">&ldquo;${esc(q[0])}&rdquo;</div><div class="who">${esc(q[1])}</div></div>`:"";
+  $("#quote").innerHTML=(weekRecap(d,d))+
+    (q?`<div class="quote"><div class="said">&ldquo;${esc(q[0])}&rdquo;</div><div class="who">${esc(q[1])}</div></div>`:"");
 }
 function weekAvg(){
   let t=0;for(let i=0;i<7;i++)t+=touchesOn(addDays(today(),-i));
@@ -2732,6 +2919,8 @@ function seedTerritory(){
   out.filter(a=>a.type=="prospect"&&a.outcome=="open").slice(0,8).forEach((a,i)=>{
     if(i%2==0)a.source=pick(srcs);
   });
+  /* sample data is fabricated history — never let it report as work you did today */
+  out.forEach(a=>(a.next||[]).forEach(n=>{if(n.made===undefined)n.made=""}));
   return out;
 }
 async function loadSample(){
@@ -2975,6 +3164,13 @@ document.addEventListener("click",async e=>{
         <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
     case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();break}
     case"warmdone":{const w=warmState();w.open=false;save();render();toast("Go get it.");break}
+    case"endday":endDay();break;
+    case"edclose":{$("#endday").classList.remove("on");$("#endday").innerHTML="";render();
+      toast("Day closed. Tomorrow starts fresh.");break}
+    case"reopenday":{
+      const key=iso(viewDate||today());
+      if(!confirm("Reopen this day? The saved summary is deleted and the day goes back to being a working list."))break;
+      delete D.days[key];await save();render();toast("Reopened.");break}
     case"catchup":catchUp();break;
     case"sample":await loadSample();break;
     case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
