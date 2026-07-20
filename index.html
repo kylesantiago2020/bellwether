@@ -378,6 +378,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .drow span{font-size:13.5px}
 .drow s{font-size:11.5px;color:var(--ink3);text-decoration:none;margin-top:2px}
 .keyn .knbody{font-size:13.5px;line-height:1.65;margin-top:4px;white-space:normal}
+.brief .knbody{font-size:13.5px;line-height:1.6;margin-bottom:10px;padding-left:11px;border-left:2px solid var(--ac)}
 .keyn .knempty{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:4px}
 .cluster{margin-top:10px;background:var(--sunk);border-radius:12px;padding:15px 17px}
 .cluster p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
@@ -1764,8 +1765,9 @@ const sealed=d=>(D.days||{})[iso(d)]||null;
 /* the note you left yourself, surfaced on the morning it was written for.
    It clears itself once you close today, or after a few days if you don't. */
 function carryNote(){
+  const from=activeD();
   for(let i=1;i<=4;i++){
-    const d=addDays(today(),-i),r=sealed(d);
+    const d=addDays(from,-i),r=sealed(d);
     if(r&&r.tomorrow)return {d,text:r.tomorrow};
     if(r)return null;                 /* a closed day with no note means nothing is owed */
   }
@@ -2217,6 +2219,7 @@ function renderList(rows,isNow){
   el.innerHTML=html;
 }
 function renderWeek(cur){
+  if(!A().length){$("#week").innerHTML="";return}
   const ds=[];let d=today();
   while(ds.length<5){if(d.getDay()!=0&&d.getDay()!=6)ds.push(d);d=addDays(d,1)}
   $("#week").innerHTML=`<div class="block"><div class="bh"><span class="t">This week</span><span class="n">tap a day</span></div>
@@ -2266,7 +2269,7 @@ function renderToday(){
        <p>That's more than a day holds. Bellwether can keep the highest-value ones on today, around what you already have booked, and lay the rest across the days ahead &mdash; field work off your office days.</p>
        <button data-act="catchup">Re-plan it</button></div>`
     : "";
-  renderClock(isNow);
+  renderClock(isNow&&A().length>0);
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderList(rows,isNow);
@@ -2424,6 +2427,12 @@ function renderAccount(){
     ${(a.type=="client"&&a.emps>=10&&/enhanced/i.test((a.today||{}).bundle||""))?`<div class="flag">On Enhanced at ${a.emps} employees — upgrade candidate.</div>`:""}
   </div>`;
 
+  /* the answer to "I'm standing outside — what do I need in my head right now?" */
+  h+=`<div class="sect keyn"><div class="h"><b>Before you walk in</b><span>${a.notes?"pinned":"nothing yet"}</span></div>
+    ${a.notes?`<div class="knbody">${esc(a.notes).replace(/\n/g,"<br>")}</div>`
+      :`<div class="knempty">Who to ask for. When the owner is actually in. Where to park. The thing they care about that isn't in any field. Whatever you'd want fresh in your mind walking through the door.</div>`}
+    <button class="b quiet" data-act="editnotes" style="margin-top:11px">${a.notes?"Edit briefing":"Write the briefing"}</button></div>`;
+
   h+=`<div class="sect"><div class="h"><b>Open actions</b><span>${openActions(a).length}</span></div>`;
   if(!openActions(a).length)h+=`<div class="hist">Nothing scheduled. That's how accounts go quiet.</div>`;
   openActions(a).sort((x,y)=>x.date<y.date?-1:1).forEach(n=>{
@@ -2435,11 +2444,6 @@ function renderAccount(){
   h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
 
   /* the things you'd write on the back of a card — never overwritten by a log entry */
-  h+=`<div class="sect keyn"><div class="h"><b>Key notes</b><span>always here</span></div>
-    ${a.notes?`<div class="knbody">${esc(a.notes).replace(/\n/g,"<br>")}</div>`
-      :`<div class="knempty">Gatekeeper's name, best time to walk in, where to park, what the owner cares about. The things you'd forget by Thursday.</div>`}
-    <button class="b quiet" data-act="editnotes" style="margin-top:11px">${a.notes?"Edit notes":"Add notes"}</button></div>`;
-
   if(a.type=="prospect"||a.type=="client")h+=discoverySection(a);
 
   if(isRel(a)){
@@ -2513,13 +2517,18 @@ function discoverySection(a){
       <div class="chips">${LANGS.map(([c,short])=>`<button class="chip sm${lang==c?" on":""}" data-lang="${c}">${short}</button>`).join("")}
         ${lang!="en"?`<button class="chip sm${D.cfg.dual?" on":""}" data-dual="1">EN too</button>`:""}</div>
     </div>`;
+  /* one question at a time is the point — show what's next, not the whole script */
+  let stubs=0;const CAP=3;let hidden=0;
   order.forEach(q=>{
     const done=isAns(q);
     if(done&&!showAll&&q!=open){h+=qDone(a,q,lang);return}
-    if(!done&&q!=open&&!showAll){h+=qStub(a,q,lang);return}
+    if(!done&&q!=open&&!showAll){
+      if(stubs<CAP){stubs++;h+=qStub(a,q,lang)}else hidden++;
+      return;
+    }
     h+=qCard(a,q,lang,dual);
   });
-  h+=`<div class="sa" style="justify-content:flex-start"><button class="b quiet" data-act="allq">${showAll?"Collapse answered":"Show every question"}</button></div></div>`;
+  h+=`<div class="sa" style="justify-content:flex-start"><button class="b quiet" data-act="allq">${showAll?"Collapse answered":hidden?`Show ${hidden} more question${hidden==1?"":"s"}`:"Show every question"}</button></div></div>`;
   return h;
 }
 function qDone(a,q,lang){
@@ -2606,7 +2615,8 @@ function renderTerritory(){
   /* while searching, the filters are irrelevant — say so instead of showing dead chips */
   $("#tfilters").innerHTML=searching
     ? `<div class="srchnote">Searching every account &mdash; filters off.</div>`
-    : TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}<s>${filterCount(k2)}</s></button>`).join("");
+    : TFILTERS.map(([k2,l])=>(()=>{const n=filterCount(k2);
+        return `<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}${n?`<s>${n}</s>`:""}</button>`})()).join("");
   const list=terrList(),cap=60*terrPage;
   const sl=(SORTS.find(([v])=>v==(D.cfg.terrSort||"reco"))||SORTS[0])[1];
   $("#tsort").innerHTML=list.length
@@ -2691,8 +2701,15 @@ function doImport(txt,type){
   /* an imported name with no next step isn't in your territory, it's a list.
      Every one gets a first touch, phased in at a pace you can keep. */
   const need=fresh.filter(x=>!openActions(x).length).sort((x,y)=>score(y)-score(x));
-  const plan=spread(need.map(x=>({a:x,kind:isRel(x)?"visit":"call"})),1);
-  plan.forEach(p=>p.it.a.next.push({id:uid(),date:p.date,
+  /* if there's still a selling day left, the first batch starts today — importing your book
+     and being told "nothing owed today" is the worst possible first impression */
+  const mins=new Date().getHours()*60+new Date().getMinutes();
+  const startToday=!isWeekend(today())&&mins<MEND&&!sealed(today());
+  const plan=spread(need.map(x=>({a:x,kind:isRel(x)?"visit":"call"})),startToday?0:1);
+  /* Bellwether scheduled these, not you — so they don't count as follow-ups you booked
+     (see made:"" below). "40 future follow-ups scheduled" on day one would be a
+     compliment you didn't earn. */
+  plan.forEach(p=>p.it.a.next.push({id:uid(),made:"",date:p.date,
     why:isRel(p.it.a)?"Introduce yourself":"First call",kind:p.it.kind,done:false}));
   const last=plan.length?plan[plan.length-1].date:null;
   (D.batches=D.batches||[]).push({name:type+" "+fmt(today()),n:rows.length,on:iso(today())});
@@ -3441,8 +3458,8 @@ document.addEventListener("click",async e=>{
     case"diag":await diagnostics();break;
     case"editnotes":{
       if(!a)break;
-      openSheet(`<h3>Key notes</h3><div class="sub">Stays pinned to ${esc(a.name)}. Nothing you log will overwrite it.</div>
-        <label class="f">Notes<textarea class="t" id="knText" rows="7" placeholder="Ask for Denise at the front desk — owner is in before 8. Park behind the building.">${esc(a.notes||"")}</textarea></label>
+      openSheet(`<h3>Before you walk in</h3><div class="sub">If you were standing outside ${esc(a.name)} right now, what would you want fresh in your mind? This stays at the top of the account and nothing you log will overwrite it.</div>
+        <label class="f">Your briefing<textarea class="t" id="knText" rows="7" placeholder="Ask for Denise at the front desk. Owner is in before 8 and gone by 2. Park behind the building. He cares about turnover — lost three people last winter.">${esc(a.notes||"")}</textarea></label>
         <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="savenotes">Save</button></div>`);
       setTimeout(()=>{const e2=$("#knText");if(e2)e2.focus()},90);break}
     case"savenotes":{
