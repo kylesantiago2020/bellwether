@@ -404,21 +404,32 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 #endday.on{display:block;animation:f .22s ease both}
 .edwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 22px 34px}
 .edcard{width:100%;max-width:420px;text-align:center}
-.edseal{width:64px;height:64px;margin:0 auto}
-.edseal svg{width:100%;height:100%;overflow:visible}
-.edtrack{fill:none;stroke:var(--rule);stroke-width:3}
-.edring{fill:none;stroke:var(--grn);stroke-width:3;stroke-linecap:round;
-  stroke-dasharray:169.6;stroke-dashoffset:169.6;transform:rotate(-90deg);transform-origin:32px 32px}
-.edtick{fill:none;stroke:var(--grn);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:32;stroke-dashoffset:32}
-.edseal.go .edring{animation:edclose .62s cubic-bezier(.32,.72,.3,1) forwards}
-.edseal.go .edtick{animation:edcheck .34s cubic-bezier(.4,0,.2,1) .54s forwards}
-.edseal.set .edring{stroke-dashoffset:0}
-.edseal.set .edtick{stroke-dashoffset:0}
-@keyframes edclose{to{stroke-dashoffset:0}}
-@keyframes edcheck{to{stroke-dashoffset:0}}
-.edbody{animation:edup .42s cubic-bezier(.3,.8,.35,1) .58s both}
-.edseal.set+.edbody{animation:none}
+.rings{width:132px;height:132px;margin:0 auto}
+.rings svg{width:100%;height:100%;transform:rotate(-90deg)}
+.rtrk{fill:none;stroke-width:8;opacity:.14;stroke-linecap:round}
+.rval{fill:none;stroke-width:8;stroke-linecap:round;
+  stroke-dasharray:var(--c);stroke-dashoffset:var(--c)}
+.rings.go .rval{transition:stroke-dashoffset .95s cubic-bezier(.22,.75,.28,1)}
+.rings.go .r2{transition-delay:.09s}
+.rings.go .r3{transition-delay:.18s}
+.rings.go.fill .rval{stroke-dashoffset:var(--o)}
+.rings.set .rval{stroke-dashoffset:var(--o)}
+.rtick{fill:none;stroke:var(--grn);stroke-width:0;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:30;stroke-dashoffset:30;transform:rotate(90deg);transform-origin:50px 50px}
+.rings.all .rtick{stroke-width:4}
+.rings.all.set .rtick{stroke-dashoffset:0}
+.rings.all.go.fill .rtick{animation:edcheck .38s cubic-bezier(.4,0,.2,1) 1.05s forwards}
+.rleg{margin-top:20px;display:inline-block;text-align:left}
+.rl{display:flex;align-items:center;gap:9px;padding:6px 0}
+.rd{width:9px;height:9px;border-radius:50%;flex:none}
+.rt{font-size:13.5px;flex:1;min-width:0}
+.rn{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink3)}
+.rn.hit{color:var(--grn)}
+.dring{margin-top:14px;text-align:center;padding-bottom:4px}
+.dring .rings{width:104px;height:104px}
+.dring .rleg{margin-top:14px}
+.edbody{animation:edup .42s cubic-bezier(.3,.8,.35,1) .72s both}
+.rings.set+.edbody{animation:none}
 @keyframes edup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .edbody h2{font-family:"Instrument Serif",Georgia,serif;font-size:27px;font-weight:400;margin-top:22px;letter-spacing:-.3px}
 .edwhen{font-size:12px;color:var(--ink3);margin-top:7px;font-family:"IBM Plex Mono",monospace}
@@ -1523,6 +1534,45 @@ function renderClock(show){
     ${m.sub?`<div class="cs">${esc(m.sub)}</div>`:""}</div>`;
 }
 
+/* Three rings, and they mean something: where you were, who you called, what you closed out.
+   Goals come from your own mission, and get frozen into the day so a later Setup change
+   never rewrites history. */
+const RINGDEF=[["field","In the field","var(--grn)"],["phone","On the phone","var(--amb)"],
+  ["follow","Followed through","#4B4FD6"]];
+function dayRings(d){
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),got=missionDone(d);
+  return {field:{v:(got.visits||0)+(got.clients||0)+(got.partners||0),
+                 goal:Math.max(1,(+m.visits||0)+(+m.clients||0)+(+m.partners||0))},
+          phone:{v:got.calls||0,goal:Math.max(1,+m.calls||0)},
+          follow:{v:got.follow||0,goal:Math.max(1,+m.follow||0)}};
+}
+/* geometry: outer to inner, so the biggest number gets the longest sweep */
+const RINGGEO=[[38,"field"],[28,"phone"],[18,"follow"]];
+function ringsSvg(r,animate){
+  if(!r)return "";
+  const arcs=RINGGEO.map(([rad,key],i)=>{
+    const c=2*Math.PI*rad, d2=r[key]||{v:0,goal:1};
+    const pct=Math.min(1,d2.v/Math.max(1,d2.goal));
+    const col=(RINGDEF.find(x=>x[0]==key)||[])[2];
+    return `<circle class="rtrk" cx="50" cy="50" r="${rad}" style="stroke:${col}"/>
+      <circle class="rval r${i+1}" cx="50" cy="50" r="${rad}"
+        style="stroke:${col};--c:${c.toFixed(1)};--o:${(c*(1-pct)).toFixed(1)}"/>`;
+  }).join("");
+  const closed=RINGGEO.every(([,k])=>(r[k]||{v:0}).v>=(r[k]||{goal:1}).goal);
+  return `<div class="rings ${animate?"go":"set"}${closed?" all":""}">
+    <svg viewBox="0 0 100 100" aria-hidden="true">${arcs}
+      <path class="rtick" d="M39 50.5l7.5 7.4L63 41.5"/></svg></div>`;
+}
+/* the legend says what each ring is — a ring with no label is just decoration */
+function ringLegend(r){
+  if(!r)return "";
+  return `<div class="rleg">${RINGDEF.map(([k,label,col])=>{
+    const d2=r[k]||{v:0,goal:1},hit=d2.v>=d2.goal;
+    return `<div class="rl"><span class="rd" style="background:${col}"></span>
+      <span class="rt">${label}</span>
+      <span class="rn${hit?" hit":""}">${d2.v} / ${d2.goal}</span></div>`}).join("")}</div>`;
+}
+
 /* ---------- ending the day ---------- */
 /* A day is a chapter. Sealing one saves what happened, never what changes later —
    the snapshot is written once and read forever after. */
@@ -1534,7 +1584,7 @@ function daySummary(d){
   const people=t=>new Set(touches.filter(x=>x.a.type==t).map(x=>x.a.id)).size;
   const won=A().filter(a=>a.won&&a.won.on==s);
   let sched=0;A().forEach(a=>(a.next||[]).forEach(n=>{if(n.made==s&&n.date>s)sched++}));
-  return {date:s,actions:touches.length,visits:kind("visited"),calls:kind("called"),
+  return {date:s,rings:dayRings(d),actions:touches.length,visits:kind("visited"),calls:kind("called"),
     meetings:kind("met"),emails:kind("emailed"),prospects:people("prospect"),
     clients:people("client"),cpas:people("cpa"),banks:people("bank"),partners:people("partner"),
     logged:ev.length,scheduled:sched,deals:won.length,
@@ -1582,6 +1632,7 @@ function doneCard(rec,d){
   return `<div class="doneday">
     <div class="dh"><i>&#10003;</i> Completed</div>
     <div class="dw">${fmtFull(d)} &middot; mission ended ${esc(rec.ended)}</div>
+    ${rec.stats.rings?`<div class="dring">${ringsSvg(rec.stats.rings,false)}${ringLegend(rec.stats.rings)}</div>`:""}
     ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
       :`<div class="dw" style="margin-top:11px">Nothing was logged that day.</div>`}
     ${(rec.win||rec.tomorrow)?`<div class="dref">
@@ -1654,16 +1705,11 @@ function showDebrief(s,animate){
   const el=$("#endday");
   el.innerHTML=`<div class="edwrap">
     <div class="edcard">
-      <div class="edseal${animate?" go":" set"}">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <circle class="edtrack" cx="32" cy="32" r="27"/>
-          <circle class="edring" cx="32" cy="32" r="27"/>
-          <path class="edtick" d="M20.5 32.8l7.6 7.4 15.4-15.6"/>
-        </svg>
-      </div>
+      ${ringsSvg(rec.stats.rings,animate)}
       <div class="edbody">
         <h2>${nm?`Great work today, ${esc(nm)}.`:"Great work today."}</h2>
         <div class="edwhen">${fmtFull(parseD(s))} &middot; ended ${esc(rec.ended)}</div>
+        ${ringLegend(rec.stats.rings)}
         ${lines?`<div class="edsub">Today you</div><ul class="edlist">${lines}</ul>`
                :`<div class="edsub">Nothing logged today. Some days are like that &mdash; the day is closed either way.</div>`}
         <div class="edref">
@@ -1677,6 +1723,12 @@ function showDebrief(s,animate){
       </div>
     </div></div>`;
   el.classList.add("on");
+  /* a CSS transition needs one frame at the start value before it's given the end value,
+     otherwise the rings simply appear already full */
+  if(animate){
+    const r=el.querySelector(".rings");
+    if(r)requestAnimationFrame(()=>requestAnimationFrame(()=>r.classList.add("fill")));
+  }
 }
 
 /* ---------- morning warm-up ---------- */
@@ -1804,13 +1856,13 @@ function renderWarm(show){
 }
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
-function todayTouches(){
-  const s=iso(today()),out=[];
+function todayTouches(d){
+  const s=iso(d||today()),out=[];
   A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))out.push({a,e})}));
   return out;
 }
-function missionDone(){
-  const t=todayTouches(),inField=x=>x.e.kind=="visited"||x.e.kind=="met";
+function missionDone(d){
+  const t=todayTouches(d),inField=x=>x.e.kind=="visited"||x.e.kind=="met";
   return {
     visits:t.filter(x=>inField(x)&&x.a.type=="prospect").length,
     clients:t.filter(x=>inField(x)&&x.a.type=="client").length,
