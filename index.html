@@ -26,12 +26,14 @@ body[data-s="terr"]{--ac:#CD5F2C;--acs:#FCEBE1}
 body[data-s="review"]{--ac:#0C8C86;--acs:#E1F3F1}
 body[data-s="set"]{--ac:#4A5160;--acs:#EDEFF3}
 body[data-s="acct"]{--ac:#7141C8;--acs:#F1EAFC}
+body[data-s="play"]{--ac:#8A6224;--acs:#F6EEDF}
 body.dark{--paper:#15171C;--card:#1E212A;--sunk:#20232C;--ink:#F1F0EC;--ink2:#A7AAB4;--ink3:#6B6E78;
 --rule:#2B2E37;--rule2:#383B45;--amb:#E0972F;--ambsoft:#3A2E17;--grn:#3FBE82;--grnsoft:#153426;
 --red:#E8705C;--redsoft:#3A1E19;--navbg:rgba(21,23,28,.94)}
 body.dark[data-s="today"]{--ac:#6F73E8;--acs:#252A50}
 body.dark[data-s="terr"]{--ac:#E08150;--acs:#3A2317}
 body.dark[data-s="review"]{--ac:#2BB0A9;--acs:#0F332F}
+body.dark[data-s="play"]{--ac:#C89A4E;--acs:#33291A}
 body.dark[data-s="set"]{--ac:#9098A8;--acs:#262A33}
 body.dark[data-s="acct"]{--ac:#9B7BE0;--acs:#2A2140}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -572,6 +574,50 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .wktot div{font-size:12.5px;color:var(--ink2)}
 .wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ---------- playbooks ---------- */
+.pbgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.pbcard{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:112px;padding:13px;border-radius:16px;border:1px solid var(--rule);background:var(--card);color:var(--ink);font-family:inherit;text-align:left;transition:transform .1s ease}
+.pbcard:active{transform:scale(.975)}
+.pbcard .ic{font-size:21px;line-height:1.2;margin-bottom:auto}
+.pbcard .t{font-size:14.5px;font-weight:500;letter-spacing:-.2px}
+.pbcard .s{font-size:11.5px;color:var(--ink3);line-height:1.35}
+.pbback{margin-top:2px;background:none;border:none;padding:6px 0;font-family:inherit;font-size:14px;color:var(--ac)}
+.pbhead{margin-top:6px}
+.pbhead .ic{font-size:27px}
+.pbhead h1{margin-top:6px}
+.pbhead .sub{font-size:13px;color:var(--ink3);margin-top:3px}
+.pbover{margin-top:14px;font-size:13.5px;line-height:1.65;color:var(--ink2);border-left:2px solid var(--ac);padding-left:12px}
+.pbsec{margin-top:8px;border:1px solid var(--rule);background:var(--card);border-radius:14px;overflow:hidden}
+.pbsh{width:100%;display:flex;align-items:center;gap:11px;padding:14px 14px;background:none;border:none;font-family:inherit;color:var(--ink);text-align:left}
+.pbsh .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac)}
+.pbsh .t{font-size:14.5px;font-weight:500}
+.pbsh .cv{margin-left:auto;color:var(--ink3);font-size:17px;transition:transform .18s ease}
+.pbsec.open .pbsh .cv{transform:rotate(90deg)}
+.pbbody{padding:0 14px 13px}
+.pbitem{font-size:13.5px;line-height:1.6;color:var(--ink2);padding:9px 0;border-top:1px solid var(--rule)}
+.pbtalk{margin-top:10px;padding:2px 0 2px 12px;border-left:2px solid var(--ac);font-family:'Instrument Serif',serif;font-size:17.5px;line-height:1.45;color:var(--ink)}
+.pbqa{padding:11px 0;border-top:1px solid var(--rule)}
+.pbqa .q{font-size:13.5px;font-weight:500;color:var(--ink)}
+.pbqa .a{margin-top:5px;font-size:13.5px;line-height:1.6;color:var(--ink2)}
+.pbchk{width:100%;display:flex;align-items:flex-start;gap:11px;padding:10px 0;border:none;border-top:1px solid var(--rule);background:none;font-family:inherit;font-size:13.5px;line-height:1.5;color:var(--ink2);text-align:left}
+.pbchk .bx{flex:none;width:17px;height:17px;margin-top:1px;border-radius:5px;border:1.5px solid var(--rule2)}
+.pbchk.on{color:var(--ink3)}
+.pbchk.on .bx{background:var(--ac);border-color:var(--ac);position:relative}
+.pbchk.on .bx:after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(43deg)}
+.pbchk.on span:last-child{text-decoration:line-through;text-decoration-color:var(--ink3)}
+.pbgrp{border-top:1px solid var(--rule)}
+.pbgh{width:100%;display:flex;align-items:center;padding:11px 0;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink);text-align:left}
+.pbgh .cv{margin-left:auto;color:var(--ink3);font-size:16px;transition:transform .18s ease}
+.pbgrp.open .pbgh .cv{transform:rotate(90deg)}
+.pbgb{padding-bottom:6px}
+.pbgb .pbitem{border-top:none;padding:6px 0 6px 12px;border-left:2px solid var(--acs)}
+.pbpage{width:100%;display:flex;align-items:center;gap:12px;padding:12px 0;border:none;border-top:1px solid var(--rule);background:none;font-family:inherit;color:var(--ink);text-align:left}
+.pbpage .ic{font-size:19px;flex:none}
+.pbpage .tx{display:flex;flex-direction:column;gap:2px}
+.pbpage .tx .t{font-size:14px;font-weight:500}
+.pbpage .tx .s{font-size:12px;color:var(--ink3);line-height:1.35}
+.pbpage .cv{margin-left:auto;color:var(--ink3);font-size:17px}
+
 </style>
 </head>
 <body>
@@ -750,11 +796,17 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   </div>
 </div>
 
+<!-- ===== PLAYBOOKS ===== -->
+<section class="screen" id="s-play">
+  <div id="playbody"></div>
+</section>
+
 <button class="fab" id="fab" aria-label="New account">+</button>
 <nav class="nav">
   <button class="nb on" data-go="today"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Today</span><span class="badge" id="bdg" style="display:none">0</span></button>
   <button class="nb" data-go="terr"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h7M8 11h7"/></svg><span>Territory</span></button>
   <button class="nb" data-go="review"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-3"/></svg><span>Review</span></button>
+  <button class="nb" data-go="play"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4.5A1.5 1.5 0 015.5 3H10a3 3 0 013 3v13a2.5 2.5 0 00-2.5-2.5H4z"/><path d="M20 4.5A1.5 1.5 0 0018.5 3H14a3 3 0 00-3 3v13a2.5 2.5 0 012.5-2.5H20z"/></svg><span>Playbooks</span></button>
   <button class="nb" data-go="set"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Setup</span></button>
 </nav>
 <div id="endday"></div>
@@ -1696,6 +1748,7 @@ function render(){
   else if(screen=="acct")renderAccount();
   else if(screen=="terr")renderTerritory();
   else if(screen=="review")renderReview();
+  else if(screen=="play")renderPlay();
   else if(screen=="set")renderSetup();
   const n=todayRows(today()).length;
   const b=$("#bdg");b.style.display=n?"flex":"none";b.textContent=n;
@@ -3667,6 +3720,483 @@ tap("restore",async t=>{
   if(!j){toast("That backup won't parse.");return}
   D=j;validate(D);const rr=await runMigrations(D);D=rr.d;
   await save();closeSheet();render();toast("Restored.");});
+
+/* ============================================================
+   PLAYBOOKS — a static field manual. No AI, no data writes.
+   Everything Kyle knows lives in PB below. To add knowledge,
+   edit PB. Nothing else in the app reads or writes this.
+   kinds: note | check | talk | group | qa | pages
+   ============================================================ */
+const PB=[
+{id:"cpa",ic:"\u{1F91D}",t:"CPA",sub:"Firms that own the relationship",
+ over:"Accountants don't buy payroll. They decide whether to trust you with their clients. One good CPA is worth twenty cold calls \u2014 so play the long game and make the first meeting about them, not ADP.",
+ secs:[
+ {t:"Before the Meeting",k:"check",i:[
+  "Read the firm's website \u2014 services, size, specialties",
+  "Check Google reviews and the About page for names",
+  "Look up the partner you're meeting on LinkedIn",
+  "Know their client mix \u2014 industries, typical size",
+  "Check Accountant Connect: are they already registered?",
+  "Reread your last notes and whatever you promised"]},
+ {t:"Rapport",k:"note",i:[
+  "Time it right \u2014 never walk in during busy season without a reason they'd care about.",
+  "Ask about the practice before you ask about payroll.",
+  "Find the pain that isn't payroll: staffing, client demands, succession, software fatigue.",
+  "Be specific. \"I saw you work with a lot of restaurants\" beats \"tell me about your firm.\""],
+  talk:["How long have you been at the firm, and how has the client mix changed?",
+  "What kind of work do you actually enjoy \u2014 and what would you hand off tomorrow?",
+  "Who handles payroll questions when a client calls in a panic?"]},
+ {t:"Discovery",k:"group",i:[
+  {h:"The Practice",q:["How many clients does the firm serve?","What industries do you specialize in?","Are you growing, holding steady, or trying to right-size?","What's the hardest part of hiring right now?"]},
+  {h:"Payroll Today",q:["Do you process payroll in-house for clients?","How many clients' payroll do you touch?","Which providers do your clients use most?","What happens when a client's payroll goes wrong \u2014 who fixes it?","How much unbilled time goes into payroll cleanup?"]},
+  {h:"Client Referrals",q:["When a client asks who to use for payroll, what do you say?","Have you had a bad experience with a provider? What happened?","What would a provider have to do to earn your recommendation?","Do you want to be involved after the referral, or handed the reins?"]},
+  {h:"Data & Access",q:["How do you get client payroll data at quarter end and year end?","How many logins are you chasing across clients?","What does W-2 season look like for the firm?","How much time goes into gathering reports you didn't create?"]},
+  {h:"Growth",q:["Are you trying to add advisory services?","Would owning payroll revenue help or distract?","Where do you want the firm in three years?"]}]},
+ {t:"Pain Points to Listen For",k:"note",i:[
+  "Chasing logins and reports from a dozen different providers.",
+  "Unbillable cleanup when a client's payroll is done wrong.",
+  "Clients calling the firm for payroll support they don't get paid for.",
+  "A payroll practice that's more headache than margin.",
+  "No control over who their clients end up with.",
+  "Year-end crunch caused by data they can't self-serve."]},
+ {t:"Transition",k:"talk",i:[
+  "It sounds like the problem isn't payroll \u2014 it's that you're accountable for it without any control over it. Can I show you the ways firms work with us?",
+  "Most firms I sit with land in one of four models. Let me walk through them and you tell me which one sounds like you.",
+  "Before I show you anything, I want to be clear \u2014 I'm not here to take your clients. I'm here to make sure the ones you refer come back to you happier.",
+  "You mentioned chasing reports at year end. That's the one I'd fix first, and it costs you nothing."]},
+ {t:"The Four Partnership Models",k:"pages",i:[
+  {ic:"\u{1F91D}",t:"Recommend ADP",sub:"They refer, we run it",
+   secs:[
+   {t:"When to use it",k:"note",i:["The firm doesn't want to process payroll \u2014 they want it off their plate.","They already get asked \"who should I use?\" and have no confident answer.","They've been burned by a provider and want a person, not a call center.","Smallest lift, fastest to start \u2014 the default model for most firms."]},
+   {t:"Talking points",k:"note",i:["You keep the relationship. I handle the payroll and you stay the trusted advisor.","You get one person to call \u2014 me \u2014 not a support queue.","Your client gets set up right the first time, which means less cleanup for you.","I'll report back to you after every referral so you're never in the dark."]},
+   {t:"Ideal fit",k:"note",i:["Firms with no payroll practice, or one they'd happily shed.","Firms that value client experience over payroll revenue.","Partners who want fewer vendors to manage, not more."]},
+   {t:"Benefits",k:"note",i:["Zero operational burden on the firm.","Client stays happy and stays theirs.","Predictable process and a named contact.","Accountant Connect access to every referred client's data."]},
+   {t:"Common questions",k:"qa",i:[
+    {q:"Will you try to sell my clients other things?",a:"Only what they ask for, and never without telling you first. You'll know before your client does."},
+    {q:"What if the referral goes badly?",a:"Then you call me and I own it. That's the whole point of having a name instead of a number."},
+    {q:"Do I get anything for referring?",a:"Let's talk about that \u2014 there are structured programs, and I'll walk you through exactly what applies to your firm."}]},
+   {t:"Follow-up actions",k:"check",i:["Get the firm registered on Accountant Connect","Agree on how referrals get sent \u2014 email, text, warm intro","Set a standing check-in cadence","Send a one-pager they can hand a client"]}]},
+  {ic:"\u{1F3E2}",t:"RUN for Partners",sub:"The firm runs payroll on our platform",
+   secs:[
+   {t:"When to use it",k:"note",i:["The firm already processes payroll and wants to keep it.","They're on an aging or manual system and know it.","They want payroll revenue but not payroll liability.","They have staff capacity and want to scale the practice."]},
+   {t:"Talking points",k:"note",i:["You keep the client, the billing and the relationship \u2014 you just stop carrying the tax risk.","One platform, one login, every client in one place.","Tax filing and compliance sit with us, so your staff stops being the last line of defense.","You can standardize how the whole firm does payroll instead of client by client."]},
+   {t:"Ideal fit",k:"note",i:["Firms with an existing payroll book they want to grow.","Firms with dedicated payroll staff.","Firms tired of maintaining desktop software and tax tables."]},
+   {t:"Benefits",k:"note",i:["Firm-branded control of the client experience.","Recurring revenue the firm keeps.","Compliance and filings handled underneath them.","Easier onboarding for new clients."]},
+   {t:"Common questions",k:"qa",i:[
+    {q:"How long does it take to move our clients?",a:"We do it in waves, not all at once, and I'm there for each one. Talk to me about timing around quarter ends."},
+    {q:"What does it cost us?",a:"Partner pricing works differently than retail. Let me get you exact numbers for your client count."},
+    {q:"Who trains my staff?",a:"We do, and I'm local. Training isn't a webinar link \u2014 it's me in your office."}]},
+   {t:"Follow-up actions",k:"check",i:["Get a client count and provider mix","Schedule a platform walkthrough with the payroll staff","Confirm partner pricing for their volume","Map a migration window that avoids quarter end"]}]},
+  {ic:"\u{1F4B0}",t:"Sell the Payroll Practice",sub:"We take the book, they take the relief",
+   secs:[
+   {t:"When to use it",k:"note",i:["Payroll is a distraction from the work the firm actually wants.","A partner is retiring or the payroll person just left.","Margins are thin and the liability keeps them up at night.","They want to redeploy staff into advisory work."]},
+   {t:"Talking points",k:"note",i:["You get out of a business you never really wanted to be in.","Your clients get a better experience than you can economically deliver.","You free the headcount for work that bills at a higher rate.","You still stay in the loop on every client through Accountant Connect."]},
+   {t:"Ideal fit",k:"note",i:["Firms with a real payroll book but no appetite to invest in it.","Succession or staffing pressure.","Partners who describe payroll as a necessary evil."]},
+   {t:"Benefits",k:"note",i:["Value for something currently draining the firm.","Clean handoff with continuity for clients.","Staff redeployed to higher-margin work.","No more tax notices landing on the firm's desk."]},
+   {t:"Common questions",k:"qa",i:[
+    {q:"Will my clients feel abandoned?",a:"They shouldn't feel anything except better service. You introduce me, I do the work, you stay their advisor."},
+    {q:"How is it valued?",a:"It depends on the book \u2014 client count, revenue, complexity. I'll get you a real conversation with the people who do this, not a guess."},
+    {q:"What if a client refuses?",a:"Then nothing changes for that client. Nobody gets forced."}]},
+   {t:"Follow-up actions",k:"check",i:["Get client count, revenue and complexity of the book","Loop in the right ADP resource for valuation","Agree on how and when clients hear about it","Set the transition timeline"]}]},
+  {ic:"\u{1F517}",t:"Accountant Connect",sub:"Free, and the easiest yes you'll get",
+   secs:[
+   {t:"When to use it",k:"note",i:["Always. It's the lowest-friction entry point with any firm.","Perfect when the partner isn't ready to talk about referrals.","Use it to earn a second meeting when the first one stalls.","Great reason to walk back in \u2014 \"let me get you set up\" is not a sales call."]},
+   {t:"Talking points",k:"note",i:["It's free, and it's yours whether or not you ever send me a client.","One login for every client of yours on ADP \u2014 no chasing passwords.","Pull reports yourself at quarter and year end instead of waiting on the client.","Built for accountants, not adapted from something else."]},
+   {t:"Ideal fit",k:"note",i:["Any firm with clients already on ADP.","Firms drowning in logins and year-end data gathering.","Skeptical partners who need proof before trust."]},
+   {t:"Benefits",k:"note",i:["Self-service access to client payroll data.","Time back at the two worst times of the year.","Practice resources and tools in one place.","It puts you in the firm without asking for anything."]},
+   {t:"Common questions",k:"qa",i:[
+    {q:"What's the catch?",a:"There isn't one. It costs nothing and it works whether you ever refer me a client or not."},
+    {q:"Do my clients have to approve access?",a:"Yes \u2014 authorization comes from the client, and I'll help you get it."},
+    {q:"How long does setup take?",a:"Minutes. Give me fifteen and you'll leave with it working."}]},
+   {t:"Follow-up actions",k:"check",i:["Register the firm on the spot if you can","List which of their clients are already on ADP","Walk one real report end to end","Book the follow-up to add remaining clients"]}]}]},
+ {t:"Wrap-Up",k:"check",i:[
+  "Confirmed which model fits and why",
+  "Scheduled the specific next meeting \u2014 date, not \"sometime\"",
+  "Got Accountant Connect started or set a date to",
+  "Asked which clients they'd want me to look at first",
+  "Logged notes and created the next action in Bellwether"]}]},
+
+{id:"peo",ic:"\u{1F4BC}",t:"TotalSource / PEO",sub:"Co-employment for the right fit",
+ over:"TotalSource wins when the owner is drowning in HR and paying too much for thin benefits. It loses when you force it. Qualify hard, then position on outcomes \u2014 better benefits, real HR, less risk \u2014 not on the co-employment mechanics.",
+ secs:[
+ {t:"Strong Fit Industries",k:"note",i:[
+  "Accounting \u00b7 Law firms \u00b7 Consulting","Technology \u00b7 Engineering","Real estate \u00b7 Insurance \u00b7 Business services","Manufacturing \u00b7 Wholesale","Nonprofits",
+  "Pattern to remember: white-collar, salaried, low turnover, benefits actually matter to the people who work there."]},
+ {t:"Green Flags",k:"note",i:[
+  "20+ employees \u2014 the math starts working here",
+  "High health insurance participation, and the owner cares about it",
+  "White-collar workforce with low turnover",
+  "Renewal increase they're angry about",
+  "No real HR person \u2014 the owner or office manager is doing it",
+  "Multi-state employees, or planning to hire out of state",
+  "Growth that has outpaced their infrastructure"]},
+ {t:"Red Flags",k:"note",i:[
+  "Level-funded or self-funded health plan \u2014 usually a hard stop",
+  "Existing competitor PEO \u2014 possible, but a different, longer play",
+  "High turnover / heavy hourly workforce with thin participation",
+  "Owner who wants absolute control of every HR decision",
+  "Nobody enrolled in benefits today and no intent to offer them",
+  "Workers' comp history or industry that won't underwrite cleanly"]},
+ {t:"Qualification Checklist",k:"check",i:[
+  "Employee count and how many are full-time",
+  "Do they offer health insurance? What plan type?",
+  "Participation \u2014 how many actually enroll?",
+  "When does the plan renew, and what was the last increase?",
+  "Who handles HR today, and what does it cost them in time?",
+  "Any compliance scare in the last two years?",
+  "States they employ in",
+  "Workers' comp carrier and any claims history",
+  "Is the decision maker in the room, or is there a partner/CFO?"]},
+ {t:"Discovery",k:"group",i:[
+  {h:"Benefits",q:["What did your renewal look like this year?","How many employees actually enroll \u2014 and why don't the rest?","Have you had to cut coverage or shift cost to employees?","What would you offer if cost weren't the constraint?","Are you losing candidates to companies with better benefits?"]},
+  {h:"HR",q:["Who handles HR here?","What percentage of their week is HR versus their real job?","What happens when someone needs to be fired?","Do you have handbooks, job descriptions, documented policies?","When did you last update them?"]},
+  {h:"Risk & Compliance",q:["Have you ever had a claim, a complaint, or an agency letter?","Who would you call if you got one tomorrow?","Are you confident on classification \u2014 exempt versus non-exempt?","Multi-state? Who tracks those rules?"]},
+  {h:"Growth",q:["Where do you want headcount in two years?","What's stopping you from hiring faster?","Would better benefits help you win the people you're losing?"]}]},
+ {t:"Positioning",k:"note",i:[
+  "Lead with the outcome: bigger-company benefits, a real HR team, and someone else carrying the risk.",
+  "Sell the three legs together \u2014 benefits, HR, risk. Any one alone is easy to dismiss.",
+  "Frame cost honestly: it isn't cheaper on paper, it's better on outcome. Compare against what they actually spend including their own time.",
+  "Explain co-employment plainly and early, in one sentence, before they hear a scary version of it elsewhere.",
+  "If they're under 20 employees or self-funded, position RUN or Workforce Now instead and revisit PEO later."]},
+ {t:"Transition",k:"talk",i:[
+  "You've told me benefits are eating you alive and nobody here actually owns HR. There's a version of ADP that solves both at once \u2014 can I show you?",
+  "What if you could offer the benefits a 500-person company offers, without becoming a 500-person company?",
+  "You keep saying \"we'll deal with it when it happens.\" TotalSource is how you stop dealing with it.",
+  "Let me be direct about what co-employment means, because people get it wrong: you still run your business and make every hiring decision. We become the employer of record for HR, benefits and compliance."]},
+ {t:"Objections",k:"qa",i:[
+  {q:"I don't want to give up control of my employees.",a:"You don't. You hire, you fire, you set pay, you run the business. What changes is who carries the paperwork and the liability."},
+  {q:"It's more expensive.",a:"Compared to what you're paying today, or compared to what you're paying today plus your renewal plus your own time? Let's price both honestly."},
+  {q:"My employees will be confused.",a:"They'll see better plans and a real HR line to call. We handle the communication and I'm there for the rollout."},
+  {q:"We're too small.",a:"That's exactly why the buying power matters. But if the numbers don't work for you, I'll tell you and we'll do something else."},
+  {q:"What if we want out later?",a:"Then you leave. I'd rather you stay because it works than because you're stuck."}]},
+ {t:"Wrap-Up",k:"check",i:[
+  "Got a current census and renewal date",
+  "Confirmed plan type \u2014 fully insured versus level-funded",
+  "Identified everyone who has to say yes",
+  "Set the date for the proposal meeting",
+  "Logged notes and the next action in Bellwether"]}]},
+
+{id:"prospect",ic:"\u{1F3E2}",t:"Prospect",sub:"New payroll business",
+ over:"The first meeting has one job: find something that hurts enough to change. If you leave with pricing and no pain, you left with nothing.",
+ secs:[
+ {t:"Before the Meeting",k:"check",i:[
+  "Website \u2014 what they do, how many locations","Google reviews \u2014 tone, staffing complaints, growth","LinkedIn \u2014 headcount trend and who the owner is","Who am I meeting and can they sign?","Do I know their current provider?","Reviewed my last notes and anything I promised"]},
+ {t:"Rapport",k:"note",i:[
+  "Ask how they got started. Owners will always tell that story.","Compliment something specific you actually noticed.","Ask about the business before the back office.","Match energy \u2014 if they're busy, earn the meeting in two minutes."],
+  talk:["How long have you been in this location?","How many people do you have now versus a couple of years ago?","What's the busiest part of your year?"]},
+ {t:"Discovery",k:"group",i:[
+  {h:"Payroll",q:["Who do you use today and how long have you been with them?","What do you pay \u2014 and do you actually know what's on the invoice?","How long does it take you to run a payroll, start to finish?","What happens when something's wrong \u2014 who do you call?","Have you ever gotten a tax notice? What happened?"]},
+  {h:"Time",q:["How do people record their hours?","Who chases down missing punches?","Any overtime surprises at the end of a pay period?"]},
+  {h:"HR",q:["Who handles HR here?","What happens when someone has to be let go?","Do you have a handbook? When was it last updated?","How do you onboard a new hire today \u2014 walk me through it."]},
+  {h:"Benefits",q:["What do you offer today?","What do you wish you could offer?","Do you have a retirement plan? Why not?","Are you losing people to companies offering more?"]},
+  {h:"Compliance",q:["Are you confident everyone is classified correctly?","Who tracks the rules when you hire in another state?","Any claims or complaints in the last couple of years?"]},
+  {h:"Growth & Tech",q:["Where do you want headcount to be in two years?","What systems have to talk to each other?","What's the most manual thing you still do every month?"]}]},
+ {t:"Positioning",k:"note",i:[
+  "Enhanced Payroll \u2014 they want payroll and tax done right, nothing more.",
+  "Complete Payroll & HR Plus \u2014 payroll is fine but HR is being handled by someone who shouldn't be handling it.",
+  "HR Pro \u2014 real HR exposure: terminations, handbooks, multi-state, compliance anxiety, or an owner spending real hours on people problems.",
+  "Time \u2014 anyone chasing punches, paper timesheets, or overtime surprises.",
+  "Retirement \u2014 recruiting pressure, state mandates, or an owner asking about their own savings.",
+  "Workers' Comp \u2014 audit surprises or large annual premium deposits.",
+  "Introduce one thing at a time, tied to a pain they named out loud. Never lead with the bundle."]},
+ {t:"Objections",k:"qa",i:[
+  {q:"I'm happy with who I have.",a:"Good \u2014 you should be. What would have to be true for you to look? I'd rather know now than chase you for a year."},
+  {q:"It's too expensive.",a:"Compared to what? Let's put your current invoice next to this, including the pieces you're paying for separately."},
+  {q:"Switching sounds like a nightmare.",a:"It's the number one reason people stay somewhere they don't like. Let me show you exactly who does what and how long it actually takes."},
+  {q:"My accountant handles it.",a:"That's great, and I'm not trying to change that. Would it help if your accountant had direct access to everything?"},
+  {q:"Send me some information.",a:"I will \u2014 but information without your numbers is just a brochure. Give me fifteen minutes and I'll send you something that's actually about you."}]},
+ {t:"Transition",k:"talk",i:[
+  "You've told me three things that cost you time every single month. Can I show you what fixing them looks like?",
+  "Everything you just described is normal for a business your size \u2014 and completely fixable.",
+  "Let me make sure I heard you right before I show you anything."]},
+ {t:"Closing",k:"note",i:[
+  "What would need to happen for this to be an easy yes?",
+  "Who else has to be comfortable with this besides you?",
+  "If we started today, what's the first payroll you'd want to be live for?",
+  "On a scale of one to ten, where are you \u2014 and what would make it a ten?",
+  "Is there any reason we shouldn't move forward?"]},
+ {t:"Wrap-Up",k:"check",i:["Scheduled the follow-up with a date","Confirmed who else has to weigh in","Asked for a referral","Logged notes","Created the next action in Bellwether"]}]},
+
+{id:"client",ic:"\u{1F465}",t:"Existing Client",sub:"Assigned \u2014 most have never met you",
+ over:"They already buy from ADP. Your job is not to sell payroll \u2014 it's to become the person they call. Introduce yourself, find out what changed since they signed, and earn the right to expand and be referred.",
+ secs:[
+ {t:"Before the Meeting",k:"check",i:[
+  "Know what they have today \u2014 bundle, add-ons, employee count","Check whether headcount has grown since they signed","Any open service issues I should know about?","Do they know they have a rep? Assume no.","Reviewed my notes and anything I promised"]},
+ {t:"Rapport",k:"note",i:[
+  "Lead with the honest reason you're there: you're their person and you wanted to meet them face to face.",
+  "Don't apologize for ADP's past service \u2014 just fix what you can and follow through.",
+  "The fastest trust builder is closing one small open loop for them."],
+  talk:["I'm your rep \u2014 which probably means you've never had one. I wanted to change that.",
+  "I'm not here to sell you anything today. I'm here so you know who to call.",
+  "What's the one thing about payroll that still annoys you?"]},
+ {t:"What Changed",k:"group",i:[
+  {h:"Since they signed",q:["How many employees now versus when you started with us?","Have you added locations or states?","Anyone new handling the back office?","Has your business changed in ways your setup hasn't kept up with?"]},
+  {h:"Friction",q:["What still takes you longer than it should?","Anything you're doing by hand every pay period?","When you've needed help, what happened?"]},
+  {h:"Expansion signals",q:["How are you tracking time today?","What are you doing for retirement?","How are benefits going?","Who's handling HR questions when they come up?","Any hiring or termination situations you weren't sure how to handle?"]}]},
+ {t:"Expansion Signals",k:"note",i:[
+  "Grown past the bundle they bought \u2014 upgrade conversation.",
+  "Paper or spreadsheet timekeeping \u2014 Time.",
+  "No retirement plan and hiring pressure \u2014 Retirement.",
+  "HR handled by the owner's spouse or the office manager \u2014 HR Pro.",
+  "20+ employees, benefits pain, white-collar \u2014 open the TotalSource playbook.",
+  "Approaching 50 employees \u2014 Workforce Now conversation and a Major Accounts partner."]},
+ {t:"Referrals",k:"talk",i:[
+  "Who else do you know running a business like yours who'd be worth me meeting?",
+  "Who does your books? I'd like to make their life easier, not harder.",
+  "If a friend asked you who handles your payroll, what would you tell them?"]},
+ {t:"Wrap-Up",k:"check",i:["They know my name and how to reach me","Closed or escalated any open issue","Identified at least one expansion opportunity","Asked for a referral or a CPA introduction","Logged notes and the next action in Bellwether"]}]},
+
+{id:"bank",ic:"\u{1F3E6}",t:"Bank",sub:"Branch-level referral relationships",
+ over:"Bank of America has the national partnership. You have the branch. Bankers refer to people they see, trust, and never have to worry about \u2014 so be consistent, be easy, and always close the loop.",
+ secs:[
+ {t:"Before the Huddle",k:"check",i:[
+  "Know which branch and which bankers will be in the room","Bring an update on every referral they've given me","Have one specific ask ready \u2014 not \"send me business\"","Know what's changed at ADP that they'd actually care about","Reviewed my notes from last time"]},
+ {t:"Rapport",k:"note",i:[
+  "Show up on the same day every week. Predictability is the whole relationship.",
+  "Learn what their goals and incentives are \u2014 refer to them in their language.",
+  "Be useful before you're needy. Bring them a business banking lead when you can.",
+  "Know the names of everyone at the branch, not just the manager."]},
+ {t:"What a Good Referral Looks Like",k:"note",i:[
+  "A business opening a new account with employees on the payroll.",
+  "An owner complaining about their payroll provider at the teller window.",
+  "A business banking client who just hired their first employee.",
+  "A client mentioning growth, new locations, or a second entity.",
+  "Anyone asking the banker \"do you know someone who does payroll?\""]},
+ {t:"Make It Easy for Them",k:"note",i:[
+  "One sentence they can say: \"I know a guy at ADP, want me to introduce you?\"",
+  "Give them a way to hand you off in the moment \u2014 a text with your name is enough.",
+  "Never make a banker fill out anything.",
+  "Tell them what happened to every single referral. This is the whole game.",
+  "Thank them publicly to their manager when something closes."]},
+ {t:"Talk Tracks",k:"talk",i:[
+  "Quick update on the three you sent me last month \u2014 here's where each one stands.",
+  "If you only remember one thing about me: any business with employees, just text me the name.",
+  "What's the most common question you get that isn't a banking question?",
+  "Who at the branch hasn't met me yet?"]},
+ {t:"Wrap-Up",k:"check",i:["Closed the loop on every prior referral","Made one specific, easy ask","Met someone new at the branch","Confirmed next week's huddle","Logged notes and the next action in Bellwether"]}]},
+
+{id:"partner",ic:"\u{1F91D}",t:"Referral Partner",sub:"Non-competing sellers in your territory",
+ over:"A good referral partner sells to the same owners you do, at the same moment, without competing. Treat them like a teammate with a quota \u2014 because they have one.",
+ secs:[
+ {t:"Before the Meeting",k:"check",i:[
+  "Know their product and who they sell to","Have referral results ready \u2014 sent, working, closed","Know what a great lead looks like for them","One specific ask prepared","Reviewed my notes"]},
+ {t:"Rapport",k:"note",i:[
+  "Talk about their pipeline before yours.",
+  "Ask what their quota actually is and how it's measured.",
+  "Ride along or trade a lead before you ask for one.",
+  "Their reps refer to people they like, not to companies they've heard of."]},
+ {t:"Mutual Value",k:"note",i:[
+  "Be specific about the trigger: \"when the owner mentions employees, that's me.\"",
+  "Give them the same trigger for their product from your side.",
+  "Make the intro path frictionless \u2014 a text, a three-way email, a walk-over.",
+  "Report back on every referral, always, even the dead ones."]},
+ {t:"Enablement",k:"check",i:[
+  "Their reps know my name and have my number","They have one sentence to say to an owner","We agreed on how intros get made","We agreed on a standing check-in","I've told them what a great lead looks like for me"]},
+ {t:"Talk Tracks",k:"talk",i:[
+  "Here's what happened with everything you sent me. Two are live, one went quiet, one closed.",
+  "What does a perfect customer look like for you right now? I'm in twenty of those a week.",
+  "Can I get five minutes at your team meeting? Not a pitch \u2014 just so your reps know who I am."]},
+ {t:"Wrap-Up",k:"check",i:["Reported on every referral","Made one specific ask","Confirmed the next touchpoint","Logged referrals received in Bellwether","Created the next action"]}]},
+
+{id:"wfn",ic:"\u{1F3E2}",t:"Workforce Now",sub:"When they've outgrown small business",
+ over:"Workforce Now is for businesses with real complexity \u2014 more people, more locations, more rules. Recognize the moment a client outgrows RUN before they feel it themselves.",
+ secs:[
+ {t:"When to Introduce",k:"note",i:[
+  "Approaching or past 50 employees.",
+  "Multiple locations, departments or legal entities.",
+  "Employees in more than one state.",
+  "They're asking for reporting RUN can't produce.",
+  "Manual work between payroll, time, and benefits systems.",
+  "A dedicated HR or finance person now owns the process.",
+  "ACA reporting is becoming a real obligation."]},
+ {t:"Ideal Fit",k:"note",i:[
+  "50\u2013999 employees.",
+  "Someone in the seat who owns HR or finance full time.",
+  "Complexity they're currently solving with spreadsheets.",
+  "Growth trajectory that will make today's setup worse, not better."]},
+ {t:"Discovery",k:"group",i:[
+  {h:"Scale",q:["How many employees, and how many locations?","Which states?","How many entities or EINs?","What's headcount going to look like in two years?"]},
+  {h:"Process",q:["Walk me through your hiring process from offer to first paycheck.","How many systems does one new hire touch?","Where does data get rekeyed?","Who builds the reports leadership asks for?"]},
+  {h:"Compliance",q:["Who owns ACA reporting?","How are you handling multi-state rules?","What's your process when someone is terminated?"]},
+  {h:"Systems",q:["What do you use for time, benefits, and applicant tracking?","What has to integrate with your accounting system?","What's the thing everyone complains about?"]}]},
+ {t:"Positioning",k:"note",i:[
+  "One system of record instead of five systems and a spreadsheet.",
+  "Reporting that answers leadership's questions without a week of prep.",
+  "Recruiting through retirement in one place \u2014 they stop rekeying data.",
+  "Compliance built in rather than remembered."]},
+ {t:"Objections",k:"qa",i:[
+  {q:"This is more than we need.",a:"Today, maybe. Where do you want to be in two years \u2014 and how much rework do you want to do to get there?"},
+  {q:"Implementation will take forever.",a:"It's a real project and I won't pretend otherwise. Let me show you the timeline and exactly what your team owns."},
+  {q:"We just switched systems.",a:"Then let's not talk about switching. Tell me what still isn't working \u2014 sometimes the gap is one module, not the whole platform."}]},
+ {t:"Handoff",k:"note",i:[
+  "At roughly 50+ employees, bring in your Major Accounts partner \u2014 you still get credit and you keep the relationship.",
+  "Introduce the partner in person or on a call. Never hand off by email alone.",
+  "Stay in the loop: the client thinks of you as their ADP person no matter who runs the deal."]},
+ {t:"Wrap-Up",k:"check",i:["Confirmed headcount, states and entities","Identified the real owner of the process","Looped in Major Accounts if needed","Set the next meeting","Logged notes in Bellwether"]}]},
+
+{id:"ac",ic:"\u{1F517}",t:"Accountant Connect",sub:"Free, fast, and the easiest yes in the territory",
+ over:"The lowest-friction way into any CPA firm. Free to them, useful immediately, and it puts you in the building without asking for anything. Use it to open relationships, not to close them.",
+ secs:[
+ {t:"What It Is",k:"note",i:[
+  "A free portal for accountants with clients on ADP.",
+  "One login to reach every authorized client's payroll data.",
+  "Self-service reports \u2014 no more emailing the client to ask.",
+  "Practice tools and resources built for accountants.",
+  "Client authorization is required, and you help them get it."]},
+ {t:"Why a CPA Cares",k:"note",i:[
+  "Quarter end and year end stop being a scavenger hunt.",
+  "No more chasing client logins and passwords.",
+  "Unbilled data-gathering hours come back.",
+  "They look responsive to their clients without doing more work.",
+  "It costs nothing, so there's no approval to get."]},
+ {t:"Demo Flow",k:"check",i:[
+  "Ask which of their clients are already on ADP","Register the firm while you're sitting there","Walk one real report end to end \u2014 their client, not a demo account","Show where year-end documents live","Set the follow-up to add the rest of their clients"]},
+ {t:"Talk Tracks",k:"talk",i:[
+  "This is free, it's yours, and it works whether or not you ever send me a client.",
+  "How many logins are you chasing right now? Let's make it one.",
+  "Give me fifteen minutes and you'll leave this meeting with it working.",
+  "I'd rather earn a referral than ask for one. Start here."]},
+ {t:"Follow-Up",k:"check",i:["Firm registered","At least one client authorized and visible","Booked the session to add remaining clients","Logged notes and the next action in Bellwether"]}]},
+
+{id:"obj",ic:"\u{1F4AC}",t:"Objection Library",sub:"Every objection, one place",
+ over:"Objections are information, not rejection. Acknowledge, ask one question, then answer. Never argue \u2014 the goal is to understand what's really underneath it.",
+ secs:[
+ {t:"Price",k:"qa",i:[
+  {q:"It's too expensive.",a:"Compared to what? Let's put your current invoice next to this line by line, including what you're buying separately."},
+  {q:"I can get it cheaper elsewhere.",a:"You probably can. What are you giving up to get there \u2014 and what does it cost you the first time something goes wrong?"},
+  {q:"I don't have budget right now.",a:"Fair. Is it a timing problem or a value problem? Those get solved differently."},
+  {q:"Just give me your best price.",a:"I will, but I'd be guessing until I know what you actually need. Give me five more minutes so I don't sell you something you don't use."}]},
+ {t:"Switching",k:"qa",i:[
+  {q:"Switching is a nightmare.",a:"That fear keeps more people stuck than any price ever has. Let me show you exactly who does what and how long it really takes."},
+  {q:"We just went through this two years ago.",a:"Then you know what a bad transition feels like. Tell me what went wrong \u2014 I want to make sure it doesn't happen again."},
+  {q:"I don't want to move mid-year.",a:"Understood. Let's map it to the quarter break, and I'll do the work ahead of time so the switch is one day, not one quarter."}]},
+ {t:"Current Provider",k:"qa",i:[
+  {q:"I'm happy with who I have.",a:"Good \u2014 you should be. What would have to change for you to look? I'd rather know now."},
+  {q:"They've never done me wrong.",a:"That's worth a lot. Can I ask what happens when you call them \u2014 do you get a person or a queue?"},
+  {q:"We've been with them 15 years.",a:"Then they've earned it. Has what you need changed in fifteen years?"}]},
+ {t:"Timing",k:"qa",i:[
+  {q:"Call me in six months.",a:"I will. What's happening in six months that isn't happening now? I want to call you at the right time, not just the polite one."},
+  {q:"We're too busy right now.",a:"That's exactly the problem I'm here to fix. But I hear you \u2014 let's put a real date on the calendar instead of a maybe."},
+  {q:"Not until after year end.",a:"Smart. Let's use the next few weeks to do the prep so January is easy instead of frantic."}]},
+ {t:"Implementation",k:"qa",i:[
+  {q:"I don't have time to set this up.",a:"You don't have to. Tell me what you'd have to do yourself \u2014 it's less than you think, and I do the rest."},
+  {q:"What if my data doesn't come over right?",a:"We parallel it and check before anything goes live. And I'm the one checking."},
+  {q:"Who do I call when something breaks?",a:"Me. That's the actual difference \u2014 you'll have a name, not a case number."}]},
+ {t:"Authority & Process",k:"qa",i:[
+  {q:"I need to talk to my partner.",a:"Of course. What do you think they'll ask that I haven't answered? Let's get them in the room."},
+  {q:"My accountant handles this.",a:"Great \u2014 I'd like them involved, not bypassed. Would it help if they had direct access to everything?"},
+  {q:"Send me some information.",a:"I will, but a brochure won't tell you anything about your business. Give me fifteen minutes and I'll send you something real."}]},
+ {t:"No Need",k:"qa",i:[
+  {q:"We only have a few employees.",a:"Then it should be simple and cheap and take you ten minutes a pay period. Does it?"},
+  {q:"My office manager handles all this.",a:"How many hours a week? What would you rather they be doing?"},
+  {q:"We do it ourselves.",a:"A lot of owners do until the first tax notice. What happens if one shows up next month?"}]}]},
+
+{id:"disc",ic:"\u2753",t:"Discovery Questions",sub:"The whole bank of questions",
+ over:"Ask fewer, better questions and then be quiet. The best discovery question is usually the follow-up you didn't plan.",
+ secs:[
+ {t:"The Core Six",k:"note",i:[
+  "What do you pay for payroll today?",
+  "How long does running payroll actually take you?",
+  "How is time tracked?",
+  "What happens when someone quits badly?",
+  "What benefits do you wish you could offer?",
+  "Who else signs off on a decision like this?"]},
+ {t:"Follow-Ups That Open Things Up",k:"talk",i:[
+  "Tell me more about that.",
+  "What does that cost you \u2014 in time or in money?",
+  "How long has that been going on?",
+  "What have you tried?",
+  "What happens if nothing changes?",
+  "Why is that important to you?"]},
+ {t:"By Area",k:"group",i:[
+  {h:"Payroll",q:["Who do you use and how long have you been with them?","What's on your invoice that you don't understand?","How long does a payroll take start to finish?","What happens when something's wrong?","Ever gotten a tax notice? What did you do?","Who runs payroll if that person is on vacation?"]},
+  {h:"Time",q:["How do employees record hours?","Who chases missing punches?","Any overtime surprises?","Do you have people at more than one site?","How do you handle PTO requests today?"]},
+  {h:"HR",q:["Who handles HR?","What percent of their week is it?","What happens when someone has to be let go?","Do you have a handbook? When was it updated?","Walk me through onboarding a new hire.","What's the hardest people problem you've dealt with this year?"]},
+  {h:"Benefits",q:["What do you offer today?","What did renewal look like?","How many enroll \u2014 and why don't the rest?","What would you offer if cost weren't a constraint?","Do you have a retirement plan? Why not?","Are you losing candidates over benefits?"]},
+  {h:"Compliance",q:["Confident everyone's classified correctly?","Who tracks rules when you hire out of state?","Any claims or complaints recently?","Who would you call if you got an agency letter tomorrow?","How are you handling I-9s and records retention?"]},
+  {h:"Growth",q:["Where do you want headcount in two years?","What's stopping you from hiring faster?","Any new locations or entities coming?","What would break first if you doubled?"]},
+  {h:"Technology",q:["What systems have to talk to each other?","What's the most manual thing you do every month?","Where does data get typed twice?","What do your employees complain about?"]},
+  {h:"Decision Process",q:["Who else has to be comfortable with this?","How have you made a decision like this before?","What would make this an easy yes?","What's your timeline, honestly?","Is there any reason we shouldn't move forward?"]}]}]}
+];
+
+/* ---------- playbooks: navigation is local to this screen ---------- */
+let pbId=null, pbPage=null, pbOpen={}, pbQ="";
+const pbFind=id=>PB.find(p=>p.id==id);
+function pbEnter(id){pbId=id;pbPage=null;pbOpen={};window.scrollTo(0,0);render()}
+function pbBack(){if(pbPage!==null){pbPage=null}else{pbId=null;pbQ=""}window.scrollTo(0,0);render()}
+
+function pbBlock(s,key){
+  const k=s.k||"note",b=[];
+  if(k=="check")b.push(s.i.map((x,j)=>{
+    const on=pbOpen["c:"+key+":"+j]?" on":"";
+    return `<button class="pbchk${on}" data-pbchk="${key}:${j}"><span class="bx"></span><span>${esc(x)}</span></button>`}).join(""));
+  else if(k=="talk")b.push(s.i.map(x=>`<div class="pbtalk">${esc(x)}</div>`).join(""));
+  else if(k=="qa")b.push(s.i.map(x=>`<div class="pbqa"><div class="q">${esc(x.q)}</div><div class="a">${esc(x.a)}</div></div>`).join(""));
+  else if(k=="group")b.push(s.i.map((g,j)=>{
+    const on=pbOpen["g:"+key+":"+j];
+    return `<div class="pbgrp${on?" open":""}"><button class="pbgh" data-pbgrp="${key}:${j}"><span>${esc(g.h)}</span><span class="cv">\u203A</span></button>${on?`<div class="pbgb">${g.q.map(q=>`<div class="pbitem">${esc(q)}</div>`).join("")}</div>`:""}</div>`}).join(""));
+  else if(k=="pages")b.push(s.i.map((p,j)=>
+    `<button class="pbpage" data-pbpage="${key}:${j}"><span class="ic">${p.ic}</span><span class="tx"><span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub||"")}</span></span><span class="cv">\u203A</span></button>`).join(""));
+  else b.push(s.i.map(x=>`<div class="pbitem">${esc(x)}</div>`).join(""));
+  if(s.talk)b.push(s.talk.map(x=>`<div class="pbtalk">${esc(x)}</div>`).join(""));
+  return b.join("");
+}
+function pbSections(secs,base){
+  return secs.map((s,i)=>{
+    const key=base+":"+i,on=pbOpen["s:"+key];
+    return `<div class="pbsec${on?" open":""}">
+      <button class="pbsh" data-pbsec="${key}"><span class="n">${String(i+1).padStart(2,"0")}</span><span class="t">${esc(s.t)}</span><span class="cv">\u203A</span></button>
+      ${on?`<div class="pbbody">${pbBlock(s,key)}</div>`:""}</div>`}).join("");
+}
+function pbGrid(){
+  const w=$("#pbgridwrap");if(!w)return;
+  const q=pbQ.trim().toLowerCase();
+  const list=q?PB.filter(p=>JSON.stringify(p).toLowerCase().includes(q)):PB;
+  w.innerHTML=list.length
+    ?`<div class="pbgrid">${list.map(p=>`<button class="pbcard" data-pbopen="${p.id}"><span class="ic">${p.ic}</span><span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub)}</span></button>`).join("")}</div>`
+    :`<div class="empty"><h3>Nothing matches that</h3><p>Try a product, an objection, or a single word \u2014 &ldquo;renewal,&rdquo; &ldquo;switching,&rdquo; &ldquo;handbook.&rdquo;</p></div>`;
+}
+function renderPlay(){
+  const el=$("#playbody");
+  /* home */
+  if(!pbId){
+    el.innerHTML=`
+      <div class="eyebrow">field manual</div>
+      <h1>Playbooks</h1>
+      <p class="note">Everything you know, where you can find it in thirty seconds.</p>
+      <input class="srch" id="pbq" placeholder="Search every playbook&hellip;" autocomplete="off" value="${esc(pbQ)}">
+      <div id="pbgridwrap"></div>
+      <p class="note" style="margin-top:22px">Ten playbooks, always the same shape \u2014 so you always know where to look.</p>`;
+    pbGrid();
+    const box=$("#pbq");
+    if(box){box.oninput=()=>{pbQ=box.value;pbGrid()}}
+    return;
+  }
+  const p=pbFind(pbId);
+  if(!p){pbId=null;return renderPlay()}
+  /* sub-page */
+  if(pbPage){
+    const [si,pi]=pbPage.split(":").map(Number);
+    const pg=p.secs[si].i[pi];
+    el.innerHTML=`
+      <button class="pbback" data-pbback="1">&lsaquo; ${esc(p.secs[si].t)}</button>
+      <div class="pbhead"><span class="ic">${pg.ic}</span><h1>${esc(pg.t)}</h1><p class="sub">${esc(pg.sub||"")}</p></div>
+      ${pbSections(pg.secs,"p"+si+"-"+pi)}`;
+    return;
+  }
+  /* playbook */
+  el.innerHTML=`
+    <button class="pbback" data-pbback="1">&lsaquo; Playbooks</button>
+    <div class="pbhead"><span class="ic">${p.ic}</span><h1>${esc(p.t)}</h1><p class="sub">${esc(p.sub)}</p></div>
+    <p class="pbover">${esc(p.over)}</p>
+    ${pbSections(p.secs,"m")}`;
+}
+tap("pbopen",t=>pbEnter(t.dataset.pbopen));
+tap("pbback",()=>pbBack());
+tap("pbsec",t=>{const k="s:"+t.dataset.pbsec;pbOpen[k]=!pbOpen[k];renderPlay()});
+tap("pbgrp",t=>{const k="g:"+t.dataset.pbgrp;pbOpen[k]=!pbOpen[k];renderPlay()});
+tap("pbchk",t=>{const k="c:"+t.dataset.pbchk;pbOpen[k]=!pbOpen[k];renderPlay()});
+tap("pbpage",t=>{pbPage=t.dataset.pbpage.replace(/^m:/,"");window.scrollTo(0,0);renderPlay()});
 
 const TAPSEL=Object.keys(TAPS).concat("act").map(k=>"[data-"+k+"]").join(",");
 document.addEventListener("click",async e=>{
