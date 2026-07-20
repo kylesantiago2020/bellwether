@@ -71,7 +71,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .jump:before{content:"\2039";margin-right:5px;opacity:.7}
 .jump:active{opacity:.6}
 .daynav{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dnbtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--sunk);color:var(--ink2);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
+.dnbtn{width:34px;height:34px;border-radius:50%;border:none;background:none;color:var(--ink3);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
 .dnbtn:active{transform:scale(.92)}
 .dncenter{flex:1;text-align:center}
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
@@ -85,6 +85,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .warm{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
 .whead{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;padding:14px 15px;background:none;border:0;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
 .whead b{font-size:14.5px;font-weight:600;display:block}
+.whead.done b:before{content:"\2713";color:var(--grn);margin-right:7px;font-weight:700}
+.whead.done{opacity:.72}
 .whead s{font-size:12px;color:var(--ink3);text-decoration:none;display:block;margin-top:2px}
 .whead .chev{font-size:13px;color:var(--ink3);transition:transform .18s ease}
 .whead .chev.up{transform:rotate(180deg)}
@@ -168,7 +170,7 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .bh{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:8px}
 .bh .t{font-size:13px;font-weight:500}
 .bh .n{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
-.qr{display:flex;align-items:center;gap:0;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
+.qr{display:flex;align-items:flex-start;gap:0;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
 .qr:active,.bk:active{transform:scale(.985)}
 .npri:active,.nq:active,.runbtn:active,.cb:active,.b:active,.chip:active,.wd:active{transform:scale(.97)}
 .qr:last-child{border-bottom:none}
@@ -177,15 +179,17 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 /* the circle sits 8px from the name, but the tap area reaches back past the row edge:
    38x44 to hit, 20px to look at. Padding grows the target, negative margin keeps the
    circle flush left and the row height unchanged. */
-.rtick{width:20px;height:20px;flex:none;background:none;border:none;position:relative;
-  box-sizing:content-box;padding:12px 8px 12px 10px;margin:-12px 0 -12px -10px}
-.rtick:before{content:"";position:absolute;top:12px;left:10px;width:20px;height:20px;
+/* A two-line row centres the circle between the two lines, which is what made it feel
+   detached. Line it up with the account name instead — that's the thing it belongs to. */
+.rtick{width:19px;height:19px;flex:none;background:none;border:none;position:relative;
+  box-sizing:content-box;padding:11px 7px 11px 10px;margin:-11px 0 -11px -10px;align-self:flex-start}
+.rtick:before{content:"";position:absolute;top:11px;left:10px;width:19px;height:19px;
   border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);box-sizing:border-box}
 .rtick:active:before{transform:scale(.88)}
-.qr .i{min-width:0;flex:1}
-.qr .nm{font-size:14.5px;font-weight:500;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qr .i{min-width:0;flex:1;padding-top:1px}
+.qr .nm{letter-spacing:-.2px;font-size:14.5px;font-weight:500;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qr .rs{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qr .rd{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grn);flex:none;text-align:right}
+.qr .rd{opacity:.72;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grn);flex:none;text-align:right}
 .qr .rd em{display:block;font-style:normal;color:var(--ink3)}
 .qr.od .rs{color:var(--amb)}
 .tagm{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:1px 5px;border-radius:3px;background:var(--acs);color:var(--ac);margin-right:5px}
@@ -232,10 +236,10 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .brief .said{font-size:18px}
 .brief .mt{margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7}
 .brief .flag{margin-top:11px;padding:10px 12px;border-radius:8px;background:var(--ambsoft);color:var(--amb);font-size:12.5px;line-height:1.55}
-.act{display:flex;align-items:center;gap:0;padding:12px 2px;border-bottom:1px solid var(--rule)}
+.act{display:flex;align-items:flex-start;gap:0;padding:12px 2px;border-bottom:1px solid var(--rule)}
 .act:last-child{border-bottom:none}
-.tick{width:20px;height:20px;flex:none;background:none;border:none;position:relative;box-sizing:content-box;padding:12px 8px 12px 10px;margin:-12px 0 -12px -10px}
-.tick:before{content:"";position:absolute;top:12px;left:10px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);box-sizing:border-box}
+.tick{width:19px;height:19px;flex:none;background:none;border:none;position:relative;box-sizing:content-box;padding:11px 7px 11px 10px;margin:-11px 0 -11px -10px;align-self:flex-start}
+.tick:before{content:"";position:absolute;top:11px;left:10px;width:19px;height:19px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);box-sizing:border-box}
 .tick:active{transform:scale(.9)}
 .act .i{min-width:0;flex:1;cursor:pointer}
 .push{flex:none;background:none;border:1px solid var(--rule2);border-radius:7px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 8px}
@@ -281,6 +285,8 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .parse{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip s{text-decoration:none;color:var(--ink3);margin-left:5px;font-size:11.5px;font-variant-numeric:tabular-nums}
+.chip.on s{color:inherit;opacity:.7}
 .chip{font-size:13px;padding:7px 12px;border-radius:20px;border:1px solid var(--rule2);background:var(--card);color:var(--ink)}
 .chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
 input[type=range]{width:100%;margin-top:10px;accent-color:var(--ac)}
@@ -303,7 +309,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .zcap{margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
 .bars{display:flex;align-items:flex-end;gap:2px;height:120px;position:relative}
 .barwrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
-.barval{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink3);line-height:1;margin-bottom:3px;white-space:nowrap}
+.barval{opacity:.75;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink3);line-height:1;margin-bottom:3px;white-space:nowrap}
 .bar{width:100%;border-radius:2px;min-height:3px;background:var(--ac);transform-origin:bottom;animation:g .45s cubic-bezier(.2,.8,.3,1) both}
 .bar.z{background:var(--rule2)}
 @keyframes g{from{transform:scaleY(0)}to{transform:scaleY(1)}}
@@ -317,7 +323,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .fig em{font-style:normal;font-size:11px;color:var(--ink3);display:block}
 .fig strong{display:block;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:400;margin-top:4px;letter-spacing:-.5px}
 .hero{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 17px}
-.hero .n{font-family:'IBM Plex Mono',monospace;font-size:32px;letter-spacing:-1.5px;line-height:1.1}
+.hero .n{letter-spacing:-1px;font-family:'IBM Plex Mono',monospace;font-size:32px;letter-spacing:-1.5px;line-height:1.1}
 .hero .l{font-size:12px;color:var(--ink3)}
 .hero .s{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink2)}
 .wall{margin-top:18px;background:var(--ambsoft);border-radius:11px;padding:15px 17px;font-size:13.5px;color:var(--amb);line-height:1.6}
@@ -338,7 +344,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .nb.on{color:var(--ac)}
 .ni{width:20px;height:20px}
 .badge{position:absolute;transform:translate(15px,-5px);background:var(--ac);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
-.fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:25px;background:var(--ac);color:#fff;border:none;font-size:26px;line-height:0;box-shadow:0 8px 20px -8px currentColor;z-index:41}
+.fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:22px;background:var(--ac);color:#fff;border:none;font-size:23px;line-height:0;box-shadow:0 4px 14px -6px rgba(21,23,28,.45);z-index:41}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -567,30 +573,31 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <section class="screen" id="s-set">
   <div class="eyebrow">setup</div>
   <h1>Setup</h1>
+  <p style="font-size:12.5px;color:var(--ink2);margin-top:8px;line-height:1.6">How Bellwether runs your territory. Change anything here and today's plan follows.</p>
 
-  <h2>Your day</h2>
+  <h2>Your daily rhythm</h2>
   <div class="two">
-    <label class="f">Touch target / day<input class="t mono" id="touchTarget" type="number" min="1"></label>
-    <label class="f">Rows shown per list<input class="t mono" id="pageSize" type="number" min="3"></label>
+    <label class="f">Daily touch goal<input class="t mono" id="touchTarget" type="number" min="1"></label>
+    <label class="f">Accounts shown per list<input class="t mono" id="pageSize" type="number" min="3"></label>
   </div>
-  <label class="f">Callback cadence &mdash; days between attempts<input class="t mono" id="cadence" placeholder="3, 4, 7, 14, 21"></label>
+  <label class="f">Follow-up schedule &mdash; days between call attempts<input class="t mono" id="cadence" placeholder="3, 4, 7, 14, 21"></label>
 
-  <h2>Today&rsquo;s mission &mdash; what a full day looks like</h2>
+  <h2>Your daily mission &mdash; what a full day looks like</h2>
   <p style="font-size:12px;color:var(--ink3);margin-top:4px">The plan on the Today screen is built from these. Set them to a day you could actually repeat.</p>
   <div class="two">
-    <label class="f">Business drop-ins<input class="t mono" id="mVisits" type="number" min="0"></label>
-    <label class="f">Client visits<input class="t mono" id="mClients" type="number" min="0"></label>
+    <label class="f">Daily business visits<input class="t mono" id="mVisits" type="number" min="0"></label>
+    <label class="f">Daily client visits<input class="t mono" id="mClients" type="number" min="0"></label>
   </div>
   <div class="two">
-    <label class="f">CPA / partner stops<input class="t mono" id="mPartners" type="number" min="0"></label>
-    <label class="f">Outbound calls<input class="t mono" id="mCalls" type="number" min="0"></label>
+    <label class="f">Daily relationship visits<input class="t mono" id="mPartners" type="number" min="0"></label>
+    <label class="f">Daily call goal<input class="t mono" id="mCalls" type="number" min="0"></label>
   </div>
-  <label class="f">Follow-ups cleared<input class="t mono" id="mFollow" type="number" min="0"></label>
+  <label class="f">Daily follow-up goal<input class="t mono" id="mFollow" type="number" min="0"></label>
 
-  <h2>Mission history</h2>
+  <h2>Your track record</h2>
   <div id="mhist"></div>
 
-  <h2>Week rhythm &mdash; not every day serves the same purpose</h2>
+  <h2>Your working week &mdash; not every day serves the same purpose</h2>
   <p style="font-size:12px;color:var(--ink3);margin-top:4px">One line per day, shown on the Today screen. Office days keep you off the road: calls lead, drop-ins wait.</p>
   <label class="f">Monday<input class="t" id="rMon"></label>
   <label class="f">Tuesday<input class="t" id="rTue"></label>
@@ -601,7 +608,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 
   <div id="bakbanner"></div>
 
-  <h2>Your year</h2>
+  <h2>Your year and your goals</h2>
   <div class="two">
     <label class="f">Sales year ends<input class="t" id="fy" type="date"></label>
     <label class="f">Meet book by<input class="t" id="qEnd" type="date"></label>
@@ -611,7 +618,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Revenue for club<input class="t mono" id="rgoal" type="number" min="0"></label>
   </div>
 
-  <h2>Appearance</h2>
+  <h2>How Bellwether looks</h2>
   <div class="chips" id="themepick">
     <button class="chip" data-th="light">Light</button>
     <button class="chip" data-th="dark">Dark</button>
@@ -620,7 +627,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 
   <h2>You &mdash; used on emails</h2>
   <div class="two">
-    <label class="f">Your name<input class="t" id="meName" placeholder="Kyle"></label>
+    <label class="f">Your name <s style="font-weight:400;text-transform:none;letter-spacing:0">Bellwether greets you with it each morning</s><input class="t" id="meName" placeholder="Kyle"></label>
     <label class="f">Your email<input class="t" id="meEmail" type="email" placeholder="you@adp.com"></label>
   </div>
   <div class="two">
@@ -628,7 +635,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Phone<input class="t" id="mePhone" placeholder="508&hellip;"></label>
   </div>
 
-  <h2>Price book &mdash; RUN FY&rsquo;27, Zone 7</h2>
+  <h2>Your pricing &mdash; RUN FY&rsquo;27, Zone 7</h2>
   <p style="font-size:12px;color:var(--ink3);margin-top:4px">Per payroll run. Edit only if rates change.</p>
   <div id="pbook"></div>
 
@@ -637,7 +644,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="addons"></div>
   <button class="b quiet" id="adda" style="margin-top:10px">+ add-on</button>
 
-  <h2>Your close rates</h2>
+  <h2>How often you close</h2>
   <p style="font-size:12px;color:var(--ink3);margin-top:4px">Learned from your own wins and losses once you have ten of each. Until then these are the estimates used.</p>
   <div class="two">
     <label class="f">Quoted %<input class="t mono" id="o1" type="number" min="0" max="100"></label>
@@ -1247,10 +1254,19 @@ const openActions=a=>(a.next||[]).filter(n=>!n.done);
 const lastEvent=(a,kinds)=>{const e=(a.events||[]).filter(x=>!kinds||kinds.includes(x.kind));return e.length?e[e.length-1]:null};
 const lastMet=a=>{const e=lastEvent(a,["met"]);return e?e.when:""};
 const lastTouch=a=>{const e=lastEvent(a,TOUCH);return e?e.when:""};
-function logEvent(a,kind,text){(a.events=a.events||[]).push({when:iso(today()),kind,text:text||""})}
+/* An event records the real date it happened — history must never lie. But when you've
+   started a future day, the work belongs to THAT mission, so we note it separately.
+   md is the mission day; when is the calendar day. Everything about progress reads md. */
+function logEvent(a,kind,text){
+  const w=iso(today()),md=activeISO();
+  const e={when:w,kind,text:text||""};
+  if(md!=w)e.md=md;
+  (a.events=a.events||[]).push(e);
+}
+const missionDay=e=>e.md||e.when;
 function touchesOn(d){
   const s=iso(d);let n=0;
-  A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))n++}));
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(missionDay(e)==s&&TOUCH.includes(e.kind))n++}));
   return n;
 }
 /* the week has a shape: Fridays are for phones and paperwork, not parking lots */
@@ -1503,7 +1519,7 @@ function render(){
 function actionBlock(n){const k2=n.kind||"call";return ["meet","visit","follow","call"].includes(k2)?k2:"call"}
 /* one account, one row per day — the highest-priority due action decides the block */
 function todayRows(d){
-  const isNow=iso(d)==iso(today()),rows=[];
+  const isNow=isActive(d),rows=[];
   A().forEach(a=>{
     if(!isOpen(a))return;
     const due=openActions(a).filter(n=>isNow?n.date<=iso(d):n.date==iso(d));
@@ -1595,7 +1611,7 @@ function renderClock(show){
 const RINGDEF=[["field","In the field","var(--grn)"],["phone","On the phone","var(--amb)"],
   ["follow","Followed through","#4B4FD6"]];
 function dayRings(d){
-  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),got=missionDone(d);
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),got=missionDone(d||activeD());
   return {field:{v:(got.visits||0)+(got.clients||0)+(got.partners||0),
                  goal:Math.max(1,(+m.visits||0)+(+m.clients||0)+(+m.partners||0))},
           phone:{v:got.calls||0,goal:Math.max(1,+m.calls||0)},
@@ -1713,7 +1729,7 @@ function missionStats(){
    the snapshot is written once and read forever after. */
 function daySummary(d){
   const s=iso(d),ev=[];
-  A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s)ev.push({e,a})}));
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(missionDay(e)==s)ev.push({e,a})}));
   const touches=ev.filter(x=>TOUCH.includes(x.e.kind));
   const kind=k=>ev.filter(x=>x.e.kind==k).length;
   const people=t=>new Set(touches.filter(x=>x.a.type==t).map(x=>x.a.id)).size;
@@ -1986,8 +2002,8 @@ function renderWarm(show){
     return `<div class="wsec"><div class="wl">${label}</div><div class="${cls}">${esc(v)}</div></div>`;
   }).join("");
   el.innerHTML=`<div class="warm">
-    <button class="whead" data-act="warmtoggle" aria-expanded="${body}">
-      <span><b>Morning warm-up</b><s>two minutes before the first stop</s></span>
+    <button class="whead${body?"":" done"}" data-act="warmtoggle" aria-expanded="${body}">
+      <span><b>${body?"Today's warm-up":"Today's warm-up complete"}</b><s>${body?"Takes about two minutes.":"Talk track ready. Go get it."}</s></span>
       <span class="chev${body?" up":""}">&#9662;</span></button>
     ${body?`<div class="wbody">${rows}
       <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div>`:""}
@@ -1996,8 +2012,8 @@ function renderWarm(show){
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
 function todayTouches(d){
-  const s=iso(d||today()),out=[];
-  A().forEach(a=>(a.events||[]).forEach(e=>{if(e.when==s&&TOUCH.includes(e.kind))out.push({a,e})}));
+  const s=iso(d||activeD()),out=[];
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(missionDay(e)==s&&TOUCH.includes(e.kind))out.push({a,e})}));
   return out;
 }
 function missionDone(d){
@@ -2010,14 +2026,15 @@ function missionDone(d){
     follow:t.filter(x=>x.e.kind=="emailed"||x.e.kind=="texted").length
   };
 }
-function renderPace(rows){
-  const tgt=+D.cfg.touchTarget||40,got=touchesOn(today());
+function renderPace(rows,day){
+  const D0=day||activeD();
+  const tgt=+D.cfg.touchTarget||40,got=touchesOn(D0);
   const pct=Math.min(100,Math.round(got/Math.max(1,tgt)*100));
-  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone();
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),done=missionDone(D0);
   /* only what is actually on today's calendar — an overdue meeting from last week
      is not a reason to trim today's calls */
-  const booked=rows.filter(r=>r.block=="meet"&&r.lead.date==iso(today())).length;
-  const office=officeDay(today());
+  const booked=rows.filter(r=>r.block=="meet"&&r.lead.date==iso(D0)).length;
+  const office=officeDay(D0);
   const plan=Object.assign({},m);
   /* a booked day is not a cold-call day — scheduled work eats the dial time first.
      Except office days: the phone IS the plan, meetings are the exception */
@@ -2029,9 +2046,9 @@ function renderPace(rows){
   const wk=weekAvg();
   $("#pace").innerHTML=`<div class="pace${paceOpen?" open":""}">
     <button class="phead" data-act="pace" aria-expanded="${paceOpen}">
-      <span class="plab">Touches</span>
+      <span class="plab">Today's mission</span>
       <span class="ptrack"><span class="pfill${got>=tgt?" ok":""}" style="width:${pct}%"></span></span>
-      <span class="pnum">${got}<s> / ${tgt}</s></span>
+      <span class="pnum">${got}<s> of ${tgt} done</s></span>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
     </button>
     <div class="pbody">
@@ -2077,8 +2094,8 @@ function nowPick(rows){
   const skipped=r=>r.a.skip==iso(today())?1:0;
   return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
 }
-function renderNow(rows){
-  const el=$("#now"),got=touchesOn(today());
+function renderNow(rows,day){
+  const el=$("#now"),got=touchesOn(day||activeD());
   if(!A().length){
     el.innerHTML=`<div class="now clear">
       <div class="eyebrow">welcome</div>
@@ -2129,7 +2146,7 @@ function greeting(){
   const part=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
   /* two short lines rather than one long one — it reads like a briefing on a phone,
      and it degrades to the old headline when no name is set */
-  return nm?`${part}, ${nm}.<em>Here's your day.</em>`:"Here's the day.";
+  return nm?`${part}, ${nm}.<em>Here's your day.</em>`:`${part}.<em>Here's your day.</em>`;
 }
 function dayShape(rows){
   const c={meet:0,visit:0,call:0,follow:0};
@@ -2251,7 +2268,7 @@ function renderToday(){
     : "";
   renderClock(isNow);
   renderWarm(isNow&&A().length>0);
-  if(isNow){renderNow(rows);if(A().length)renderPace(rows);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
+  if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderList(rows,isNow);
   /* every business day has a beginning and an ending — one button, whichever applies */
   const mins=new Date().getHours()*60+new Date().getMinutes();
@@ -2561,6 +2578,16 @@ function sortList(list){
     default:return list.sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
   }
 }
+/* how many accounts each filter would show — counted once per render, not per chip tap */
+function filterCount(f){
+  return A().filter(a=>{
+    if(f=="dormant")return !isOpen(a);
+    if(!isOpen(a))return false;
+    if(f=="open")return true;
+    if(f=="never")return !lastMet(a);
+    return a.type==f;
+  }).length;
+}
 function terrList(){
   const q=norm(terrQ),qd=digits(terrQ);
   /* searching is a hunt for one account — a filter chip must never hide the thing you typed */
@@ -2579,7 +2606,7 @@ function renderTerritory(){
   /* while searching, the filters are irrelevant — say so instead of showing dead chips */
   $("#tfilters").innerHTML=searching
     ? `<div class="srchnote">Searching every account &mdash; filters off.</div>`
-    : TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}</button>`).join("");
+    : TFILTERS.map(([k2,l])=>`<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}<s>${filterCount(k2)}</s></button>`).join("");
   const list=terrList(),cap=60*terrPage;
   const sl=(SORTS.find(([v])=>v==(D.cfg.terrSort||"reco"))||SORTS[0])[1];
   $("#tsort").innerHTML=list.length
