@@ -575,48 +575,55 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 /* ---------- playbooks ---------- */
-.pbgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
-.pbcard{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:112px;padding:13px;border-radius:16px;border:1px solid var(--rule);background:var(--card);color:var(--ink);font-family:inherit;text-align:left;transition:transform .1s ease}
-.pbcard:active{transform:scale(.975)}
-.pbcard .ic{font-size:21px;line-height:1.2;margin-bottom:auto}
-.pbcard .t{font-size:14.5px;font-weight:500;letter-spacing:-.2px}
-.pbcard .s{font-size:11.5px;color:var(--ink3);line-height:1.35}
-.pbback{margin-top:2px;background:none;border:none;padding:6px 0;font-family:inherit;font-size:14px;color:var(--ac)}
-.pbhead{margin-top:6px}
-.pbhead .ic{font-size:27px}
-.pbhead h1{margin-top:6px}
-.pbhead .sub{font-size:13px;color:var(--ink3);margin-top:3px}
-.pbover{margin-top:14px;font-size:13.5px;line-height:1.65;color:var(--ink2);border-left:2px solid var(--ac);padding-left:12px}
-.pbsec{margin-top:8px;border:1px solid var(--rule);background:var(--card);border-radius:14px;overflow:hidden}
-.pbsh{width:100%;display:flex;align-items:center;gap:11px;padding:14px 14px;background:none;border:none;font-family:inherit;color:var(--ink);text-align:left}
-.pbsh .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac)}
-.pbsh .t{font-size:14.5px;font-weight:500}
-.pbsh .cv{margin-left:auto;color:var(--ink3);font-size:17px;transition:transform .18s ease}
-.pbsec.open .pbsh .cv{transform:rotate(90deg)}
-.pbbody{padding:0 14px 13px}
-.pbitem{font-size:13.5px;line-height:1.6;color:var(--ink2);padding:9px 0;border-top:1px solid var(--rule)}
-.pbtalk{margin-top:10px;padding:2px 0 2px 12px;border-left:2px solid var(--ac);font-family:'Instrument Serif',serif;font-size:17.5px;line-height:1.45;color:var(--ink)}
-.pbqa{padding:11px 0;border-top:1px solid var(--rule)}
-.pbqa .q{font-size:13.5px;font-weight:500;color:var(--ink)}
-.pbqa .a{margin-top:5px;font-size:13.5px;line-height:1.6;color:var(--ink2)}
-.pbchk{width:100%;display:flex;align-items:flex-start;gap:11px;padding:10px 0;border:none;border-top:1px solid var(--rule);background:none;font-family:inherit;font-size:13.5px;line-height:1.5;color:var(--ink2);text-align:left}
-.pbchk .bx{flex:none;width:17px;height:17px;margin-top:1px;border-radius:5px;border:1.5px solid var(--rule2)}
+.pbintro{margin-top:10px;font-size:14px;line-height:1.6;color:var(--ink2)}
+.pbgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:20px}
+.pbcard{display:flex;flex-direction:column;align-items:flex-start;min-height:124px;padding:16px;border:none;border-radius:18px;background:var(--card);color:var(--ink);font-family:inherit;text-align:left;transition:transform .12s ease}
+.pbcard:active{transform:scale(.97)}
+.pbcard svg{width:22px;height:22px;color:var(--ac);margin-bottom:auto}
+.pbcard .t{margin-top:14px;font-size:15px;font-weight:500;letter-spacing:-.2px;line-height:1.25}
+.pbcard .s{margin-top:4px;font-size:11.5px;color:var(--ink3);line-height:1.35}
+.pbback{margin:2px 0 0 -4px;padding:8px 4px;background:none;border:none;font-family:inherit;font-size:14.5px;color:var(--ac)}
+.pbhead{margin-top:14px}
+.pbhead svg{width:27px;height:27px;color:var(--ac)}
+.pbhead h1{margin-top:12px}
+.pbhead .sub{margin-top:4px;font-size:13.5px;color:var(--ink3)}
+.pbover{margin-top:16px;font-size:14px;line-height:1.7;color:var(--ink2)}
+.pbsecs{margin-top:26px}
+.pbsec{border-top:1px solid var(--rule)}
+.pbsec:last-child{border-bottom:1px solid var(--rule)}
+.pbsh{width:100%;display:flex;align-items:center;gap:12px;padding:17px 2px;background:none;border:none;font-family:inherit;font-size:15px;font-weight:500;letter-spacing:-.2px;color:var(--ink);text-align:left}
+.pbsh .cv{margin-left:auto;flex:none;width:15px;height:15px;color:var(--ink3);transition:transform .2s ease}
+.pbsec.open .pbsh{color:var(--ac)}
+.pbsec.open .pbsh .cv{transform:rotate(90deg);color:var(--ac)}
+.pbbody{padding:0 2px 22px;animation:f .22s ease both}
+.pbitem{font-size:14px;line-height:1.65;color:var(--ink2);margin-top:13px}
+.pbitem:first-child{margin-top:0}
+.pbtalk{margin-top:12px;padding:14px 16px;border-radius:14px;background:var(--acs);font-family:'Instrument Serif',serif;font-size:19px;line-height:1.4;color:var(--ink)}
+.pbqa{margin-top:20px}
+.pbqa:first-child{margin-top:0}
+.pbqa .q{font-size:14px;font-weight:500;color:var(--ink);line-height:1.5}
+.pbqa .a{margin-top:6px;font-size:14px;line-height:1.65;color:var(--ink2)}
+.pbchk{width:100%;display:flex;align-items:flex-start;gap:13px;margin-top:14px;padding:0;border:none;background:none;font-family:inherit;font-size:14px;line-height:1.5;color:var(--ink2);text-align:left}
+.pbchk:first-child{margin-top:0}
+.pbchk .bx{flex:none;width:19px;height:19px;margin-top:0;border-radius:10px;border:1.5px solid var(--rule2);transition:.14s}
 .pbchk.on{color:var(--ink3)}
 .pbchk.on .bx{background:var(--ac);border-color:var(--ac);position:relative}
-.pbchk.on .bx:after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(43deg)}
-.pbchk.on span:last-child{text-decoration:line-through;text-decoration-color:var(--ink3)}
-.pbgrp{border-top:1px solid var(--rule)}
-.pbgh{width:100%;display:flex;align-items:center;padding:11px 0;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink);text-align:left}
-.pbgh .cv{margin-left:auto;color:var(--ink3);font-size:16px;transition:transform .18s ease}
+.pbchk.on .bx:after{content:"";position:absolute;left:6px;top:3.5px;width:4px;height:8px;border:solid var(--card);border-width:0 1.6px 1.6px 0;transform:rotate(43deg)}
+.pbgrp{margin-top:22px}
+.pbgrp:first-child{margin-top:2px}
+.pbgh{display:flex;align-items:center;gap:8px;width:100%;padding:0;background:none;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);text-align:left;transition:.14s}
+.pbgrp.open .pbgh{color:var(--ac)}
+.pbgh .cv{flex:none;width:12px;height:12px;transition:transform .2s ease}
 .pbgrp.open .pbgh .cv{transform:rotate(90deg)}
-.pbgb{padding-bottom:6px}
-.pbgb .pbitem{border-top:none;padding:6px 0 6px 12px;border-left:2px solid var(--acs)}
-.pbpage{width:100%;display:flex;align-items:center;gap:12px;padding:12px 0;border:none;border-top:1px solid var(--rule);background:none;font-family:inherit;color:var(--ink);text-align:left}
-.pbpage .ic{font-size:19px;flex:none}
-.pbpage .tx{display:flex;flex-direction:column;gap:2px}
-.pbpage .tx .t{font-size:14px;font-weight:500}
+.pbgb{animation:f .22s ease both}
+.pbgb .pbitem{margin-top:12px}
+.pbpage{width:100%;display:flex;align-items:center;gap:14px;padding:15px 2px;border:none;border-top:1px solid var(--rule);background:none;font-family:inherit;color:var(--ink);text-align:left}
+.pbpage:first-child{border-top:none;padding-top:4px}
+.pbpage svg:first-child{width:20px;height:20px;flex:none;color:var(--ac)}
+.pbpage .tx{display:flex;flex-direction:column;gap:3px}
+.pbpage .tx .t{font-size:14.5px;font-weight:500;letter-spacing:-.2px}
 .pbpage .tx .s{font-size:12px;color:var(--ink3);line-height:1.35}
-.pbpage .cv{margin-left:auto;color:var(--ink3);font-size:17px}
+.pbpage .cv{margin-left:auto;flex:none;width:15px;height:15px;color:var(--ink3)}
 
 </style>
 </head>
@@ -3728,7 +3735,7 @@ tap("restore",async t=>{
    kinds: note | check | talk | group | qa | pages
    ============================================================ */
 const PB=[
-{id:"cpa",ic:"\u{1F91D}",t:"CPA",sub:"Firms that own the relationship",
+{id:"cpa",t:"CPA",sub:"Firms that own the relationship",
  over:"Accountants don't buy payroll. They decide whether to trust you with their clients. One good CPA is worth twenty cold calls \u2014 so play the long game and make the first meeting about them, not ADP.",
  secs:[
  {t:"Before the Meeting",k:"check",i:[
@@ -3765,7 +3772,7 @@ const PB=[
   "Before I show you anything, I want to be clear \u2014 I'm not here to take your clients. I'm here to make sure the ones you refer come back to you happier.",
   "You mentioned chasing reports at year end. That's the one I'd fix first, and it costs you nothing."]},
  {t:"The Four Partnership Models",k:"pages",i:[
-  {ic:"\u{1F91D}",t:"Recommend ADP",sub:"They refer, we run it",
+  {ic:"recommend",t:"Recommend ADP",sub:"They refer, we run it",
    secs:[
    {t:"When to use it",k:"note",i:["The firm doesn't want to process payroll \u2014 they want it off their plate.","They already get asked \"who should I use?\" and have no confident answer.","They've been burned by a provider and want a person, not a call center.","Smallest lift, fastest to start \u2014 the default model for most firms."]},
    {t:"Talking points",k:"note",i:["You keep the relationship. I handle the payroll and you stay the trusted advisor.","You get one person to call \u2014 me \u2014 not a support queue.","Your client gets set up right the first time, which means less cleanup for you.","I'll report back to you after every referral so you're never in the dark."]},
@@ -3776,7 +3783,7 @@ const PB=[
     {q:"What if the referral goes badly?",a:"Then you call me and I own it. That's the whole point of having a name instead of a number."},
     {q:"Do I get anything for referring?",a:"Let's talk about that \u2014 there are structured programs, and I'll walk you through exactly what applies to your firm."}]},
    {t:"Follow-up actions",k:"check",i:["Get the firm registered on Accountant Connect","Agree on how referrals get sent \u2014 email, text, warm intro","Set a standing check-in cadence","Send a one-pager they can hand a client"]}]},
-  {ic:"\u{1F3E2}",t:"RUN for Partners",sub:"The firm runs payroll on our platform",
+  {ic:"layers",t:"RUN for Partners",sub:"The firm runs payroll on our platform",
    secs:[
    {t:"When to use it",k:"note",i:["The firm already processes payroll and wants to keep it.","They're on an aging or manual system and know it.","They want payroll revenue but not payroll liability.","They have staff capacity and want to scale the practice."]},
    {t:"Talking points",k:"note",i:["You keep the client, the billing and the relationship \u2014 you just stop carrying the tax risk.","One platform, one login, every client in one place.","Tax filing and compliance sit with us, so your staff stops being the last line of defense.","You can standardize how the whole firm does payroll instead of client by client."]},
@@ -3787,7 +3794,7 @@ const PB=[
     {q:"What does it cost us?",a:"Partner pricing works differently than retail. Let me get you exact numbers for your client count."},
     {q:"Who trains my staff?",a:"We do, and I'm local. Training isn't a webinar link \u2014 it's me in your office."}]},
    {t:"Follow-up actions",k:"check",i:["Get a client count and provider mix","Schedule a platform walkthrough with the payroll staff","Confirm partner pricing for their volume","Map a migration window that avoids quarter end"]}]},
-  {ic:"\u{1F4B0}",t:"Sell the Payroll Practice",sub:"We take the book, they take the relief",
+  {ic:"tag",t:"Sell the Payroll Practice",sub:"We take the book, they take the relief",
    secs:[
    {t:"When to use it",k:"note",i:["Payroll is a distraction from the work the firm actually wants.","A partner is retiring or the payroll person just left.","Margins are thin and the liability keeps them up at night.","They want to redeploy staff into advisory work."]},
    {t:"Talking points",k:"note",i:["You get out of a business you never really wanted to be in.","Your clients get a better experience than you can economically deliver.","You free the headcount for work that bills at a higher rate.","You still stay in the loop on every client through Accountant Connect."]},
@@ -3798,7 +3805,7 @@ const PB=[
     {q:"How is it valued?",a:"It depends on the book \u2014 client count, revenue, complexity. I'll get you a real conversation with the people who do this, not a guess."},
     {q:"What if a client refuses?",a:"Then nothing changes for that client. Nobody gets forced."}]},
    {t:"Follow-up actions",k:"check",i:["Get client count, revenue and complexity of the book","Loop in the right ADP resource for valuation","Agree on how and when clients hear about it","Set the transition timeline"]}]},
-  {ic:"\u{1F517}",t:"Accountant Connect",sub:"Free, and the easiest yes you'll get",
+  {ic:"ac",t:"Accountant Connect",sub:"Free, and the easiest yes you'll get",
    secs:[
    {t:"When to use it",k:"note",i:["Always. It's the lowest-friction entry point with any firm.","Perfect when the partner isn't ready to talk about referrals.","Use it to earn a second meeting when the first one stalls.","Great reason to walk back in \u2014 \"let me get you set up\" is not a sales call."]},
    {t:"Talking points",k:"note",i:["It's free, and it's yours whether or not you ever send me a client.","One login for every client of yours on ADP \u2014 no chasing passwords.","Pull reports yourself at quarter and year end instead of waiting on the client.","Built for accountants, not adapted from something else."]},
@@ -3816,7 +3823,7 @@ const PB=[
   "Asked which clients they'd want me to look at first",
   "Logged notes and created the next action in Bellwether"]}]},
 
-{id:"peo",ic:"\u{1F4BC}",t:"TotalSource / PEO",sub:"Co-employment for the right fit",
+{id:"peo",t:"TotalSource / PEO",sub:"Co-employment for the right fit",
  over:"TotalSource wins when the owner is drowning in HR and paying too much for thin benefits. It loses when you force it. Qualify hard, then position on outcomes \u2014 better benefits, real HR, less risk \u2014 not on the co-employment mechanics.",
  secs:[
  {t:"Strong Fit Industries",k:"note",i:[
@@ -3876,7 +3883,7 @@ const PB=[
   "Set the date for the proposal meeting",
   "Logged notes and the next action in Bellwether"]}]},
 
-{id:"prospect",ic:"\u{1F3E2}",t:"Prospect",sub:"New payroll business",
+{id:"prospect",t:"Prospect",sub:"New payroll business",
  over:"The first meeting has one job: find something that hurts enough to change. If you leave with pricing and no pain, you left with nothing.",
  secs:[
  {t:"Before the Meeting",k:"check",i:[
@@ -3917,7 +3924,7 @@ const PB=[
   "Is there any reason we shouldn't move forward?"]},
  {t:"Wrap-Up",k:"check",i:["Scheduled the follow-up with a date","Confirmed who else has to weigh in","Asked for a referral","Logged notes","Created the next action in Bellwether"]}]},
 
-{id:"client",ic:"\u{1F465}",t:"Existing Client",sub:"Assigned \u2014 most have never met you",
+{id:"client",t:"Existing Client",sub:"Assigned \u2014 most have never met you",
  over:"They already buy from ADP. Your job is not to sell payroll \u2014 it's to become the person they call. Introduce yourself, find out what changed since they signed, and earn the right to expand and be referred.",
  secs:[
  {t:"Before the Meeting",k:"check",i:[
@@ -3946,7 +3953,7 @@ const PB=[
   "If a friend asked you who handles your payroll, what would you tell them?"]},
  {t:"Wrap-Up",k:"check",i:["They know my name and how to reach me","Closed or escalated any open issue","Identified at least one expansion opportunity","Asked for a referral or a CPA introduction","Logged notes and the next action in Bellwether"]}]},
 
-{id:"bank",ic:"\u{1F3E6}",t:"Bank",sub:"Branch-level referral relationships",
+{id:"bank",t:"Bank",sub:"Branch-level referral relationships",
  over:"Bank of America has the national partnership. You have the branch. Bankers refer to people they see, trust, and never have to worry about \u2014 so be consistent, be easy, and always close the loop.",
  secs:[
  {t:"Before the Huddle",k:"check",i:[
@@ -3975,7 +3982,7 @@ const PB=[
   "Who at the branch hasn't met me yet?"]},
  {t:"Wrap-Up",k:"check",i:["Closed the loop on every prior referral","Made one specific, easy ask","Met someone new at the branch","Confirmed next week's huddle","Logged notes and the next action in Bellwether"]}]},
 
-{id:"partner",ic:"\u{1F91D}",t:"Referral Partner",sub:"Non-competing sellers in your territory",
+{id:"partner",t:"Referral Partner",sub:"Non-competing sellers in your territory",
  over:"A good referral partner sells to the same owners you do, at the same moment, without competing. Treat them like a teammate with a quota \u2014 because they have one.",
  secs:[
  {t:"Before the Meeting",k:"check",i:[
@@ -3998,7 +4005,7 @@ const PB=[
   "Can I get five minutes at your team meeting? Not a pitch \u2014 just so your reps know who I am."]},
  {t:"Wrap-Up",k:"check",i:["Reported on every referral","Made one specific ask","Confirmed the next touchpoint","Logged referrals received in Bellwether","Created the next action"]}]},
 
-{id:"wfn",ic:"\u{1F3E2}",t:"Workforce Now",sub:"When they've outgrown small business",
+{id:"wfn",t:"Workforce Now",sub:"When they've outgrown small business",
  over:"Workforce Now is for businesses with real complexity \u2014 more people, more locations, more rules. Recognize the moment a client outgrows RUN before they feel it themselves.",
  secs:[
  {t:"When to Introduce",k:"note",i:[
@@ -4034,7 +4041,7 @@ const PB=[
   "Stay in the loop: the client thinks of you as their ADP person no matter who runs the deal."]},
  {t:"Wrap-Up",k:"check",i:["Confirmed headcount, states and entities","Identified the real owner of the process","Looped in Major Accounts if needed","Set the next meeting","Logged notes in Bellwether"]}]},
 
-{id:"ac",ic:"\u{1F517}",t:"Accountant Connect",sub:"Free, fast, and the easiest yes in the territory",
+{id:"ac",t:"Accountant Connect",sub:"Free, fast, and the easiest yes in the territory",
  over:"The lowest-friction way into any CPA firm. Free to them, useful immediately, and it puts you in the building without asking for anything. Use it to open relationships, not to close them.",
  secs:[
  {t:"What It Is",k:"note",i:[
@@ -4058,7 +4065,7 @@ const PB=[
   "I'd rather earn a referral than ask for one. Start here."]},
  {t:"Follow-Up",k:"check",i:["Firm registered","At least one client authorized and visible","Booked the session to add remaining clients","Logged notes and the next action in Bellwether"]}]},
 
-{id:"obj",ic:"\u{1F4AC}",t:"Objection Library",sub:"Every objection, one place",
+{id:"obj",t:"Objection Library",sub:"Every objection, one place",
  over:"Objections are information, not rejection. Acknowledge, ask one question, then answer. Never argue \u2014 the goal is to understand what's really underneath it.",
  secs:[
  {t:"Price",k:"qa",i:[
@@ -4091,7 +4098,7 @@ const PB=[
   {q:"My office manager handles all this.",a:"How many hours a week? What would you rather they be doing?"},
   {q:"We do it ourselves.",a:"A lot of owners do until the first tax notice. What happens if one shows up next month?"}]}]},
 
-{id:"disc",ic:"\u2753",t:"Discovery Questions",sub:"The whole bank of questions",
+{id:"disc",t:"Discovery Questions",sub:"The whole bank of questions",
  over:"Ask fewer, better questions and then be quiet. The best discovery question is usually the follow-up you didn't plan.",
  secs:[
  {t:"The Core Six",k:"note",i:[
@@ -4119,7 +4126,26 @@ const PB=[
   {h:"Decision Process",q:["Who else has to be comfortable with this?","How have you made a decision like this before?","What would make this an easy yes?","What's your timeline, honestly?","Is there any reason we shouldn't move forward?"]}]}]}
 ];
 
-/* ---------- playbooks: navigation is local to this screen ---------- */
+/* ---------- playbooks: one icon language, no chrome ---------- */
+const pbSvg=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const PBIC={
+ cpa:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8.5 3v18M11.5 8h5.5M11.5 12h5.5M11.5 16h3"/>',
+ peo:'<path d="M12 3l7 3v5.4c0 4.2-2.9 7.5-7 8.4-4.1-.9-7-4.2-7-8.4V6z"/><circle cx="12" cy="10" r="1.9"/><path d="M8.8 15.8a3.6 3.6 0 016.4 0"/>',
+ prospect:'<path d="M4.5 9.5h15V20a1 1 0 01-1 1h-13a1 1 0 01-1-1z"/><path d="M4.5 9.5L6 4h12l1.5 5.5"/><path d="M9.5 21v-6h5v6"/>',
+ client:'<circle cx="9" cy="8" r="3.1"/><path d="M3 20.5a6 6 0 0112 0"/><path d="M16.2 5.6a3 3 0 010 5.5"/><path d="M18 20.5a6.2 6.2 0 00-2.4-4.8"/>',
+ bank:'<path d="M3 10l9-6 9 6"/><path d="M5.5 10.5v7.5M10 10.5v7.5M14 10.5v7.5M18.5 10.5v7.5"/><path d="M3.5 21h17"/>',
+ partner:'<path d="M4 9h13l-3.2-3.2M20 15H7l3.2 3.2"/>',
+ wfn:'<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>',
+ ac:'<path d="M10.2 13.8a4 4 0 005.6 0l3-3a4 4 0 00-5.6-5.6l-1.4 1.4"/><path d="M13.8 10.2a4 4 0 00-5.6 0l-3 3a4 4 0 005.6 5.6l1.4-1.4"/>',
+ obj:'<path d="M21 11.6a7.6 7.6 0 01-10.9 6.9L4 21l1.9-5.2A7.6 7.6 0 1121 11.6z"/>',
+ disc:'<circle cx="12" cy="12" r="8.7"/><path d="M9.6 9.6a2.5 2.5 0 014.8.9c0 1.7-2.4 2-2.4 3.5"/><path d="M12 17.4h.01"/>',
+ recommend:'<path d="M21 3L10.4 13.6"/><path d="M21 3l-6.7 18-3.9-7.4L3 9.7z"/>',
+ layers:'<path d="M12 3.2l8.6 4.8-8.6 4.8-8.6-4.8z"/><path d="M3.4 13.2L12 18l8.6-4.8"/>',
+ tag:'<path d="M3.5 12.6V4.5a1 1 0 011-1h8.1L20.5 11.4 12.4 19.5z"/><circle cx="7.8" cy="7.8" r="1.25"/>',
+ cv:'<path d="M9 5l7 7-7 7"/>'};
+const pbIcon=k=>pbSvg(PBIC[k]||PBIC.disc);
+const pbCv=`<span class="cv">${pbSvg(PBIC.cv)}</span>`;
+
 let pbId=null, pbPage=null, pbOpen={}, pbQ="";
 const pbFind=id=>PB.find(p=>p.id==id);
 function pbEnter(id){pbId=id;pbPage=null;pbOpen={};window.scrollTo(0,0);render()}
@@ -4134,60 +4160,56 @@ function pbBlock(s,key){
   else if(k=="qa")b.push(s.i.map(x=>`<div class="pbqa"><div class="q">${esc(x.q)}</div><div class="a">${esc(x.a)}</div></div>`).join(""));
   else if(k=="group")b.push(s.i.map((g,j)=>{
     const on=pbOpen["g:"+key+":"+j];
-    return `<div class="pbgrp${on?" open":""}"><button class="pbgh" data-pbgrp="${key}:${j}"><span>${esc(g.h)}</span><span class="cv">\u203A</span></button>${on?`<div class="pbgb">${g.q.map(q=>`<div class="pbitem">${esc(q)}</div>`).join("")}</div>`:""}</div>`}).join(""));
+    return `<div class="pbgrp${on?" open":""}"><button class="pbgh" data-pbgrp="${key}:${j}">${pbCv}<span>${esc(g.h)}</span></button>${on?`<div class="pbgb">${g.q.map(q=>`<div class="pbitem">${esc(q)}</div>`).join("")}</div>`:""}</div>`}).join(""));
   else if(k=="pages")b.push(s.i.map((p,j)=>
-    `<button class="pbpage" data-pbpage="${key}:${j}"><span class="ic">${p.ic}</span><span class="tx"><span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub||"")}</span></span><span class="cv">\u203A</span></button>`).join(""));
+    `<button class="pbpage" data-pbpage="${key}:${j}">${pbIcon(p.ic)}<span class="tx"><span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub||"")}</span></span>${pbCv}</button>`).join(""));
   else b.push(s.i.map(x=>`<div class="pbitem">${esc(x)}</div>`).join(""));
   if(s.talk)b.push(s.talk.map(x=>`<div class="pbtalk">${esc(x)}</div>`).join(""));
   return b.join("");
 }
 function pbSections(secs,base){
-  return secs.map((s,i)=>{
+  return `<div class="pbsecs">`+secs.map((s,i)=>{
     const key=base+":"+i,on=pbOpen["s:"+key];
     return `<div class="pbsec${on?" open":""}">
-      <button class="pbsh" data-pbsec="${key}"><span class="n">${String(i+1).padStart(2,"0")}</span><span class="t">${esc(s.t)}</span><span class="cv">\u203A</span></button>
-      ${on?`<div class="pbbody">${pbBlock(s,key)}</div>`:""}</div>`}).join("");
+      <button class="pbsh" data-pbsec="${key}"><span>${esc(s.t)}</span>${pbCv}</button>
+      ${on?`<div class="pbbody">${pbBlock(s,key)}</div>`:""}</div>`}).join("")+`</div>`;
 }
 function pbGrid(){
   const w=$("#pbgridwrap");if(!w)return;
   const q=pbQ.trim().toLowerCase();
   const list=q?PB.filter(p=>JSON.stringify(p).toLowerCase().includes(q)):PB;
   w.innerHTML=list.length
-    ?`<div class="pbgrid">${list.map(p=>`<button class="pbcard" data-pbopen="${p.id}"><span class="ic">${p.ic}</span><span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub)}</span></button>`).join("")}</div>`
-    :`<div class="empty"><h3>Nothing matches that</h3><p>Try a product, an objection, or a single word \u2014 &ldquo;renewal,&rdquo; &ldquo;switching,&rdquo; &ldquo;handbook.&rdquo;</p></div>`;
+    ?`<div class="pbgrid">${list.map(p=>`<button class="pbcard" data-pbopen="${p.id}">${pbIcon(p.id)}<span class="t">${esc(p.t)}</span><span class="s">${esc(p.sub)}</span></button>`).join("")}</div>`
+    :`<div class="empty"><h3>Nothing matches that</h3><p>Try a product, an objection, or a single word &mdash; renewal, switching, handbook.</p></div>`;
 }
 function renderPlay(){
   const el=$("#playbody");
-  /* home */
   if(!pbId){
     el.innerHTML=`
       <div class="eyebrow">field manual</div>
       <h1>Playbooks</h1>
-      <p class="note">Everything you know, where you can find it in thirty seconds.</p>
+      <p class="pbintro">Everything you know, where you can find it in thirty seconds.</p>
       <input class="srch" id="pbq" placeholder="Search every playbook&hellip;" autocomplete="off" value="${esc(pbQ)}">
-      <div id="pbgridwrap"></div>
-      <p class="note" style="margin-top:22px">Ten playbooks, always the same shape \u2014 so you always know where to look.</p>`;
+      <div id="pbgridwrap"></div>`;
     pbGrid();
     const box=$("#pbq");
-    if(box){box.oninput=()=>{pbQ=box.value;pbGrid()}}
+    if(box)box.oninput=()=>{pbQ=box.value;pbGrid()};
     return;
   }
   const p=pbFind(pbId);
   if(!p){pbId=null;return renderPlay()}
-  /* sub-page */
   if(pbPage){
     const [si,pi]=pbPage.split(":").map(Number);
     const pg=p.secs[si].i[pi];
     el.innerHTML=`
       <button class="pbback" data-pbback="1">&lsaquo; ${esc(p.secs[si].t)}</button>
-      <div class="pbhead"><span class="ic">${pg.ic}</span><h1>${esc(pg.t)}</h1><p class="sub">${esc(pg.sub||"")}</p></div>
+      <div class="pbhead">${pbIcon(pg.ic)}<h1>${esc(pg.t)}</h1><p class="sub">${esc(pg.sub||"")}</p></div>
       ${pbSections(pg.secs,"p"+si+"-"+pi)}`;
     return;
   }
-  /* playbook */
   el.innerHTML=`
     <button class="pbback" data-pbback="1">&lsaquo; Playbooks</button>
-    <div class="pbhead"><span class="ic">${p.ic}</span><h1>${esc(p.t)}</h1><p class="sub">${esc(p.sub)}</p></div>
+    <div class="pbhead">${pbIcon(p.id)}<h1>${esc(p.t)}</h1><p class="sub">${esc(p.sub)}</p></div>
     <p class="pbover">${esc(p.over)}</p>
     ${pbSections(p.secs,"m")}`;
 }
