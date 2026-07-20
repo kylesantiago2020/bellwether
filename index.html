@@ -574,6 +574,37 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .wktot div{font-size:12.5px;color:var(--ink2)}
 .wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ---------- bundle detail ---------- */
+.bdpanel{margin-top:4px}
+.bdlead{font-size:13px;line-height:1.6;color:var(--ink2);margin-bottom:4px}
+.bdlab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;margin:16px 0 2px}
+.bdlab:first-child{margin-top:0}
+.bdlab.rm{color:#C0392B}.bdlab.add{color:#1E8E5A}
+.bdrow{display:flex;gap:10px;align-items:flex-start;margin-top:11px}
+.bdrow .dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px}
+.bdrow.rm .dot{background:#C0392B}.bdrow.add .dot{background:#1E8E5A}
+.bdrow b{display:block;font-size:13px;font-weight:500;color:var(--ink)}
+.bdrow i{display:block;font-style:normal;font-size:12.5px;line-height:1.55;color:var(--ink3);margin-top:2px}
+.bdgrp{margin-top:16px}.bdgrp:first-child{margin-top:0}
+.bdgh{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ac);margin:14px 0 6px}
+.bdgrp>.bdgh:first-child{margin-top:0}
+.bdinc{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--ink2);margin-top:8px}
+.bdinc i{font-style:normal;color:#1E8E5A;font-size:12px;margin-top:1px}
+.bdprice{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);margin-top:9px}
+.bdtbl{font-size:12px}
+.bdhead{display:flex;align-items:flex-end;gap:4px;padding-bottom:7px;border-bottom:1px solid var(--rule)}
+.bdhead span{flex:1}
+.bdhead em{width:52px;flex:none;text-align:center;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);line-height:1.2}
+.bdhead em.on{color:var(--ac)}
+.bdr{display:flex;align-items:center;gap:4px;padding:7px 0;border-bottom:1px solid var(--rule)}
+.bdr>span{flex:1;font-size:12px;line-height:1.4;color:var(--ink2);padding-right:6px}
+.bdr u{width:52px;flex:none;text-align:center;text-decoration:none;border-radius:5px;padding:2px 0}
+.bdr u.on{background:var(--acs)}
+.bdr i{font-style:normal;font-size:11.5px}
+.bdr i.y{color:#1E8E5A}.bdr i.n{color:var(--ink3)}
+.rung{position:relative}
+.rung.pick:after{content:"";position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:14px;height:2px;border-radius:1px;background:var(--ac)}
+
 /* ---------- playbooks ---------- */
 body[data-s="play"] .wrap{padding-left:32px;padding-right:32px}
 body[data-s="play"] .eyebrow{font-size:10px}
@@ -1696,6 +1727,191 @@ function recommend(a){
   return {bundle,why,peo:f.has("peo")&&a.emps>=5,major:f.has("major")||a.emps>=50,partner:f.has("addpartner")};
 }
 
+/* ============================================================
+   BUNDLE INTELLIGENCE — static knowledge, no AI.
+   BKEY: E = Enhanced, C = Complete & HR Plus, P = HR Pro
+   Each feature carries one sentence explaining why the owner
+   would care. That sentence is what gets shown when a feature
+   appears or disappears as Kyle moves between bundles.
+   Verify counts against the FY'27 price book before quoting.
+   ============================================================ */
+const BORDER=["Enhanced","Complete & HR Plus","HR Pro"];
+const BK={"Enhanced":"E","Complete & HR Plus":"C","HR Pro":"P"};
+const BSHORT={"Enhanced":"Enhanced","Complete & HR Plus":"Complete","HR Pro":"HR Pro"};
+const BFEAT=[
+{g:"Payroll",i:[
+ {n:"Payroll",w:"Runs in minutes from a phone instead of an afternoon.",E:1,C:1,P:1},
+ {n:"Tax filing",w:"Every federal, state and local filing and deposit is made for them, on time.",E:1,C:1,P:1},
+ {n:"Paperless payroll or delivery",w:"They choose paperless or printed and delivered \u2014 whichever their crew actually uses.",E:1,C:1,P:1},
+ {n:"New hire reporting",w:"State new-hire filings happen automatically the day someone starts.",E:1,C:1,P:1},
+ {n:"Multi-jurisdiction payroll",w:"Employees in more than one state or town are handled without a workaround.",E:1,C:1,P:1},
+ {n:"General ledger interface",w:"Payroll lands in their accounting software without anyone rekeying it.",E:1,C:1,P:1},
+ {n:"W-2 & 1099 forms",w:"Year-end forms created, delivered and e-filed with the IRS.",E:1,C:1,P:1},
+ {n:"Multi-company management",w:"Two entities, one login, one set of reports.",E:1,C:1,P:1},
+ {n:"24/7 support",w:"Someone answers at 6am on a payroll morning.",E:1,C:1,P:1},
+ {n:"Electronic reports",w:"Payroll reports arrive electronically instead of in a binder.",E:1,C:1,P:1},
+ {n:"1st Release",w:"Their payroll is released first in the processing order \u2014 funds and reporting land earliest.",E:0,C:0,P:1}]},
+{g:"Pay delivery",i:[
+ {n:"Pay options \u2014 TotalPay, FSDD, check signing & stuffing, pay card",w:"They pick how people get paid; nobody is stuffing envelopes on a Thursday night.",E:1,C:1,P:1},
+ {n:"Employee access",w:"Employees pull their own stubs and W-2s instead of asking the owner.",E:1,C:1,P:1},
+ {n:"RUN mobile payroll",w:"Payroll can be run from a truck, a job site or a kitchen table.",E:1,C:1,P:1},
+ {n:"Wisely Direct card",w:"An option for employees without a bank account \u2014 no cost to the employer.",E:1,C:1,P:1},
+ {n:"Bill pay & client invoicing",w:"Bills and invoices run from the same place they pay their people.",E:1,C:1,P:1},
+ {n:"Employee onboarding",w:"New hires enter their own information before day one.",E:1,C:1,P:1}]},
+{g:"Compliance",i:[
+ {n:"Poster compliance update service",w:"Posters stay current automatically \u2014 the cheapest fine there is to avoid.",E:1,C:1,P:1},
+ {n:"Garnishment payment service",w:"Court-ordered withholdings are calculated and paid without the owner touching them.",E:1,C:1,P:1},
+ {n:"SUI management",w:"Unemployment claims and rate notices get handled instead of piling up.",E:1,C:1,P:1},
+ {n:"Employment verification",w:"Verification requests from lenders and agencies stop landing on the owner's desk.",E:1,C:1,P:1},
+ {n:"Electronic Form I-9",w:"I-9s are completed and stored correctly \u2014 the most commonly botched form in small business.",E:1,C:1,P:1},
+ {n:"HR compliance updates and training",w:"They hear about a law change before it becomes their problem.",E:0,C:1,P:1}]},
+{g:"HR resources",i:[
+ {n:"State & federal resources",w:"Plain-English answers to the rules that apply to them.",E:1,C:1,P:1},
+ {n:"HR checkups",w:"A structured look at what they're doing wrong before someone else finds it.",E:1,C:1,P:1},
+ {n:"Tip of the week",w:"A steady drip of HR guidance without anyone attending a seminar.",E:1,C:1,P:1},
+ {n:"Quarterly HR newsletter",w:"What changed this quarter, summarized for an owner, not a lawyer.",E:1,C:1,P:1},
+ {n:"HR dictionary",w:"The terminology decoded when a form or an agency letter uses it.",E:1,C:1,P:1},
+ {n:"Document vault",w:"Employee documents live in one secure place instead of a filing cabinet and three inboxes.",E:0,C:1,P:1},
+ {n:"HR Help Desk",w:"A number to call before they do something that becomes a lawsuit.",E:0,C:1,P:1},
+ {n:"HR training and toolkits",w:"Step-by-step guidance for hiring, termination and the other moments they get wrong.",E:0,C:1,P:1},
+ {n:"Enhanced HR HelpDesk support",w:"Not a queue \u2014 the deeper level of help when the question is genuinely hard.",E:0,C:0,P:1},
+ {n:"Dedicated HR team support",w:"The same named HR people every time, who already know their business.",E:0,C:0,P:1},
+ {n:"Employee/employer training",w:"Managers learn how to handle people problems instead of improvising.",E:0,C:0,P:1},
+ {n:"Harassment prevention training",w:"The training several states now require, delivered and documented.",E:0,C:0,P:1},
+ {n:"Employee Learning Management System",w:"Employees complete training online and managers automatically track completion.",E:0,C:0,P:1},
+ {n:"Legal services powered by Legal Club",w:"Access to legal help without a retainer the first time something goes sideways.",E:0,C:0,P:1}]},
+{g:"HR tools",i:[
+ {n:"HR tracking",w:"Reviews, education and incidents live somewhere other than the owner's memory.",E:1,C:1,P:1},
+ {n:"HR forms and documents",w:"Offer letters, warnings and reviews already written and reviewed.",E:0,C:1,P:1},
+ {n:"Employee handbook wizard",w:"They get a real handbook \u2014 the document that protects them when someone is fired.",E:0,C:1,P:1},
+ {n:"Employee handbook creation services",w:"ADP writes the handbook for them instead of handing them a template.",E:0,C:0,P:1}]},
+{g:"Hiring",i:[
+ {n:"Background checks",w:"Screening runs inside payroll instead of through another vendor.",E:"5",C:"25",P:"25"},
+ {n:"ZipRecruiter",w:"Open roles go out to the job boards without a separate subscription.",E:"1 job slot",C:"2 job slots",P:"2 job slots"},
+ {n:"Job description wizard",w:"They stop writing job posts from scratch at 10pm.",E:0,C:1,P:1},
+ {n:"Applicant Tracking System (ATS) tools",w:"Every candidate sits in one pipeline instead of a shared inbox.",E:0,C:0,P:1}]},
+{g:"Insight & extras",i:[
+ {n:"Job costing",w:"They finally see which jobs and crews actually make money.",E:1,C:1,P:1},
+ {n:"Employee discounts",w:"A perk that costs the owner nothing and shows up in recruiting.",E:1,C:1,P:1},
+ {n:"Compensation benchmarking",w:"They know what a role pays locally before they lose someone over it.",E:0,C:1,P:1}]}];
+/* objection coaching, per bundle */
+const BCOACH={
+"HR Pro":[
+ {o:"That's expensive.",r:"I hear you. The difference isn't payroll \u2014 payroll costs about the same either way. What you're paying for is the HR infrastructure: the dedicated team, the training system, the ATS. If hiring and compliance aren't priorities this year we can absolutely step down, and I'll show you exactly what you'd be giving up."},
+ {o:"We already have HR.",r:"Good. Then let's find out whether you're paying twice. Show me what tools they're using and I'll tell you honestly what this replaces and what it doesn't."},
+ {o:"We'll add it later.",r:"You can. Just know that adding HR later usually means a second implementation and retraining your team twice. Sometimes it's easier to build on the right foundation now while we're already doing the work."},
+ {o:"My employees don't need training.",r:"Until one manager handles a complaint wrong. The training isn't for the good days \u2014 it's the documentation you'll wish you had on the bad one."}],
+"Complete & HR Plus":[
+ {o:"That's expensive.",r:"Compared to what you're spending now, or compared to what you'd spend on a handbook, an HR consultant and a background check vendor separately? Let's add those up before we compare."},
+ {o:"Can't we just do Enhanced?",r:"We can. Enhanced runs payroll perfectly. What you'd lose is the handbook, the HR Help Desk, the forms library and twenty of your twenty-five background checks \u2014 which are the exact things you told me nobody here is handling right now."},
+ {o:"We're not big enough for HR tools.",r:"You already have the HR problems. You just don't have anywhere to put them yet."}],
+"Enhanced":[
+ {o:"That's expensive.",r:"This is the leanest package we sell \u2014 payroll, taxes, posters and garnishments. If price is the issue, the lever is the discount, not the bundle."},
+ {o:"What about HR stuff?",r:"You still get the HR resources, HR tracking and electronic I-9s here. What Enhanced doesn't include is the handbook, the help desk and the forms library \u2014 and nothing you described called for those yet. If hiring picks up we step up then, and I'll tell you when I think that day has come."},
+ {o:"My current provider is cheaper.",r:"They might be. Are they filing your taxes, handling garnishments and keeping your posters current? Let's compare the invoice line by line, not the headline number."}]};
+
+/* ---------- deterministic reasoning off discovery flags ---------- */
+const BFLAGREASON={
+ hr:{need:"P",why:"termination and handbook exposure"},
+ handbook:{need:"C",why:"needing a handbook"},
+ peo:{need:"P",why:"benefits ambition"},
+ ta:{need:"C",why:"collecting hours by hand"},
+ multistate:{need:"C",why:"employees in more than one state"},
+ growth:{need:"C",why:"headcount on the move"},
+ "401k":{need:"C",why:"retirement"}};
+const bRank=b=>BORDER.indexOf(b);
+const bFeatAt=(f,b)=>f[BK[b]];
+const bHas=(f,b)=>{const v=bFeatAt(f,b);return v&&v!==0};
+function bDiff(from,to){/* what changes moving from -> to */
+  const add=[],rm=[];
+  BFEAT.forEach(g=>g.i.forEach(f=>{
+    const a=bHas(f,from),b=bHas(f,to);
+    if(!a&&b)add.push(f);
+    else if(a&&!b)rm.push(f);
+    else if(a&&b&&bFeatAt(f,from)!==bFeatAt(f,to))
+      (bRank(to)>bRank(from)?add:rm).push(Object.assign({},f,{n:f.n+" \u2014 "+bFeatAt(f,to)+" instead of "+bFeatAt(f,from)}));}));
+  return {add,rm};
+}
+function bWhyNot(a,rec,other){
+  const f=qFlags(a),d=bDiff(rec,other),out=[];
+  if(bRank(other)<bRank(rec)){
+    Object.keys(BFLAGREASON).forEach(k=>{
+      const r=BFLAGREASON[k];
+      if(f.has(k)&&bRank(other)<bRank(r.need==="P"?"HR Pro":"Complete & HR Plus"))
+        out.push("They mentioned "+r.why+" \u2014 this drops what answers it.");});
+    d.rm.slice(0,3).forEach(x=>out.push("Loses "+x.n+"."));
+    if(!out.length)out.push("Cheaper, but nothing they described gets solved any better.");
+  }else{
+    d.add.slice(0,3).forEach(x=>out.push("Adds "+x.n+" \u2014 nothing they said asks for it yet."));
+    out.push("Costs more without solving another problem they named.");
+  }
+  return out.slice(0,4);
+}
+
+/* ---------- bundle detail panel ---------- */
+let bOpen=null, bSec={};
+const bTick=v=>v===1?'<i class="y">\u2713</i>':(v?'<i class="y">'+esc(v)+'</i>':'<i class="n">\u2014</i>');
+function bSection(id,title,inner,openDefault){
+  if(bSec[id]===undefined)bSec[id]=!!openDefault;
+  const on=bSec[id];
+  return `<div class="pbsec${on?" open":""}"><button class="pbsh" data-bsec="${id}"><span>${esc(title)}</span>
+    <span class="cv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    ${on?`<div class="pbbody">${inner}</div>`:""}</div>`;
+}
+function bundlePanel(a,q,rec){
+  const sel=q.bundle||rec.bundle, isRec=sel===rec.bundle;
+  const yr=b=>annual({emps:a.emps,bundle:b,freq:q.freq,addons:[],disc:+q.disc||0});
+  const delta=yr(sel)-yr(rec.bundle);
+  let h=`<div class="bdpanel"><div class="pbsecs">`;
+
+  /* 1 — why */
+  let why=isRec
+    ? `<div class="bdlead">Everything they told you points here.</div>`+rec.why.map(w=>`<div class="pbitem">${esc(w)}</div>`).join("")
+    : `<div class="bdlead">Bellwether recommended <b>${esc(rec.bundle)}</b>. You've moved ${bRank(sel)>bRank(rec.bundle)?"up":"down"} to ${esc(sel)}${delta?", "+(delta>0?"+":"\u2212")+$$$(Math.abs(delta))+" a year":""}.</div>`
+      +rec.why.map(w=>`<div class="pbitem">${esc(w)}</div>`).join("");
+  h+=bSection("why","Why this bundle",why,true);
+
+  /* 2 — what changes */
+  if(!isRec){
+    const d=bDiff(rec.bundle,sel);
+    let ch="";
+    if(d.rm.length)ch+=`<div class="bdlab rm">Moving to ${esc(BSHORT[sel])} removes</div>`+d.rm.map(f=>
+      `<div class="bdrow rm"><span class="dot"></span><div><b>${esc(f.n)}</b><i>${esc(f.w)}</i></div></div>`).join("");
+    if(d.add.length)ch+=`<div class="bdlab add">Moving to ${esc(BSHORT[sel])} adds</div>`+d.add.map(f=>
+      `<div class="bdrow add"><span class="dot"></span><div><b>${esc(f.n)}</b><i>${esc(f.w)}</i></div></div>`).join("");
+    h+=bSection("chg","What changes",ch||`<div class="pbitem">Nothing changes between these two.</div>`,true);
+  }
+
+  /* 3 — everything included */
+  h+=bSection("inc","Everything included",BFEAT.map(g=>{
+    const rows=g.i.filter(f=>bHas(f,sel));
+    if(!rows.length)return "";
+    return `<div class="bdgrp"><div class="bdgh">${esc(g.g)}</div>`+rows.map(f=>
+      `<div class="bdinc"><i>\u2713</i><span>${esc(f.n)}${f[BK[sel]]!==1?" ("+esc(f[BK[sel]])+")":""}</span></div>`).join("")+`</div>`;
+  }).join(""));
+
+  /* 4 — coach */
+  h+=bSection("coach","If they push back",(BCOACH[sel]||[]).map(c=>
+    `<div class="pbqa"><div class="q">\u201C${esc(c.o)}\u201D</div><div class="a">${esc(c.r)}</div></div>`).join(""));
+
+  /* 5 — compare */
+  h+=bSection("cmp","Compare all three",
+    `<div class="bdtbl"><div class="bdhead"><span></span>${BORDER.map(b=>
+      `<em class="${b===sel?"on":""}">${esc(BSHORT[b])}</em>`).join("")}</div>`
+    +BFEAT.map(g=>`<div class="bdgh">${esc(g.g)}</div>`+g.i.map(f=>
+      `<div class="bdr"><span>${esc(f.n)}</span>${BORDER.map(b=>
+        `<u class="${b===sel?"on":""}">${bTick(f[BK[b]])}</u>`).join("")}</div>`).join("")).join("")
+    +`</div>`);
+
+  /* 6 — why not the others */
+  h+=bSection("not","Why not the others",BORDER.filter(b=>b!==sel).map(b=>
+    `<div class="bdgrp"><div class="bdgh">Why not ${esc(BSHORT[b])}?</div>`
+    +bWhyNot(a,sel,b).map(r=>`<div class="pbitem">${esc(r)}</div>`).join("")
+    +`<div class="bdprice">${$$$(yr(b))} a year \u2014 ${(yr(b)-yr(sel))>0?"+":"\u2212"}${$$$(Math.abs(yr(b)-yr(sel)))} vs ${esc(BSHORT[sel])}</div></div>`).join(""));
+
+  return h+`</div></div>`;
+}
+
 /* ---------- small ui ---------- */
 let toastT,undoFn=null;
 function toast(m){const t=$("#toast");undoFn=null;t.innerHTML=esc(m);t.classList.remove("act");t.classList.add("on");
@@ -2783,6 +2999,7 @@ function renderAccount(){
       <div class="ladder">${rungs.map(r=>{
         const v=annual({emps:a.emps,bundle:r,freq:q.freq,addons:[],disc:+q.disc||0});
         return `<div class="rung${r==q.bundle?" pick":""}" data-rung="${esc(r)}"><em>${esc(r)}</em><strong>${k(v)}</strong></div>`}).join("")}</div>
+      ${bundlePanel(a,q,rec)}
       <label class="f">Discount — ${+q.disc||0}%<input type="range" id="disc" min="0" max="59" value="${+q.disc||0}"></label>
       ${rec.peo?`<div class="peo">Benefits ambition plus ${a.emps} employees — this is a PEO conversation, not a payroll one.</div>`:""}
       ${(+q.disc||0)>35?`<div class="giveaway warn">You're giving away ${$$$(annual({emps:a.emps,bundle:q.bundle,freq:q.freq,addons:q.addons,disc:0})-annual({emps:a.emps,bundle:q.bundle,freq:q.freq,addons:q.addons,disc:+q.disc}))} a year. Trade it for something.</div>`:""}
@@ -3711,6 +3928,7 @@ tap("addvisit",t=>{const v=acct(t.dataset.addvisit);if(!v)return;
   v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
   save();render();toast("Added to today.")});
 
+tap("bsec",t=>{const k=t.dataset.bsec;bSec[k]=!bSec[k];render()});
 tap("rung",t=>{const a=cur();if(!a)return;
   a.quote=Object.assign({freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0},a.quote||{},{bundle:t.dataset.rung});
   save();render()});
