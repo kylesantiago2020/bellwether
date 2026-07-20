@@ -188,7 +188,10 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 /* blocks */
 .block{margin-top:26px}
 .bh{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:8px}
-.bh .t{font-size:13px;font-weight:500}
+/* Block-header title. This used to be `.bh .t`, which collided with the unscoped `.t` form
+   input — so every section heading silently inherited width:100%, a border, a card
+   background and 10px/12px padding, and pushed its own count out of the row. */
+.bh .bt{font-size:13px;font-weight:500;min-width:0;overflow-wrap:anywhere}
 .bh .n{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
 .qr{display:flex;align-items:flex-start;gap:0;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
 .qr:active,.bk:active{transform:scale(.985)}
@@ -209,7 +212,7 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .qr .i{min-width:0;flex:1;padding-top:1px}
 .qr .nm{letter-spacing:-.2px;font-size:14.5px;font-weight:500;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qr .rs{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qr .rd{opacity:.72;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grn);flex:none;text-align:right}
+.qr .rd{opacity:.72;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grn);flex:none;text-align:right;padding-left:10px;max-width:38%;overflow-wrap:anywhere}
 .qr .rd em{display:block;font-style:normal;color:var(--ink3)}
 .qr.od .rs{color:var(--amb)}
 .tagm{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:1px 5px;border-radius:3px;background:var(--acs);color:var(--ac);margin-right:5px}
@@ -328,7 +331,7 @@ input[type=range]{width:100%;margin-top:10px;accent-color:var(--ac)}
 .bk>div:first-child{min-width:0}
 .bk .nm{font-size:14px;font-weight:500;overflow-wrap:anywhere}
 .bk .s{font-size:12px;color:var(--ink3);margin-top:1px}
-.bk .rd{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none;text-align:right}
+.bk .rd{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none;text-align:right;max-width:38%;overflow-wrap:anywhere}
 .imp{margin-top:18px;background:var(--sunk);border-radius:11px;padding:15px 17px}
 textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--rule2);border-radius:8px;padding:10px;min-height:100px;background:var(--card);color:var(--ink)}
 
@@ -428,9 +431,13 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .keyn .knempty{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:4px}
 .cluster{margin-top:10px;background:var(--sunk);border-radius:12px;padding:15px 17px}
 .cluster p{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
-.cluster .cl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;cursor:pointer}
-.cluster .cl:last-child{border-bottom:none}
-.cluster .cl s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
+/* A nearby-account row. This used to be `.cluster .cl`, colliding with the unscoped `.cl`
+   mission-clock label — so every row rendered uppercase with .09em letter-spacing, which
+   is both wrong and wider than the row was built for. */
+.cluster .clrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;cursor:pointer;min-width:0}
+.cluster .clrow:last-child{border-bottom:none}
+.cluster .clrow span{min-width:0;overflow-wrap:anywhere}
+.cluster .clrow s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);flex:none}
 
 /* date field */
 .dfield{display:flex;gap:7px;align-items:stretch;margin-top:6px}
@@ -486,7 +493,11 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .rings.all.go.fill .rchk{animation:edcheck .38s cubic-bezier(.4,0,.2,1) 1.05s forwards}
 .rleg{margin-top:20px;display:inline-block;text-align:left}
 .rl{display:flex;align-items:center;gap:9px;padding:6px 0}
-.rd{width:9px;height:9px;border-radius:50%;flex:none}
+/* This is the ring-legend dot, and nothing else. It used to be a bare `.rd`, which also
+   names the right-hand value column in Today and Territory rows — those rules never set a
+   width, so every EE count and dollar figure inherited a 9px box and spilled out of its card.
+   Scoped to the legend, the collision is gone at the source. */
+.rl .rdot{width:9px;height:9px;border-radius:50%;flex:none}
 .rt{font-size:13.5px;flex:1;min-width:0}
 .rn{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink3)}
 .rn.hit{color:var(--grn)}
@@ -811,15 +822,20 @@ function bizDay(d){let x=new Date(d.getTime());while(isWeekend(x))x=addDays(x,1)
    is operating on — normally the real today, but you can start a future day early.
    A day in the past is never still active. */
 function activeISO(){
-  const t=iso(today()),a=D.cfg&&D.cfg.activeDay;
-  return (a&&a>t)?a:t;
+  const t=iso(today()),c=D.cfg||{},a=c.activeDay;
+  /* Starting tomorrow early is a decision about tonight, not a standing preference. It holds
+     for the rest of the calendar day you made it on, and then the app is back on the real
+     today. Without that expiry a future day chosen once stayed active for days — open the
+     app on Monday morning and be looking at Wednesday. */
+  return (a&&a>t&&c.activeSetOn===t)?a:t;
 }
 const activeD=()=>parseD(activeISO());
 const isActive=d=>iso(d)==activeISO();
 /* the next business day after a given one — what "start tomorrow" means */
 const nextBiz=d=>bizDay(addDays(d,1));
 async function startDay(k){
-  D.cfg.activeDay=k;viewDate=parseD(k);showAllRows=false;
+  /* stamped with the day the choice was made, which is what lets it expire */
+  D.cfg.activeDay=k;D.cfg.activeSetOn=iso(today());viewDate=parseD(k);showAllRows=false;
   await save();render();
   toast(k==iso(today())?"Back on today.":fmt(parseD(k))+" is your active day.");
 }
@@ -1044,6 +1060,10 @@ function validate(d){
       .filter(x=>x&&typeof x=="object"&&String(x.what||"").trim())
       .map(x=>({at:/^\d{2}:\d{2}$/.test(x.at||"")?x.at:"",what:String(x.what).trim()}));
   });
+  /* a future active day that has gone stale is cleared here, so what's on disk matches
+     what the app will actually do on open */
+  {const t=iso(today());
+   if(d.cfg.activeDay&&!(d.cfg.activeDay>t&&d.cfg.activeSetOn===t)){d.cfg.activeDay="";d.cfg.activeSetOn=""}}
   /* a one-day override is a note about one date, not configuration — it lives beside the days */
   if(!d.modes||typeof d.modes!="object")d.modes={};
   Object.keys(d.modes).forEach(k2=>{if(!MODEK.includes(d.modes[k2]))delete d.modes[k2]});
@@ -1794,7 +1814,7 @@ function ringLegend(r){
   if(!r)return "";
   return `<div class="rleg">${RINGDEF.map(([k,label,col])=>{
     const d2=r[k]||{v:0,goal:1},hit=d2.v>=d2.goal;
-    return `<div class="rl"><span class="rd" style="background:${col}"></span>
+    return `<div class="rl"><span class="rdot" style="background:${col}"></span>
       <span class="rt">${label}</span>
       <span class="rn${hit?" hit":""}">${d2.v} / ${d2.goal}</span></div>`}).join("")}</div>`;
 }
@@ -2250,7 +2270,7 @@ function nearbyHtml(rows){
   if(showNearby)h+=`<div class="cluster">
     <p style="margin-top:0">${nb.anchor?`You're already headed there for ${esc(nb.anchor.name)}.`:""} Windshield time is the expensive part — spend it once.</p>
     ${nb.list.map(a=>{const lt=lastTouch(a);
-      return `<div class="cl" data-addvisit="${a.id}"><span>${esc(a.name)}</span>
+      return `<div class="clrow" data-addvisit="${a.id}"><span>${esc(a.name)}</span>
         <s>${[a.emps?a.emps+" ee":"",lt?days(parseD(lt),today())+"d":"never"].filter(Boolean).join(" · ")} &nbsp;+ add</s></div>`}).join("")}
   </div>`;
   return h;
@@ -2365,7 +2385,7 @@ function renderList(rows,isNow,day){
   };
   const group=(title,list,tail)=>{
     if(!list.length&&!tail)return "";
-    let h=`<div class="block"><div class="bh"><span class="t">${title}</span><span class="n">${list.length}</span></div>`;
+    let h=`<div class="block"><div class="bh"><span class="bt">${title}</span><span class="n">${list.length}</span></div>`;
     list.slice(0,per).forEach(r=>h+=row(r));
     if(list.length>per)h+=`<div class="more"><button class="b quiet" data-act="morerows">Show ${list.length-per} more</button></div>`;
     h+=(tail||"")+`</div>`;
@@ -2430,7 +2450,7 @@ function renderWeek(cur){
   if(!A().length){$("#week").innerHTML="";return}
   const ds=[];let d=today();
   while(ds.length<5){if(d.getDay()!=0&&d.getDay()!=6)ds.push(d);d=addDays(d,1)}
-  $("#week").innerHTML=`<div class="block"><div class="bh"><span class="t">This week</span><span class="n">tap a day</span></div>
+  $("#week").innerHTML=`<div class="block"><div class="bh"><span class="bt">This week</span><span class="n">tap a day</span></div>
     <div class="wgrid">${ds.map(x=>{
       const n=todayRows(x).length,on=iso(x)==iso(cur),done=!!sealed(x);
       return `<button class="wd${on?" on":""}" data-week="${iso(x)}" aria-label="${x.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}">
@@ -3811,7 +3831,7 @@ document.addEventListener("click",async e=>{
     case"reopenday":{
       const key=iso(viewDate||today());
       if(!confirm("Reopen this day? The saved summary is deleted and the day goes back to being a working list."))break;
-      delete D.days[key];D.cfg.activeDay=key>iso(today())?key:"";
+      delete D.days[key];D.cfg.activeDay=key>iso(today())?key:"";D.cfg.activeSetOn=iso(today());
       await save();render();toast("Reopened.");break}
     case"catchup":catchUp();break;
     case"sample":await loadSample();break;
