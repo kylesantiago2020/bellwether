@@ -574,6 +574,45 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .wktot div{font-size:12.5px;color:var(--ink2)}
 .wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ---------- bundle panel v2 ---------- */
+.bdread{margin-top:2px}
+.bdconf{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ac)}
+.bdconf.thin{color:#B4791E}
+.bdopt{font-size:22px;font-weight:500;letter-spacing:-.5px;margin-top:5px}
+.bdamt{font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink2);margin-top:2px}
+.bdsaid{margin-top:10px;font-size:14px;line-height:1.6;color:var(--ink)}
+.bdsaid.thin{color:#B4791E}
+.bdvs{margin-top:6px;font-size:12.5px;line-height:1.55;color:var(--ink3)}
+.bdstrip{margin-top:14px;padding:10px;border-radius:14px;background:var(--acs)}
+.bdstrip .ladder{margin:0}
+.bddisc{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--ink2)}
+.bddisc b{font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+.bddisc input{flex:1}
+.bdcheck{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--card);font-size:13px;line-height:1.5;color:var(--ink2)}
+.bdcheck .dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px;background:#B4791E}
+.bdlab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:20px 0 8px}
+.bdchips{display:flex;flex-wrap:wrap;gap:7px}
+.bdchip{padding:8px 12px;border-radius:999px;border:1px solid var(--rule2);background:var(--card);font-family:inherit;font-size:12.5px;color:var(--ink)}
+.bdchip:active{background:var(--acs);border-color:var(--ac)}
+.bdmo{margin-top:16px}
+.bdmoback{background:none;border:none;padding:2px 0 8px;font-family:inherit;font-size:13px;color:var(--ac)}
+.bdtrig{font-size:13px;color:var(--ink3)}
+.bdwhy{margin-top:3px;font-size:12.5px;line-height:1.5;color:var(--ink3)}
+.bdsay{margin-top:12px;padding:14px 15px;border-radius:14px;background:var(--acs);font-family:'Instrument Serif',serif;font-size:21px;line-height:1.3;color:var(--ink)}
+.bdproof{margin-top:12px}
+.bdproof span{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.bdproof i{display:block;font-style:normal;font-size:13px;line-height:1.5;color:var(--ink2);padding-left:11px;border-left:2px solid var(--ac);margin-top:5px}
+.bdnext{margin-top:14px;font-size:14px;line-height:1.5;color:var(--ink)}
+.bdnext span{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.bdmove{margin-top:14px;padding-left:12px;border-left:2px solid var(--rule2)}
+.bdmove.down{border-color:#C0392B}.bdmove.up{border-color:#1E8E5A}
+.bdmove b{display:block;font-size:12.5px;font-weight:500}
+.bdmove .say{display:block;margin-top:5px;font-family:'Instrument Serif',serif;font-size:17px;line-height:1.35;color:var(--ink)}
+.bdmove .lost{display:block;margin-top:6px;font-size:11.5px;line-height:1.5;color:var(--ink3)}
+.bdmind{margin-top:8px}
+.bdnote{margin-top:10px;font-size:11.5px;color:var(--ink3)}
+.bdsafe{width:100%;margin-top:18px;padding:12px;border-radius:12px;border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13.5px;color:var(--ink2)}
+
 /* ---------- bundle detail ---------- */
 .bdpanel{margin-top:4px}
 .bdlead{font-size:13px;line-height:1.6;color:var(--ink2);margin-bottom:4px}
@@ -1712,19 +1751,10 @@ function qFlags(a){
 }
 function visibleFollow(a){const f=qFlags(a);return QFOLLOW.filter(q=>f.has(q.when))}
 function recommend(a){
-  const f=qFlags(a);
-  let bundle="Enhanced",why=[];
-  if(f.has("hr")||f.has("handbook")||f.has("peo")){bundle="HR Pro";
-    if(f.has("hr"))why.push("Termination and handbook exposure \u2014 HR Pro carries the HR support");
-    if(f.has("peo"))why.push("Benefits ambition points at PEO; HR Pro is the on-ramp");}
-  else if(f.has("ta")||f.has("401k")||f.has("growth")||f.has("multistate")){bundle="Complete & HR Plus";
-    if(f.has("ta"))why.push("Hours arrive by hand \u2014 time tracking attaches here");
-    if(f.has("multistate"))why.push("Multi-state filing is handled, not homework");
-    if(f.has("growth"))why.push("Headcount is moving; this is the bundle that holds");}
-  else why.push("Straight payroll pain \u2014 no HR trigger surfaced yet");
-  if(f.has("pain"))why.push("Payroll is eating real hours every cycle");
-  if(!f.has("event"))why.push("\u26a0 No compelling event captured \u2014 this one slips unless you find it");
-  return {bundle,why,peo:f.has("peo")&&a.emps>=5,major:f.has("major")||a.emps>=50,partner:f.has("addpartner")};
+  const rd=read(a,"bundle"),f=qFlags(a);
+  return {bundle:rd.option,rd,
+    why:rd.because.length?rd.because.slice(0,3).map(e=>cap(e.said)):["Nothing in discovery points anywhere yet"],
+    peo:f.has("peo")&&a.emps>=5,major:f.has("major")||a.emps>=50,partner:f.has("addpartner")};
 }
 
 /* ============================================================
@@ -1794,35 +1824,12 @@ const BFEAT=[
  {n:"Job costing",w:"They finally see which jobs and crews actually make money.",E:1,C:1,P:1},
  {n:"Employee discounts",w:"A perk that costs the owner nothing and shows up in recruiting.",E:1,C:1,P:1},
  {n:"Compensation benchmarking",w:"They know what a role pays locally before they lose someone over it.",E:0,C:1,P:1}]}];
-/* objection coaching, per bundle */
-const BCOACH={
-"HR Pro":[
- {o:"That's expensive.",r:"I hear you. The difference isn't payroll \u2014 payroll costs about the same either way. What you're paying for is the HR infrastructure: the dedicated team, the training system, the ATS. If hiring and compliance aren't priorities this year we can absolutely step down, and I'll show you exactly what you'd be giving up."},
- {o:"We already have HR.",r:"Good. Then let's find out whether you're paying twice. Show me what tools they're using and I'll tell you honestly what this replaces and what it doesn't."},
- {o:"We'll add it later.",r:"You can. Just know that adding HR later usually means a second implementation and retraining your team twice. Sometimes it's easier to build on the right foundation now while we're already doing the work."},
- {o:"My employees don't need training.",r:"Until one manager handles a complaint wrong. The training isn't for the good days \u2014 it's the documentation you'll wish you had on the bad one."}],
-"Complete & HR Plus":[
- {o:"That's expensive.",r:"Compared to what you're spending now, or compared to what you'd spend on a handbook, an HR consultant and a background check vendor separately? Let's add those up before we compare."},
- {o:"Can't we just do Enhanced?",r:"We can. Enhanced runs payroll perfectly. What you'd lose is the handbook, the HR Help Desk, the forms library and twenty of your twenty-five background checks \u2014 which are the exact things you told me nobody here is handling right now."},
- {o:"We're not big enough for HR tools.",r:"You already have the HR problems. You just don't have anywhere to put them yet."}],
-"Enhanced":[
- {o:"That's expensive.",r:"This is the leanest package we sell \u2014 payroll, taxes, posters and garnishments. If price is the issue, the lever is the discount, not the bundle."},
- {o:"What about HR stuff?",r:"You still get the HR resources, HR tracking and electronic I-9s here. What Enhanced doesn't include is the handbook, the help desk and the forms library \u2014 and nothing you described called for those yet. If hiring picks up we step up then, and I'll tell you when I think that day has come."},
- {o:"My current provider is cheaper.",r:"They might be. Are they filing your taxes, handling garnishments and keeping your posters current? Let's compare the invoice line by line, not the headline number."}]};
-
-/* ---------- deterministic reasoning off discovery flags ---------- */
-const BFLAGREASON={
- hr:{need:"P",why:"termination and handbook exposure"},
- handbook:{need:"C",why:"needing a handbook"},
- peo:{need:"P",why:"benefits ambition"},
- ta:{need:"C",why:"collecting hours by hand"},
- multistate:{need:"C",why:"employees in more than one state"},
- growth:{need:"C",why:"headcount on the move"},
- "401k":{need:"C",why:"retirement"}};
+/* ---------- feature-matrix helpers ---------- */
+const bTick=v=>v===1?'<i class="y">\u2713</i>':(v?'<i class="y">'+esc(v)+'</i>':'<i class="n">\u2014</i>');
 const bRank=b=>BORDER.indexOf(b);
 const bFeatAt=(f,b)=>f[BK[b]];
 const bHas=(f,b)=>{const v=bFeatAt(f,b);return v&&v!==0};
-function bDiff(from,to){/* what changes moving from -> to */
+function bDiff(from,to){
   const add=[],rm=[];
   BFEAT.forEach(g=>g.i.forEach(f=>{
     const a=bHas(f,from),b=bHas(f,to);
@@ -1832,85 +1839,331 @@ function bDiff(from,to){/* what changes moving from -> to */
       (bRank(to)>bRank(from)?add:rm).push(Object.assign({},f,{n:f.n+" \u2014 "+bFeatAt(f,to)+" instead of "+bFeatAt(f,from)}));}));
   return {add,rm};
 }
-function bWhyNot(a,rec,other){
-  const f=qFlags(a),d=bDiff(rec,other),out=[];
-  if(bRank(other)<bRank(rec)){
-    Object.keys(BFLAGREASON).forEach(k=>{
-      const r=BFLAGREASON[k];
-      if(f.has(k)&&bRank(other)<bRank(r.need==="P"?"HR Pro":"Complete & HR Plus"))
-        out.push("They mentioned "+r.why+" \u2014 this drops what answers it.");});
-    d.rm.slice(0,3).forEach(x=>out.push("Loses "+x.n+"."));
-    if(!out.length)out.push("Cheaper, but nothing they described gets solved any better.");
-  }else{
-    d.add.slice(0,3).forEach(x=>out.push("Adds "+x.n+" \u2014 nothing they said asks for it yet."));
-    out.push("Costs more without solving another problem they named.");
-  }
-  return out.slice(0,4);
+
+/* ============================================================
+   COACHING ENGINE — decisions, evidence, moments, checks.
+   No AI. Every surfaced item carries the reason it appeared.
+   Bundles are decision #1, not the architecture.
+   O = option key: E Enhanced · C Complete & HR Plus · P HR Pro
+   ============================================================ */
+const DECISION={
+ bundle:{id:"bundle",label:"Which package",
+   options:["Enhanced","Complete & HR Plus","HR Pro"],
+   key:{"Enhanced":"E","Complete & HR Plus":"C","HR Pro":"P"},
+   base:{E:2,C:0,P:0},          /* Enhanced is the floor, not a winner by default */
+   shape:"pick"}
+};
+
+/* evidence: keyed to the real discovery question + the real answer they chose,
+   so `said` is a quote of their answer, never a paraphrase of a flag. */
+const EV={bundle:[
+ {id:"exit-ugly",   q:"exit",    c:["had"],    said:"they've already had an exit go badly", inv:"that had never happened",        pts:{C:2,P:3}, w:3, solves:["Risk"]},
+ {id:"exit-worry",  q:"exit",    c:["worry"],  said:"they think about a bad exit",          inv:"they weren't worried about it",   pts:{C:2,P:2}, w:2, solves:["Risk"]},
+ {id:"docs-stale",  q:"exit",    c:["stale"],  said:"their paperwork is out of date",       inv:"their paperwork were current",    pts:{C:3,P:3}, w:3, solves:["Compliance","Risk"]},
+ {id:"exit-covered",q:"exit",    c:["fine"],   said:"they feel covered on the HR side",     inv:"they weren't covered",            pts:{E:2},     w:2, solves:[]},
+ {id:"no-handbook", q:"f_hand",  c:["none"],   said:"they have no handbook",                inv:"they had a current handbook",     pts:{C:3,P:3}, w:3, solves:["Compliance","Risk"]},
+ {id:"old-handbook",q:"f_hand",  c:["old"],    said:"their handbook is old",                inv:"their handbook were current",     pts:{C:2,P:2}, w:2, solves:["Compliance"]},
+ {id:"handbook-ok", q:"f_hand",  c:["current"],said:"their handbook is current",            inv:"it were out of date",             pts:{E:1},     w:1, solves:[]},
+ {id:"added-people",q:"change",  c:["grew"],   said:"they added people this year",          inv:"headcount were flat",             pts:{C:2,P:2}, w:2, solves:["Hiring","Growth"]},
+ {id:"new-state",   q:"change",  c:["state"],  said:"they're in a new state now",           inv:"they were single-state",          pts:{C:3,P:3}, w:3, solves:["Compliance"]},
+ {id:"flat",        q:"change",  c:["flat"],   said:"the business is flat",                 inv:"they were growing",               pts:{E:1},     w:1, solves:["Cost"]},
+ {id:"shrank",      q:"change",  c:["shrank"], said:"the business got smaller",             inv:"they were growing",               pts:{E:2},     w:2, solves:["Cost"]},
+ {id:"hand-hours",  q:"time",    c:["paper","sheet","clock"], said:"hours still arrive by hand", inv:"hours flowed in on their own", pts:{C:1,P:1}, w:1, solves:["Cost"]},
+ {id:"auto-hours",  q:"time",    c:["auto"],   said:"hours already flow in automatically",  inv:"they were still on paper",        pts:{E:1},     w:1, solves:[]},
+ {id:"payroll-eats",q:"hours",   c:["half","full"], said:"payroll eats half a day or more", inv:"payroll took under an hour",      pts:{C:1,P:1}, w:2, solves:["Cost"]},
+ {id:"owner-runs",  q:"payday",  c:["self"],   said:"the owner runs payroll personally",    inv:"someone else ran it",             pts:{C:1,P:1}, w:1, solves:["Cost"]},
+ {id:"nobody-owns", q:"payday",  c:["chaos"],  said:"nobody owns payroll — it moves around",inv:"one person owned it",             pts:{C:2,P:2}, w:2, solves:["Risk"]},
+ {id:"wants-hr",    q:"benefits",c:["both"],   said:"they want someone handling HR",        inv:"they didn't want HR help",        pts:{C:3,P:3}, w:3, solves:["HR"]},
+ {id:"wants-401k",  q:"benefits",c:["401k"],   said:"they'd like a retirement match",       inv:"retirement weren't on their mind",pts:{C:1,P:1},     w:1, solves:["Retention"]},
+ {id:"grow-plus",   q:"f_growth",c:["plus"],   said:"they expect ten to twenty more people",inv:"headcount stayed put",            pts:{C:2,P:2}, w:2, solves:["Hiring","Growth"]},
+ {id:"grow-fifty",  q:"f_growth",c:["fifty"],  said:"they expect to pass fifty",            inv:"they stayed under fifty",         pts:{C:1,P:3}, w:3, solves:["Growth"]},
+ {id:"breaking",    q:"inaction",c:["worse","must"], said:"this already breaks when they get busy", inv:"nothing had to change",   pts:{C:1,P:1}, w:2, solves:["Risk"]}
+]};
+
+/* answers → evidence actually present on this account */
+function evOf(a,d){
+  const ans=(a.discovery&&a.discovery.answers)||{};
+  return (EV[d]||[]).filter(e=>e.c.includes(ans[e.q]));
+}
+function scoreOpts(dec,list){
+  const s=Object.assign({},dec.base);
+  list.forEach(e=>Object.keys(e.pts||{}).forEach(k=>s[k]=(s[k]||0)+e.pts[k]*(e.w||1)));
+  return s;
+}
+/* the read: what to recommend, why, and what would change it */
+function read(a,dId){
+  const dec=DECISION[dId],have=evOf(a,dId),s=scoreOpts(dec,have);
+  const rank=dec.options.slice().sort((x,y)=>{
+    const dx=s[dec.key[y]]-s[dec.key[x]];
+    return dx||dec.options.indexOf(x)-dec.options.indexOf(y);   /* ties break DOWN, never up */
+  });
+  const win=rank[0],wk=dec.key[win],margin=s[wk]-s[dec.key[rank[1]]];
+  const because=have.filter(e=>(e.pts||{})[wk]>0).sort((x,y)=>(y.pts[wk]*y.w)-(x.pts[wk]*x.w));
+  const against=have.filter(e=>!(e.pts||{})[wk]);
+  const band=(because.length>=3&&margin>=3)?"High":(because.length>=2?"Moderate":"Thin");
+
+  /* what would change my mind — computed, not authored */
+  const change=[];
+  because.slice(0,4).forEach(e=>{
+    const alt=read2(dec,have.filter(x=>x.id!=e.id));
+    if(alt!=win)change.push({txt:"If "+e.inv+", I'd say "+short(alt)+".",kind:"drop"});
+  });
+  (EV[dId]||[]).filter(e=>!have.some(h=>h.id==e.id)).forEach(e=>{
+    const alt=read2(dec,have.filter(x=>x.q!=e.q).concat([e]));
+    if(alt!=win&&!change.some(c=>c.e==e.id))
+      change.push({txt:"If "+e.said+", I'd say "+short(alt)+".",kind:"add",e:e.id});
+  });
+  return {dec,option:win,rank,score:s,margin,band,because,against,have,
+          support:because.length,total:have.length,change:change.slice(0,4)};
+}
+function read2(dec,list){
+  const s=scoreOpts(dec,list);
+  return dec.options.slice().sort((x,y)=>(s[dec.key[y]]-s[dec.key[x]])||dec.options.indexOf(x)-dec.options.indexOf(y))[0];
+}
+const short=b=>({"Enhanced":"Enhanced","Complete & HR Plus":"Complete","HR Pro":"HR Pro"}[b]||b);
+const saidList=(arr,n)=>arr.slice(0,n||3).map(e=>e.said).join(" \u00b7 ");
+
+/* ---------- moments: why / say / proof / next ---------- */
+const OBJ=["build-value","differentiate","handle-objection","reduce-risk","confirm-understanding","earn-agreement","close"];
+const MO=[
+{id:"b.read.*",d:"bundle",o:"*",obj:"build-value",trigger:"Presenting it",
+ why:"Lead with their words, not the package name. They agree with themselves faster.",
+ say:"Based on what you've told me, this is where I'd start.",
+ proof:["*"],next:"Does that match how you'd describe it?"},
+
+{id:"b.price.E",d:"bundle",o:"E",obj:"handle-objection",trigger:"That's expensive.",
+ why:"This is already the floor. The lever is the discount, not the package.",
+ say:"This is the leanest package we sell. Payroll, taxes, posters, garnishments.",
+ proof:["payroll-eats","owner-runs"],next:"What number were you expecting?"},
+{id:"b.price.C",d:"bundle",o:"C",obj:"handle-objection",trigger:"That's expensive.",
+ why:"They're comparing to a payroll invoice, not to what they're missing.",
+ say:"Payroll costs the same either way. You're paying for the HR.",
+ proof:["no-handbook","docs-stale","wants-hr"],next:"Is it the total, or the monthly?"},
+{id:"b.price.P",d:"bundle",o:"P",obj:"handle-objection",trigger:"That's expensive.",
+ why:"Name the three things they're actually buying, then offer the step down honestly.",
+ say:"You're buying the HR team, the training and the hiring system.",
+ proof:["exit-ugly","wants-hr","grow-fifty"],next:"Which of those three matters least to you?"},
+
+{id:"b.diff.E",d:"bundle",o:"E",obj:"differentiate",trigger:"What's the difference?",
+ why:"Keep it to the two things they'd actually use this year.",
+ say:"Enhanced runs payroll. Complete adds the handbook and someone to call.",
+ proof:["no-handbook","docs-stale"],next:"Would you use either of those this year?"},
+{id:"b.diff.C",d:"bundle",o:"C",obj:"differentiate",trigger:"What's the difference?",
+ why:"Two levers only. More than two and they stop tracking.",
+ say:"Complete gives you the handbook and a help desk. HR Pro adds training.",
+ proof:["no-handbook","added-people"],next:"Which of those would you use first?"},
+{id:"b.diff.P",d:"bundle",o:"P",obj:"differentiate",trigger:"What's the difference?",
+ why:"HR Pro's difference is people, not features. Say people.",
+ say:"HR Pro is the difference between a phone number and a person.",
+ proof:["exit-ugly","wants-hr"],next:"Who would you call today if it happened?"},
+
+{id:"b.havehr.*",d:"bundle",o:"*",obj:"differentiate",trigger:"We already have HR.",
+ why:"Never argue. Find the overlap and let them do the math.",
+ say:"Good. Then let's find out whether you're paying twice.",
+ proof:["wants-hr"],next:"Who's doing it, and what are they using?"},
+
+{id:"b.later.*",d:"bundle",o:"*",obj:"handle-objection",trigger:"Can we upgrade later?",
+ why:"It's a closing question. Answer yes, then name the real cost of waiting.",
+ say:"Yes, it's a phone call. You'd just train your people twice.",
+ proof:["added-people","grow-plus"],next:"Would you rather set it up once, or twice?"},
+
+{id:"b.advise.*",d:"bundle",o:"*",obj:"confirm-understanding",trigger:"What would you do?",
+ why:"The trust test. Answering honestly, including down, is worth more than the upsell.",
+ say:"Honestly, I'd take this one and put the difference into your renewal.",
+ proof:["*"],next:"Does that line up with what you were thinking?"},
+
+{id:"b.small.*",d:"bundle",o:"*",obj:"build-value",trigger:"We're too small for this.",
+ why:"They already have the problems. Make the storage question concrete.",
+ say:"You already have the HR problems. You just have nowhere to put them.",
+ proof:["exit-ugly","exit-worry","no-handbook"],next:"Where does a warning letter live right now?"},
+
+{id:"b.switch.*",d:"bundle",o:"*",obj:"reduce-risk",trigger:"Switching sounds painful.",
+ why:"Fear of the move keeps more people stuck than price ever does.",
+ say:"Two hours of your time. I do the rest, and I do it here.",
+ proof:["payroll-eats","nobody-owns"],next:"What went wrong the last time you switched?"},
+
+{id:"b.wait.*",d:"bundle",o:"*",obj:"close",trigger:"Call me in six months.",
+ why:"Make them name the change. If they can't, there isn't one.",
+ say:"Happy to. What changes in six months that isn't happening now?",
+ proof:["breaking"],next:"What would have to break before it's worth doing?"},
+
+{id:"b.discount.*",d:"bundle",o:"*",obj:"earn-agreement",trigger:"Can you do better?",
+ why:"Never give price for nothing. Trade it for a date or a referral.",
+ say:"I can move on price if you can move on start date.",
+ proof:["breaking"],next:"What's the first payroll you'd want to be live for?"},
+
+{id:"b.close.*",d:"bundle",o:"*",obj:"close",trigger:"Ready to close",
+ why:"Ask for the decision plainly. Vague closes produce vague answers.",
+ say:"Is there any reason we shouldn't get you set up for that date?",
+ proof:["*"],next:"Who else has to be comfortable with this?"}
+];
+
+/* ---------- rep coaching: only over things Bellwether can actually see ---------- */
+const CHECKS=[
+{id:"price-before-value",clock:"live",
+ when:(c)=>c.disc>0&&c.answered<4,
+ say:"Build value first. One more question before price."},
+{id:"unresolved-need",clock:"live",
+ when:(c)=>c.gap&&c.gap.length>0,
+ say:c=>"Sanity check: "+short(c.sel)+" leaves "+c.gap[0]+" unanswered."},
+{id:"untouched-lever",clock:"live",
+ when:(c)=>c.lever&&!c.seen,
+ say:c=>"They told you "+c.lever+". You haven't used it yet."}
+];
+/* which of their stated needs the selected option does not answer */
+const NEEDMAP={ /* evidence id -> the feature that answers it, by option */
+ "no-handbook":{f:"Employee handbook wizard",need:"their handbook"},
+ "old-handbook":{f:"Employee handbook wizard",need:"their handbook"},
+ "docs-stale":{f:"HR forms and documents",need:"their paperwork"},
+ "exit-ugly":{f:"HR Help Desk",need:"their termination risk"},
+ "exit-worry":{f:"HR Help Desk",need:"their termination risk"},
+ "wants-hr":{f:"HR Help Desk",need:"their HR gap"},
+ "new-state":{f:"HR compliance updates and training",need:"their multi-state exposure"},
+ "grow-fifty":{f:"Applicant Tracking System (ATS) tools",need:"their hiring plan"},
+ "grow-plus":{f:"Job description wizard",need:"their hiring plan"}
+};
+function needGap(rd,sel){
+  const k=DECISION.bundle.key[sel],out=[];
+  rd.have.forEach(e=>{
+    const m=NEEDMAP[e.id];if(!m)return;
+    const f=BFEAT.reduce((r,g)=>r||g.i.find(x=>x.n==m.f),null);
+    if(f&&!(f[k]&&f[k]!==0)&&!out.includes(m.need))out.push(m.need);
+  });
+  return out;
+}
+function runChecks(ctx){
+  return CHECKS.filter(c=>c.clock=="live"&&c.when(ctx))
+    .map(c=>({id:c.id,say:typeof c.say=="function"?c.say(ctx):c.say})).slice(0,1);
+}
+/* ---------- moment selection ---------- */
+function moments(ctx){
+  const k=DECISION.bundle.key[ctx.sel];
+  const pool=MO.filter(m=>m.d=="bundle"&&(m.o=="*"||m.o==k));
+  const seen={};
+  return pool.filter(m=>{const t=m.trigger;if(seen[t])return false;seen[t]=1;return true})
+   .map(m=>{
+     let s=(m.obj==ctx.obj?4:0);
+     if(ctx.disc>25&&m.obj=="handle-objection")s+=3;
+     if(ctx.sel!=ctx.rec&&m.obj=="differentiate")s+=3;
+     if(m.proof&&m.proof.some(p=>ctx.evIds.includes(p)))s+=2;
+     if(ctx.emps&&ctx.emps<12&&m.id=="b.small.*")s+=2;
+     return Object.assign({s},m)})
+   .sort((x,y)=>y.s-x.s);
+}
+function inferObjective(ctx){
+  if(ctx.disc>0)return "handle-objection";
+  if(ctx.sel!=ctx.rec)return "differentiate";
+  if(ctx.answered>=6)return "earn-agreement";
+  return "build-value";
+}
+/* proof resolves to THEIR words, never authored text */
+function proofOf(m,rd){
+  if(!m.proof)return [];
+  if(m.proof.includes("*"))return rd.because.slice(0,3).map(e=>e.said);
+  return rd.have.filter(e=>m.proof.includes(e.id)).map(e=>e.said);
 }
 
-/* ---------- bundle detail panel ---------- */
-let bOpen=null, bSec={};
-const bTick=v=>v===1?'<i class="y">\u2713</i>':(v?'<i class="y">'+esc(v)+'</i>':'<i class="n">\u2014</i>');
-function bSection(id,title,inner,openDefault){
-  if(bSec[id]===undefined)bSec[id]=!!openDefault;
-  const on=bSec[id];
-  return `<div class="pbsec${on?" open":""}"><button class="pbsh" data-bsec="${id}"><span>${esc(title)}</span>
-    <span class="cv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
-    ${on?`<div class="pbbody">${inner}</div>`:""}</div>`;
+/* ---------- bundle panel v2: renders the engine, knows no sales content ---------- */
+let bMo=null, bRef={}, bSafe=false, bSeen={};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const bCvSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+function bRefSec(id,title,inner,acct){
+  const on=!!bRef[id];
+  return `<div class="pbsec${on?" open":""}"><button class="pbsh" data-bref="${id}"><span>${esc(title)}</span><span class="cv">${bCvSvg}</span></button>${on?`<div class="pbbody">${inner}</div>`:""}</div>`;
 }
 function bundlePanel(a,q,rec){
-  const sel=q.bundle||rec.bundle, isRec=sel===rec.bundle;
+  const rd=rec.rd||read(a,"bundle"), dec=rd.dec;
+  const sel=q.bundle||rd.option, k=dec.key[sel];
   const yr=b=>annual({emps:a.emps,bundle:b,freq:q.freq,addons:[],disc:+q.disc||0});
-  const delta=yr(sel)-yr(rec.bundle);
-  let h=`<div class="bdpanel"><div class="pbsecs">`;
+  const answered=Object.keys((a.discovery&&a.discovery.answers)||{}).length;
+  const gap=needGap(rd,sel);
+  const lever=(rd.because[0]&&!bSeen[a.id])?rd.because[0].said:null;
+  const ctx={sel,rec:rd.option,disc:+q.disc||0,answered,emps:a.emps,gap,
+             lever,seen:!!bSeen[a.id],evIds:rd.have.map(e=>e.id)};
+  ctx.obj=inferObjective(ctx);
+  const checks=bSafe?[]:runChecks(ctx);
+  let h=`<div class="bdpanel">`;
 
-  /* 1 — why */
-  let why=isRec
-    ? `<div class="bdlead">Everything they told you points here.</div>`+rec.why.map(w=>`<div class="pbitem">${esc(w)}</div>`).join("")
-    : `<div class="bdlead">Bellwether recommended <b>${esc(rec.bundle)}</b>. You've moved ${bRank(sel)>bRank(rec.bundle)?"up":"down"} to ${esc(sel)}${delta?", "+(delta>0?"+":"\u2212")+$$$(Math.abs(delta))+" a year":""}.</div>`
-      +rec.why.map(w=>`<div class="pbitem">${esc(w)}</div>`).join("");
-  h+=bSection("why","Why this bundle",why,true);
+  /* ── the read ───────────────────────────────────────────── */
+  h+=`<div class="bdread">
+    <div class="bdconf ${rd.band.toLowerCase()}">${rd.band} confidence \u00b7 ${rd.support} of ${rd.total||0} signals</div>
+    <div class="bdopt">${esc(rd.option)}</div>
+    <div class="bdamt">${$$$(annual({emps:a.emps,bundle:rd.option,freq:q.freq,addons:[],disc:0}))} a year at list</div>
+    ${rd.because.length?`<div class="bdsaid">Because ${esc(saidList(rd.because,3))}.</div>`
+      :`<div class="bdsaid thin">Nothing in discovery points anywhere yet. Ask before you price.</div>`}
+    ${(!bSafe&&rd.against.length)?`<div class="bdvs">Against: ${esc(saidList(rd.against,2))}.</div>`:""}
+  </div>`;
 
-  /* 2 — what changes */
-  if(!isRec){
-    const d=bDiff(rec.bundle,sel);
-    let ch="";
-    if(d.rm.length)ch+=`<div class="bdlab rm">Moving to ${esc(BSHORT[sel])} removes</div>`+d.rm.map(f=>
-      `<div class="bdrow rm"><span class="dot"></span><div><b>${esc(f.n)}</b><i>${esc(f.w)}</i></div></div>`).join("");
-    if(d.add.length)ch+=`<div class="bdlab add">Moving to ${esc(BSHORT[sel])} adds</div>`+d.add.map(f=>
-      `<div class="bdrow add"><span class="dot"></span><div><b>${esc(f.n)}</b><i>${esc(f.w)}</i></div></div>`).join("");
-    h+=bSection("chg","What changes",ch||`<div class="pbitem">Nothing changes between these two.</div>`,true);
+  /* ── price strip: the two controls you actually use ──────── */
+  h+=`<div class="bdstrip"><div class="ladder">${dec.options.slice().reverse().map(r=>{
+      const v=yr(r);
+      return `<div class="rung${r==sel?" pick":""}" data-rung="${esc(r)}"><em>${esc(short(r))}</em><strong>${k2(v)}</strong></div>`}).join("")}</div>
+    ${bSafe?"":`<label class="bddisc">Discount <b>${+q.disc||0}%</b><input type="range" id="disc" min="0" max="59" value="${+q.disc||0}"></label>`}</div>`;
+
+  if(checks.length)h+=`<div class="bdcheck"><span class="dot"></span><span>${esc(checks[0].say)}</span></div>`;
+
+  /* ── the room ────────────────────────────────────────────── */
+  if(!bSafe){
+    const list=moments(ctx);
+    if(bMo){
+      const m=list.find(x=>x.id==bMo)||MO.find(x=>x.id==bMo);
+      const pf=proofOf(m,rd);
+      h+=`<div class="bdmo">
+        <button class="bdmoback" data-bmo="">&lsaquo; Back</button>
+        <div class="bdtrig">${esc(m.trigger)}</div>
+        <div class="bdwhy">${esc(m.why)}</div>
+        <div class="bdsay">${esc(m.say)}</div>
+        ${pf.length?`<div class="bdproof"><span>Proof</span>${pf.map(p=>`<i>${esc(cap(p))}</i>`).join("")}</div>`:""}
+        <div class="bdnext"><span>Then ask</span>${esc(m.next)}</div>
+      </div>`;
+    }else{
+      h+=`<div class="bdlab">They're about to say</div><div class="bdchips">${
+        list.slice(0,6).map(m=>`<button class="bdchip" data-bmo="${esc(m.id)}">${esc(m.trigger)}</button>`).join("")}</div>`;
+    }
   }
 
-  /* 3 — everything included */
-  h+=bSection("inc","Everything included",BFEAT.map(g=>{
-    const rows=g.i.filter(f=>bHas(f,sel));
-    if(!rows.length)return "";
-    return `<div class="bdgrp"><div class="bdgh">${esc(g.g)}</div>`+rows.map(f=>
-      `<div class="bdinc"><i>\u2713</i><span>${esc(f.n)}${f[BK[sel]]!==1?" ("+esc(f[BK[sel]])+")":""}</span></div>`).join("")+`</div>`;
-  }).join(""));
+  /* ── the moves ───────────────────────────────────────────── */
+  if(!bSafe){
+    const i=dec.options.indexOf(sel),mv=[];
+    if(i>0){const d=bDiff(sel,dec.options[i-1]);
+      mv.push(`<div class="bdmove down"><b>Step down to ${esc(short(dec.options[i-1]))}</b>
+        <span class="say">"Fine \u2014 but ${esc((d.rm[0]||{n:"the HR side"}).n.toLowerCase())} goes away."</span>
+        <span class="lost">${d.rm.slice(0,4).map(x=>esc(x.n)).join(" \u00b7 ")}</span></div>`)}
+    if(i<dec.options.length-1){const d=bDiff(sel,dec.options[i+1]);
+      mv.push(`<div class="bdmove up"><b>Step up to ${esc(short(dec.options[i+1]))}</b>
+        <span class="say">"${esc(short(dec.options[i+1]))} is for the day ${esc(dec.options[i+1]=="HR Pro"?"you have to fire someone and document it":"you need a handbook and someone to call")}."</span>
+        <span class="lost">${d.add.slice(0,4).map(x=>esc(x.n)).join(" \u00b7 ")}</span></div>`)}
+    h+=mv.join("");
+  }
 
-  /* 4 — coach */
-  h+=bSection("coach","If they push back",(BCOACH[sel]||[]).map(c=>
-    `<div class="pbqa"><div class="q">\u201C${esc(c.o)}\u201D</div><div class="a">${esc(c.r)}</div></div>`).join(""));
+  /* ── what would change my mind ───────────────────────────── */
+  if(!bSafe&&rd.change.length)
+    h+=`<div class="bdmind"><div class="bdlab">What would change my mind</div>${
+      rd.change.map(c=>`<div class="bditem">${esc(c.txt)}</div>`).join("")}</div>`;
 
-  /* 5 — compare */
-  h+=bSection("cmp","Compare all three",
-    `<div class="bdtbl"><div class="bdhead"><span></span>${BORDER.map(b=>
-      `<em class="${b===sel?"on":""}">${esc(BSHORT[b])}</em>`).join("")}</div>`
-    +BFEAT.map(g=>`<div class="bdgh">${esc(g.g)}</div>`+g.i.map(f=>
-      `<div class="bdr"><span>${esc(f.n)}</span>${BORDER.map(b=>
-        `<u class="${b===sel?"on":""}">${bTick(f[BK[b]])}</u>`).join("")}</div>`).join("")).join("")
-    +`</div>`);
+  /* ── reference ───────────────────────────────────────────── */
+  h+=`<div class="pbsecs">`;
+  const diffRows=BFEAT.map(g=>{
+    const rows=g.i.filter(f=>!(f.E===f.C&&f.C===f.P));
+    return rows.length?`<div class="bdgh">${esc(g.g)}</div>`+rows.map(f=>
+      `<div class="bdr"><span>${esc(f.n)}</span>${dec.options.map(b=>
+        `<u class="${b==sel?"on":""}">${bTick(f[dec.key[b]])}</u>`).join("")}</div>`).join(""):""}).join("");
+  h+=bRefSec("cmp","What's different",`<div class="bdtbl"><div class="bdhead"><span></span>${
+      dec.options.map(b=>`<em class="${b==sel?"on":""}">${esc(short(b))}</em>`).join("")}</div>${diffRows}</div>
+      <div class="bdnote">Only the rows that differ. Everything else is in all three.</div>`);
+  h+=bRefSec("inc","Everything in "+short(sel),BFEAT.map(g=>{
+    const rows=g.i.filter(f=>f[k]&&f[k]!==0);
+    return rows.length?`<div class="bdgrp"><div class="bdgh">${esc(g.g)}</div>`+rows.map(f=>
+      `<div class="bdinc"><i>\u2713</i><span>${esc(f.n)}${f[k]!==1?" ("+esc(f[k])+")":""}</span></div>`).join("")+`</div>`:""}).join(""));
+  h+=`</div>`;
 
-  /* 6 — why not the others */
-  h+=bSection("not","Why not the others",BORDER.filter(b=>b!==sel).map(b=>
-    `<div class="bdgrp"><div class="bdgh">Why not ${esc(BSHORT[b])}?</div>`
-    +bWhyNot(a,sel,b).map(r=>`<div class="pbitem">${esc(r)}</div>`).join("")
-    +`<div class="bdprice">${$$$(yr(b))} a year \u2014 ${(yr(b)-yr(sel))>0?"+":"\u2212"}${$$$(Math.abs(yr(b)-yr(sel)))} vs ${esc(BSHORT[sel])}</div></div>`).join(""));
-
-  return h+`</div></div>`;
+  h+=`<button class="bdsafe" data-bsafe="1">${bSafe?"Show my side":"Hand them the phone"}</button>`;
+  return h+`</div>`;
 }
+const k2=v=>k(v);
+tap("bref",t=>{const i=t.dataset.bref;bRef[i]=!bRef[i];render()});
+tap("bmo",t=>{const a=cur();bMo=t.dataset.bmo||null;if(a&&bMo)bSeen[a.id]=1;render()});
+tap("bsafe",()=>{bSafe=!bSafe;bMo=null;render()});
 
 /* ---------- small ui ---------- */
 let toastT,undoFn=null;
@@ -3928,7 +4181,6 @@ tap("addvisit",t=>{const v=acct(t.dataset.addvisit);if(!v)return;
   v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
   save();render();toast("Added to today.")});
 
-tap("bsec",t=>{const k=t.dataset.bsec;bSec[k]=!bSec[k];render()});
 tap("rung",t=>{const a=cur();if(!a)return;
   a.quote=Object.assign({freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0},a.quote||{},{bundle:t.dataset.rung});
   save();render()});
