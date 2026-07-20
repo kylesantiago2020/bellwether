@@ -48,9 +48,17 @@ html,body{max-width:100%;overflow-x:hidden}
 *,*::before,*::after{box-sizing:border-box}
 .wrap{max-width:640px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 18px 0;overflow-x:clip}
 body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+/* <s> is used throughout as "quiet secondary text", never as deleted text. A dozen rules
+   cancelled the strikethrough individually and the ones that were missed rendered
+   crossed-out copy in the UI. Cancel it once, at the source. */
+s{text-decoration:none}
 h1{font-size:25px;font-weight:400;letter-spacing:-.5px;line-height:1.25;margin-top:4px}
 h1 em{display:block;font-style:normal;color:var(--ink3)}
-h2{font-size:13px;font-weight:500;margin-top:28px;color:var(--ink2)}
+/* sections need air between them, and a hairline so a long settings page reads as parts
+   rather than one unbroken column */
+h2{font-size:13px;font-weight:500;margin-top:34px;padding-top:20px;border-top:1px solid var(--rule);color:var(--ink2)}
+h2:first-of-type{margin-top:26px;padding-top:0;border-top:none}
+h2+p,h2+.f,h2+.two,h2+div{margin-top:10px}
 .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ac);letter-spacing:.04em;text-transform:uppercase}
 .screen{display:none}.screen.on{display:block;animation:f .28s ease both}
 @keyframes f{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -305,7 +313,15 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .est .l{font-size:11.5px;color:var(--grn);opacity:.85}
 
 /* forms */
-.f{display:block;margin-top:14px;font-size:12.5px;color:var(--ink2)}
+/* every explanatory paragraph under a heading, at one size and one weight */
+.note{font-size:12.5px;line-height:1.6;color:var(--ink3);margin-top:8px}
+.sa.left{justify-content:flex-start}
+.f{display:block;margin-top:16px;font-size:12.5px;color:var(--ink2)}
+/* the quiet half of a field label — one rule, so every hint in the app matches */
+.f .hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink3)}
+/* placeholders sit below label and value in the hierarchy, never looking like real input */
+.t::placeholder,textarea::placeholder{color:var(--ink3);opacity:.75}
+.t{text-overflow:ellipsis}
 .t{width:100%;margin-top:6px;font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:8px;padding:10px 12px;resize:none}
 .t:focus{border-color:var(--ac);outline:none}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -602,7 +618,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="terrlist" style="margin-top:4px"></div>
   <div class="imp">
     <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
-    <p style="font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.6">Export a list view and paste the rows, or pick the file. First row must be headers. Include <b>contact name, phone and email</b> columns &mdash; the call block needs them.</p>
+    <p class="note">Export a list view and paste the rows, or pick the file. First row must be headers. Include <b>contact name, phone and email</b> columns &mdash; the call block needs them.</p>
     <div id="batches"></div>
   <div id="dupereport"></div>
     <div class="chips" id="ityp"><button class="chip on" data-imptype="client">Clients</button><button class="chip" data-imptype="prospect">Competitor accts</button><button class="chip" data-imptype="cpa">CPAs</button><button class="chip" data-imptype="bank">Banks</button><button class="chip" data-imptype="partner">Partners</button></div>
@@ -632,7 +648,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <section class="screen" id="s-set">
   <div class="eyebrow">setup</div>
   <h1>Setup</h1>
-  <p style="font-size:12.5px;color:var(--ink2);margin-top:8px;line-height:1.6">How Bellwether runs your territory. Change anything here and today's plan follows.</p>
+  <p class="note">How Bellwether runs your territory. Change anything here and today's plan follows.</p>
 
   <h2>Your daily rhythm</h2>
   <div class="two">
@@ -642,7 +658,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <label class="f">Follow-up schedule &mdash; days between call attempts<input class="t mono" id="cadence" placeholder="3, 4, 7, 14, 21"></label>
 
   <h2>Your daily mission &mdash; what a full day looks like</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">The plan on the Today screen is built from these. Set them to a day you could actually repeat.</p>
+  <p class="note">The plan on the Today screen is built from these. Set them to a day you could actually repeat.</p>
   <div class="two">
     <label class="f">Daily business visits<input class="t mono" id="mVisits" type="number" min="0"></label>
     <label class="f">Daily client visits<input class="t mono" id="mClients" type="number" min="0"></label>
@@ -657,7 +673,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="mhist"></div>
 
   <h2>Your working week &mdash; not every day serves the same purpose</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">What each day normally is, and anything that's simply true every week. Bellwether plans around it &mdash; and any morning you decide differently, one tap on Today changes that day without changing this.</p>
+  <p class="note">What each day normally is, and anything that's simply true every week. Bellwether plans around it &mdash; and any morning you decide differently, one tap on Today changes that day without changing this.</p>
   <div id="weekcfg"></div>
 
   <div id="bakbanner"></div>
@@ -681,7 +697,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 
   <h2>You &mdash; used on emails</h2>
   <div class="two">
-    <label class="f">Your name <s style="font-weight:400;text-transform:none;letter-spacing:0">Bellwether greets you with it each morning</s><input class="t" id="meName" placeholder="Kyle"></label>
+    <label class="f">Your name <s class="hint">Bellwether greets you with it each morning</s><input class="t" id="meName" placeholder="Kyle"></label>
     <label class="f">Your email<input class="t" id="meEmail" type="email" placeholder="you@adp.com"></label>
   </div>
   <div class="two">
@@ -690,7 +706,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   </div>
 
   <h2>Your pricing &mdash; RUN FY&rsquo;27, Zone 7</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">Per payroll run. Edit only if rates change.</p>
+  <p class="note">Per payroll run. Edit only if rates change.</p>
   <div id="pbook"></div>
 
   <h2>Add-ons &mdash; per payroll run</h2>
@@ -699,7 +715,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <button class="b quiet" id="adda" style="margin-top:10px">+ add-on</button>
 
   <h2>How often you close</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">Learned from your own wins and losses once you have ten of each. Until then these are the estimates used.</p>
+  <p class="note">Learned from your own wins and losses once you have ten of each. Until then these are the estimates used.</p>
   <div class="two">
     <label class="f">Quoted %<input class="t mono" id="o1" type="number" min="0" max="100"></label>
     <label class="f">Interested %<input class="t mono" id="o2" type="number" min="0" max="100"></label>
@@ -2501,11 +2517,13 @@ function renderToday(){
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderList(rows,isNow,d);
   /* every business day has a beginning and an ending — one button, whichever applies */
-  const mins=new Date().getHours()*60+new Date().getMinutes();
   $("#endbtn").innerHTML=
     (!isNow&&d>today()&&!isWeekend(d)&&A().length)
       ? `<button class="endbtn go" data-start="${iso(d)}">Start ${fmt(d)}</button>`
-    :(isNow&&A().length&&mins>=MSTART)
+    /* This used to also require the clock to be past 8:30am. Opening the app early and
+       finding the button gone reads as broken, not as clever — a control that comes and goes
+       by the hour is the opposite of trustworthy. It is always here on the active day. */
+    :(isNow&&A().length)
       ? `<button class="endbtn" data-act="endday">End my day</button>` : "";
   renderWeek(d);
   const q=isNow?dailyQuote():null;
@@ -2600,7 +2618,7 @@ function callOutcome(c){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
       <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
-      <label class="f" style="text-align:left">When next? <s style="font-weight:400;text-transform:none;letter-spacing:0">blank means ${fmt(plusBiz(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
+      <label class="f" style="text-align:left">When next? <s class="hint">blank means ${fmt(plusBiz(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
       <div class="sa"><button class="b quiet" data-c="cancel">Back</button><button class="b pri" data-c="savetalk">Save &amp; next</button></div>`;
     wireDate("cnext");
     setTimeout(()=>$("#csaid").focus(),80);return;
@@ -2668,7 +2686,7 @@ function renderAccount(){
       <div class="i" data-editnext="${n.id}"><b>${esc(n.why)}</b><s>${fmt(parseD(n.date))}${n.at?" · "+fmtTime(n.at):""}${od?" · overdue":""} · ${n.kind||"call"}</s></div>
       <button class="push" data-push="${n.id}" aria-label="Push a week">+7d</button></div>`;
   });
-  h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
+  h+=`<div class="sa left"><button class="b" data-act="addnext">+ next action</button></div></div>`;
 
   /* the things you'd write on the back of a card — never overwritten by a log entry */
   if(a.type=="prospect"||a.type=="client")h+=discoverySection(a);
@@ -2712,11 +2730,11 @@ function renderAccount(){
   if(!isOpen(a)){
     h+=`<div class="sect"><div class="h"><b>${a.outcome=="lost"?"Lost":"Dormant"}</b><span>${esc(a.lostReason||"")}</span></div>
       <div class="hist">Nothing was deleted. Reopen it and the whole history comes back with it.</div>
-      <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
+      <div class="sa left"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
     $("#acctbody").innerHTML=h;return;
   }
   h+=`<div class="sect"><div class="h"><b>Walking out</b><span></span></div>
-    <div class="sa" style="justify-content:flex-start">
+    <div class="sa left">
       <button class="b" data-log="met">Met</button>
       ${a.type=="prospect"||a.type=="client"?`<button class="b" data-log="quoted">Quoted</button>`:""}
       <button class="b" data-log="note">Note</button>
@@ -2755,7 +2773,7 @@ function discoverySection(a){
     }
     h+=qCard(a,q,lang,dual);
   });
-  h+=`<div class="sa" style="justify-content:flex-start"><button class="b quiet" data-act="allq">${showAll?"Collapse answered":hidden?`Show ${hidden} more question${hidden==1?"":"s"}`:"Show every question"}</button></div></div>`;
+  h+=`<div class="sa left"><button class="b quiet" data-act="allq">${showAll?"Collapse answered":hidden?`Show ${hidden} more question${hidden==1?"":"s"}`:"Show every question"}</button></div></div>`;
   return h;
 }
 function qDone(a,q,lang){
@@ -3026,7 +3044,7 @@ function renderSetup(){
 
   $("#bakbanner").innerHTML=needsBackup()
     ? `<div class="banner"><b>You haven't exported in ${daysSinceExport()>900?"a while":daysSinceExport()+" days"}</b>, and the data has changed since. One tap and it's on your phone.
-       <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="export">Export backup</button></div></div>`
+       <div class="sa left"><button class="b pri" data-act="export">Export backup</button></div></div>`
     : (D.cfg.lastExport?`<div class="hist" style="margin-top:14px">Last export ${fmtWhen(D.cfg.lastExport)}.</div>`:"");
   $("#pbook").innerHTML=(c.book||PRICEBOOK).map((b,bi)=>`<div style="margin-top:14px"><b style="font-size:13px">${esc(b.n)}</b>
     ${Object.keys(b.f).map(f=>`<div class="ptab"><span style="font-size:12.5px;color:var(--ink2)">${esc(f)}</span>
@@ -3278,7 +3296,7 @@ function newAcctSheet(carry){
       ? `<div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number" value="${esc(v.emps||"")}"></label>
          <label class="f">City<input class="t" id="naCity" value="${esc(v.city!=null?v.city:lastCity)}"></label></div>`
       : `<label class="f">City<input class="t" id="naCity" value="${esc(v.city!=null?v.city:lastCity)}"></label>`}
-    <label class="f">Street address <s style="font-weight:400;text-transform:none;letter-spacing:0">optional &mdash; powers Navigate</s><input class="t" id="naAddr" autocomplete="off" placeholder="12 Union Ave" value="${esc(v.addr||"")}"></label>
+    <label class="f">Street address <s class="hint">optional &mdash; powers Navigate</s><input class="t" id="naAddr" autocomplete="off" placeholder="12 Union Ave" value="${esc(v.addr||"")}"></label>
     <div class="two"><label class="f">${f.contact}<input class="t" id="naContact" value="${esc(v.contact||"")}"></label>
       <label class="f">Phone<input class="t" id="naPhone" type="tel" value="${esc(v.phone||"")}"></label></div>
     <label class="f">First next action &mdash; leave it blank and the first ${isRelType(t)?"introduction goes out":"call goes out"} tomorrow</label>${dateField("naNext",isRelType(t)?"stop by tuesday":"call tuesday")}
@@ -3898,7 +3916,7 @@ function importFile(){
       openSheet(`<h3>Import ${copy.accounts.length} accounts</h3>
         <div class="sub">From ${copy.exportedOn?fmtWhen(copy.exportedOn):"an older file"} · schema v${copy.v||"?"}${repairLog.length?" · "+repairLog.length+" fields repaired":""}</div>
         <p class="read">You have <b>${mine}</b> accounts right now. A backup of them is taken either way.</p>
-        <div class="sa" style="justify-content:flex-start">
+        <div class="sa left">
           <button class="b pri" data-act="impmerge">Merge into mine</button>
           <button class="b danger" data-act="impreplace">Replace mine</button>
           <button class="b quiet" data-act="close">Cancel</button></div>
