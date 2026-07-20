@@ -2161,9 +2161,6 @@ function bundlePanel(a,q,rec){
   return h+`</div>`;
 }
 const k2=v=>k(v);
-tap("bref",t=>{const i=t.dataset.bref;bRef[i]=!bRef[i];render()});
-tap("bmo",t=>{const a=cur();bMo=t.dataset.bmo||null;if(a&&bMo)bSeen[a.id]=1;render()});
-tap("bsafe",()=>{bSafe=!bSafe;bMo=null;render()});
 
 /* ---------- small ui ---------- */
 let toastT,undoFn=null;
@@ -4694,6 +4691,9 @@ tap("pbgrp",t=>{const k="g:"+t.dataset.pbgrp;pbOpen[k]=!pbOpen[k];renderPlay()})
 tap("pbchk",t=>{const k="c:"+t.dataset.pbchk;pbOpen[k]=!pbOpen[k];renderPlay()});
 tap("pbpage",t=>{pbPage=t.dataset.pbpage.replace(/^m:/,"");window.scrollTo(0,0);renderPlay()});
 
+tap("bref",t=>{const i=t.dataset.bref;bRef[i]=!bRef[i];render()});
+tap("bmo",t=>{const a=cur();bMo=t.dataset.bmo||null;if(a&&bMo)bSeen[a.id]=1;render()});
+tap("bsafe",()=>{bSafe=!bSafe;bMo=null;render()});
 const TAPSEL=Object.keys(TAPS).concat("act").map(k=>"[data-"+k+"]").join(",");
 document.addEventListener("click",async e=>{
   const t=e.target.closest(TAPSEL);
