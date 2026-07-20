@@ -40,6 +40,7 @@ font-size:15px;line-height:1.5;padding-bottom:88px;-webkit-font-smoothing:antial
 .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
 .said{font-family:'Instrument Serif',Georgia,serif;line-height:1.4}
 .wrap{max-width:640px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 18px 0}
+body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 h1{font-size:25px;font-weight:400;letter-spacing:-.5px;line-height:1.25;margin-top:4px}
 h1 em{display:block;font-style:normal;color:var(--ink3)}
 h2{font-size:13px;font-weight:500;margin-top:28px;color:var(--ink2)}
@@ -63,7 +64,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .mark{width:32px;height:32px;border-radius:9px;flex:none;overflow:hidden;background:#12213A}
 .mark img{width:100%;height:100%;display:block}
 .wm b{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.3px}
-.wm span{display:block;font-size:10.5px;color:var(--ink3);font-family:'IBM Plex Mono',monospace}
 
 /* day nav + shape */
 .jump{display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;
@@ -75,8 +75,21 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .dnbtn:active{transform:scale(.92)}
 .dncenter{flex:1;text-align:center}
 .shape{margin-top:5px;font-size:13px;color:var(--ink2);line-height:1.55}
-.rhythm{margin-top:7px;font-size:12.5px;color:var(--ink3)}
-.rhythm span{border-left:2px solid var(--ac);padding-left:8px}
+.rhythm{margin-top:11px}
+/* the day's shape, stated in one line you can change with one tap */
+.dmseg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--rule);border:1px solid var(--rule);border-radius:9px;overflow:hidden}
+.dmseg button{font-family:inherit;font-size:12.5px;padding:8px 0;border:none;background:var(--card);color:var(--ink3);letter-spacing:-.1px}
+.dmseg button.on{background:var(--ac);color:#fff}
+.dmnote{margin-top:7px;font-size:12px;color:var(--ink3);display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.dmnote b{font-weight:500;color:var(--ink2)}
+.dmnote button{font-family:inherit;font-size:11.5px;background:none;border:none;color:var(--ac);padding:0;text-decoration:underline;text-underline-offset:2px}
+.dmfix{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.dmfix div{font-size:12.5px;color:var(--ink2);border-left:2px solid var(--ac);padding-left:8px;line-height:1.45}
+.dmfix em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);margin-right:6px}
+.wcd{margin-top:16px}
+.wcd>b{font-size:13px;font-weight:500;display:block;margin-bottom:7px}
+.wcd textarea{font-family:inherit;font-size:15px;line-height:1.5;padding:9px 10px;border:1px solid var(--rule2);border-radius:8px;background:var(--card);color:var(--ink);width:100%;margin-top:7px;resize:vertical;min-height:38px}
+.wcd s{display:block;text-decoration:none;font-size:11.5px;color:var(--ink3);margin-top:5px}
 .clk{margin-top:15px;padding-top:13px;border-top:1px solid var(--rule)}
 .cl{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);font-weight:500}
 .ct{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:23px;letter-spacing:-.5px;margin-top:4px;font-variant-numeric:tabular-nums}
@@ -194,6 +207,8 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .qr.od .rs{color:var(--amb)}
 .tagm{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:1px 5px;border-radius:3px;background:var(--acs);color:var(--ac);margin-right:5px}
 .tagm.p{background:var(--ambsoft);color:var(--amb)}
+/* a booked hour reads as ink, not as a coloured label — it's a fact, not a category */
+.tagm.at{background:var(--ink);color:var(--paper);letter-spacing:.2px}
 .tagm.g{background:var(--grnsoft);color:var(--grn)}
 .more{margin-top:12px;text-align:center}
 .empty{margin-top:34px;padding:34px 20px;text-align:center;background:var(--acs);border-radius:14px}
@@ -203,7 +218,7 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .runbtn:active{transform:scale(.98)}
 
 /* call block */
-.callwrap{position:fixed;inset:0;background:var(--paper);z-index:70;display:none;flex-direction:column;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
+.callwrap{position:fixed;inset:0;background:var(--paper);z-index:70;display:none;flex-direction:column;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));overscroll-behavior:contain}
 .callwrap.on{display:flex}
 .ctopbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .ctopbar .pg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
@@ -283,7 +298,12 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .t{width:100%;margin-top:6px;font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:8px;padding:10px 12px;resize:none}
 .t:focus{border-color:var(--ac);outline:none}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.parse{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac)}
+.parse{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:17px}
+/* the time is optional, so it stays out of the way until there's a date to hang it on */
+.tpick{position:relative;overflow:hidden;flex:none;display:none;font-size:11.5px;color:var(--ink3);border:1px solid var(--rule2);border-radius:7px;padding:4px 9px;background:var(--card)}
+.tpick.show{display:block}
+.tpick.set{color:var(--ac);border-color:var(--ac)}
+.tpick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;background:none}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .chip s{text-decoration:none;color:var(--ink3);margin-left:5px;font-size:11.5px;font-variant-numeric:tabular-nums}
 .chip.on s{color:inherit;opacity:.7}
@@ -332,9 +352,12 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .ptabhead{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-top:14px;font-size:11px;color:var(--ink3)}
 
 /* sheet, nav, toast */
-.veil{position:fixed;inset:0;background:rgba(23,25,29,.4);display:none;align-items:flex-end;justify-content:center;z-index:80}
+/* the veil owns every gesture while it is up: nothing behind it pans, nothing chains through it.
+   the sheet itself opts back in to vertical panning only, so a horizontal drag can never
+   reach the day-swipe handler underneath. */
+.veil{position:fixed;inset:0;background:rgba(23,25,29,.4);display:none;align-items:flex-end;justify-content:center;z-index:80;touch-action:none;overscroll-behavior:contain}
 .veil.on{display:flex;animation:f .16s ease both}
-.sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;animation:up .26s cubic-bezier(.2,.8,.3,1) both}
+.sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;animation:up .26s cubic-bezier(.2,.8,.3,1) both}
 @keyframes up{from{transform:translateY(24px)}to{transform:none}}
 @media(min-width:700px){.veil{align-items:center}.sheet{border-radius:14px;max-width:480px;padding:24px 26px 22px;max-height:86vh}}
 .sheet h3{font-size:16px;font-weight:500}
@@ -364,9 +387,17 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .mrow .mn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);flex:none}
 
 /* cluster */
-.trow{display:flex;align-items:center;gap:10px;margin-top:2px}
-.trow .chips{flex:1;min-width:0}
-.srchnote{font-size:12px;color:var(--ink3);padding:6px 0}
+/* Territory filter area: one scannable rail of filters, then a single meta line that
+   pairs "what you're looking at" with "how it's ordered". The sort control stops
+   floating alone opposite a block of wrapped chips. */
+.trail{display:flex;gap:6px;margin-top:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.trail::-webkit-scrollbar{display:none}
+.trail .chip{flex:none}
+.trail:empty{display:none}
+.tmeta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+.tmeta:empty{display:none}
+.tcount{font-size:12.5px;color:var(--ink3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcount b{color:var(--ink2);font-weight:500}
 .sortbtn{flex:none;font-size:12.5px;padding:6px 10px;border-radius:8px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-family:inherit;cursor:pointer;white-space:nowrap;transition:transform .08s ease}
 .sortbtn:active{transform:scale(.97)}
 .sortbtn span{margin-left:5px;opacity:.6}
@@ -419,7 +450,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .qstub{padding:10px 2px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink3);cursor:pointer}
 .qstub:before{content:"+ ";color:var(--ac)}
 /* ---- end of day ---- */
-#endday{position:fixed;inset:0;z-index:80;display:none;background:var(--paper);overflow-y:auto}
+#endday{position:fixed;inset:0;z-index:80;display:none;background:var(--paper);overflow-y:auto;overscroll-behavior:contain}
 #endday.on{display:block;animation:f .22s ease both}
 .edwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 22px 34px}
 .edcard{width:100%;max-width:420px;text-align:center}
@@ -504,7 +535,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 <body>
 <div class="wrap">
 
-<header class="hdr"><div class="mark"><img src="data:image/png;base64,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" alt="Bellwether" width="32" height="32"></div><div class="wm"><b>Bellwether</b><span>metrowest territory</span></div></header>
+<header class="hdr"><div class="mark"><img src="data:image/png;base64,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" alt="Bellwether" width="32" height="32"></div><div class="wm"><b>Bellwether</b></div></header>
 
 <!-- ===== TODAY ===== -->
 <section class="screen on" id="s-today">
@@ -540,7 +571,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div class="eyebrow">your territory</div>
   <h1>Territory</h1>
   <input class="srch" id="q" placeholder="Search accounts&hellip;" autocomplete="off">
-  <div class="trow"><div class="chips" id="tfilters"></div><div id="tsort"></div></div>
+  <div class="trail" id="tfilters"></div>
+  <div class="tmeta"><div class="tcount" id="tcount"></div><div id="tsort"></div></div>
   <div id="terrlist" style="margin-top:4px"></div>
   <div class="imp">
     <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
@@ -599,13 +631,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="mhist"></div>
 
   <h2>Your working week &mdash; not every day serves the same purpose</h2>
-  <p style="font-size:12px;color:var(--ink3);margin-top:4px">One line per day, shown on the Today screen. Office days keep you off the road: calls lead, drop-ins wait.</p>
-  <label class="f">Monday<input class="t" id="rMon"></label>
-  <label class="f">Tuesday<input class="t" id="rTue"></label>
-  <label class="f">Wednesday<input class="t" id="rWed"></label>
-  <label class="f">Thursday<input class="t" id="rThu"></label>
-  <label class="f">Friday<input class="t" id="rFri"></label>
-  <label class="f">Office days<input class="t mono" id="rOffice" placeholder="fri"></label>
+  <p style="font-size:12px;color:var(--ink3);margin-top:4px">What each day normally is, and anything that's simply true every week. Bellwether plans around it &mdash; and any morning you decide differently, one tap on Today changes that day without changing this.</p>
+  <div id="weekcfg"></div>
 
   <div id="bakbanner"></div>
 
@@ -695,7 +722,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const SCHEMA=7;                       /* bump this and add a step to MIGRATIONS */
+const SCHEMA=8;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -708,6 +735,9 @@ const RELNUDGE={notmet:"Walk in and introduce yourself. That's the whole first m
 const TYPELABEL={prospect:"prospect",client:"ADP client",cpa:"CPA firm",bank:"bank branch",partner:"referral partner"};
 const TYPESHORT={cpa:"CPA",bank:"bank",partner:"partner"};
 const isRel=a=>a&&a.type!="prospect";
+const ACCTTYPES=["prospect","client","cpa","bank","partner"];
+/* same rule as isRel, but for a type on its own — used before an account exists */
+const isRelType=t=>t!="prospect";
 let D={accounts:[],cfg:{},v:SCHEMA}, viewDate=null, screen="today", curId=null, terrFilter="open", terrQ="", terrPage=1;
 
 const PRICEBOOK=[
@@ -731,12 +761,15 @@ const PRICEBOOK=[
 const DEF={fy:"",qEnd:"",goal:0,rgoal:0,o1:40,o2:20,o3:8,me:{},theme:"system",
  touchTarget:40,pageSize:10,cadence:"3, 4, 7, 14, 21",
  mission:{visits:3,clients:2,partners:1,calls:12,follow:2},
- rhythm:{mon:"Field day — drop-ins, prospecting, relationship stops",
-         tue:"8:30 · Banker huddle — BoA Medfield, 478 Main St",
-         wed:"8:30 · Banker huddle — BoA Dedham, 858 Washington St",
-         thu:"8:30 · Banker huddle — BoA Ashland, 300 Elliott St",
-         fri:"Office day — calls, follow-ups, pipeline, plan next week"},
- officeDays:"fri",
+ /* what a normal week looks like: a mode per weekday, plus the standing items that
+    are simply true every week. Today can override the mode for one day without
+    touching any of this. */
+ week:{mon:"field",tue:"field",wed:"field",thu:"field",fri:"office"},
+ recur:{mon:[],
+        tue:[{at:"08:30",what:"Banker huddle — BoA Medfield, 478 Main St"}],
+        wed:[{at:"08:30",what:"Banker huddle — BoA Dedham, 858 Washington St"}],
+        thu:[{at:"08:30",what:"Banker huddle — BoA Ashland, 300 Elliott St"}],
+        fri:[]},
  dlang:"en",dual:false,
  lastExport:"",dirtySince:"",
  book:PRICEBOOK,
@@ -794,17 +827,45 @@ const DOW=["sun","mon","tue","wed","thu","fri","sat"];
 function nlpKind(txt){
   const t=(txt||"").toLowerCase();
   if(/\b(visit|drop in|drop by|stop by|swing by|walk in)\b/.test(t))return"visit";
-  if(/\b(meet|meeting|appointment|demo|presentation|lunch|coffee)\b/.test(t))return"meet";
+  if(/\b(meet|meeting|appointment|demo|presentation|lunch|coffee|huddle)\b/.test(t))return"meet";
   if(/\b(email|send|proposal|quote|text|paperwork|contract)\b/.test(t))return"follow";
   return"call";
 }
+/* "tuesday at 10:30", "friday 2pm", "8:30 huddle" — a time is only a time when it says so,
+   either with am/pm or with a colon. "3 weeks" and "7/28" must never read as a clock. */
+function nlpTime(txt){
+  const t=(txt||"").toLowerCase();
+  let m=t.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?![a-z])/);
+  if(m){
+    let h=+m[1];const mi=m[2]?+m[2]:0,pm=m[3][0]=="p";
+    if(h<1||h>12||mi>59)return null;
+    if(pm&&h!=12)h+=12; if(!pm&&h==12)h=0;
+    return hhmm(h,mi);
+  }
+  m=t.match(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if(m)return hhmm(+m[1],+m[2]);
+  return null;
+}
+const hhmm=(h,mi)=>String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0");
+/* 24h storage, 12h everywhere a human reads it */
+function fmtTime(at){
+  if(!at)return"";
+  const [h,mi]=String(at).split(":").map(Number);
+  if(!(h>=0&&h<=23&&mi>=0&&mi<=59))return"";
+  const ap=h<12?"AM":"PM",h12=h%12==0?12:h%12;
+  return h12+":"+String(mi).padStart(2,"0")+" "+ap;
+}
 function nlp(txt){
   const raw=(txt||"").toLowerCase().trim();if(!raw)return null;
+  const at=nlpTime(raw);
+  /* the clock is removed before the date parser runs so "2:00" can't be read as a day */
+  const declocked=at?raw.replace(/\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)(?![a-z])/,"  ")
+                      .replace(/\b(?:at\s+)?(?:[01]?\d|2[0-3]):[0-5]\d\b/,"  ").trim():raw;
   const n=today();let d=null,prec="day",m;
   const mk=(y,mo,da)=>{const x=new Date(y,mo,da);x.setHours(0,0,0,0);return x};
   const add=(v,u)=>{const x=new Date(n);u=="d"?x.setDate(x.getDate()+v):u=="w"?x.setDate(x.getDate()+v*7):x.setMonth(x.getMonth()+v);x.setHours(0,0,0,0);return x};
   /* strip the verb and the account name — "call doyle on the 28th" */
-  const t=raw.replace(/^(call|ring|dial|visit|see|meet( with)?|stop by|drop in( on)?|drop by|swing by|follow up( with)?|email|text|check in( with)?|touch base( with)?)\s+/,"").trim();
+  const t=declocked.replace(/^(call|ring|dial|visit|see|meet( with)?|stop by|drop in( on)?|drop by|swing by|follow up( with)?|email|text|check in( with)?|touch base( with)?)\s+/,"").trim();
 
   if(/^(today|this afternoon|later today|tonight)\b/.test(t))d=new Date(n);
   else if(/^tomorrow|^tmrw|^tom\b/.test(t))d=add(1,"d");
@@ -855,9 +916,14 @@ function nlp(txt){
     for(let i=0;i<12;i++)if(new RegExp("\\b"+MON[i]+"[a-z]*\\b").test(t)){
       d=mk(n.getFullYear(),i,1);if(d<n)d=mk(n.getFullYear()+1,i,1);prec="month";break}
   }
+  if(!d&&at){
+    /* "8:30 huddle" with no day named — the nearest one that hasn't already gone by */
+    const now=new Date(),cur=hhmm(now.getHours(),now.getMinutes());
+    d=at>cur?new Date(n):addDays(n,1);
+  }
   if(!d)return null;
   d.setHours(0,0,0,0);
-  return{date:iso(d),prec,kind:nlpKind(raw)};
+  return{date:iso(d),prec,kind:nlpKind(raw),at:at||""};
 }
 
 /* ---------- storage ---------- */
@@ -955,7 +1021,17 @@ function validate(d){
      editing a price in Setup silently rewrites DEF for every later load */
   d.cfg=Object.assign({},clone(DEF),d.cfg&&typeof d.cfg=="object"?d.cfg:{});
   d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
-  d.cfg.rhythm=Object.assign({},DEF.rhythm,d.cfg.rhythm&&typeof d.cfg.rhythm=="object"?d.cfg.rhythm:{});
+  d.cfg.week=Object.assign({},DEF.week,d.cfg.week&&typeof d.cfg.week=="object"?d.cfg.week:{});
+  DOW.forEach(k2=>{if(d.cfg.week[k2]&&!MODEK.includes(d.cfg.week[k2]))d.cfg.week[k2]="field"});
+  if(!d.cfg.recur||typeof d.cfg.recur!="object")d.cfg.recur=clone(DEF.recur);
+  Object.keys(d.cfg.recur).forEach(k2=>{
+    d.cfg.recur[k2]=(Array.isArray(d.cfg.recur[k2])?d.cfg.recur[k2]:[])
+      .filter(x=>x&&typeof x=="object"&&String(x.what||"").trim())
+      .map(x=>({at:/^\d{2}:\d{2}$/.test(x.at||"")?x.at:"",what:String(x.what).trim()}));
+  });
+  /* a one-day override is a note about one date, not configuration — it lives beside the days */
+  if(!d.modes||typeof d.modes!="object")d.modes={};
+  Object.keys(d.modes).forEach(k2=>{if(!MODEK.includes(d.modes[k2]))delete d.modes[k2]});
   if(!d.cfg.book||!d.cfg.book[0]||!d.cfg.book[0].f){d.cfg.book=clone(PRICEBOOK);repairLog.push("price book restored to defaults")}
   if(!Array.isArray(d.cfg.addons))d.cfg.addons=clone(DEF.addons);
   if(!d.days||typeof d.days!="object"||Array.isArray(d.days))d.days={};
@@ -979,6 +1055,28 @@ const MIGRATIONS={
       a.next.forEach(n=>{if(n.kind=="meet"&&/visit|drop/i.test(n.why||""))n.kind="visit"});
     });
     d.cfg.mission=Object.assign({},DEF.mission,d.cfg.mission||{});
+    return d;
+  }
+  ,
+  7:function(d){
+    /* v7 → v8: the week stops being a sentence and becomes a shape.
+       The office-day list becomes a mode per weekday; a rhythm line only survives as a
+       recurring item if it actually names an hour — the rest of those lines were
+       describing the mode, which the mode now says by itself. */
+    const od=String(d.cfg.officeDays||"fri").toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const wk={},rc={};
+    DOW.forEach(k2=>{
+      if(k2=="sun"||k2=="sat")return;
+      wk[k2]=od.includes(k2)?"office":(DEF.week[k2]||"field");
+      const line=String(((d.cfg.rhythm||{})[k2])||"").trim();
+      const at=line?nlpTime(line):"";
+      rc[k2]=at
+        ? [{at,what:line.replace(/^\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s*(?:[·\-—:]\s*)?/i,"").trim()||line}]
+        : [];
+    });
+    d.cfg.week=wk;d.cfg.recur=rc;
+    delete d.cfg.rhythm;delete d.cfg.officeDays;
+    d.modes=d.modes&&typeof d.modes=="object"?d.modes:{};
     return d;
   }
   ,
@@ -1271,7 +1369,25 @@ function touchesOn(d){
   return n;
 }
 /* the week has a shape: Fridays are for phones and paperwork, not parking lots */
-const officeDay=d=>String(D.cfg.officeDays||"fri").toLowerCase().split(/[,\s]+/).includes(DOW[d.getDay()]);
+/* ---------- day mode ----------
+   One idea at two time scales: the week template says what a Tuesday normally is,
+   and Today can override a single date without editing the template. Everything that
+   used to ask "is this an office day?" now asks the mode. */
+const MODES=[["field","Field"],["mixed","Mixed"],["office","Office"]];
+const MODEK=MODES.map(m=>m[0]);
+const MODELABEL={field:"Field day",mixed:"Mixed day",office:"Office day"};
+const weekMode=d=>{const m=(D.cfg.week||{})[DOW[d.getDay()]];return MODEK.includes(m)?m:"field"};
+const dayMode=d=>{const o=(D.modes||{})[iso(d)];return MODEK.includes(o)?o:weekMode(d)};
+const modeOverridden=d=>dayMode(d)!=weekMode(d);
+/* you cannot drop in on anyone from the ADP office — this is the one hard rule */
+const officeDay=d=>dayMode(d)=="office";
+const recurFor=d=>((D.cfg.recur||{})[DOW[d.getDay()]]||[]);
+function setDayMode(d,m){
+  D.modes=D.modes||{};
+  if(!MODEK.includes(m))return;
+  /* choosing the day's normal mode isn't an override — it's clearing one */
+  if(m==weekMode(d))delete D.modes[iso(d)]; else D.modes[iso(d)]=m;
+}
 /* what has this relationship actually produced? counted, never guessed */
 function refStats(a){
   const refs=(a.events||[]).filter(e=>e.kind=="referral");
@@ -1491,8 +1607,26 @@ function restoreAcct(snap){
   if(i>=0)D.accounts[i]=snap;else D.accounts.push(snap);
   save();render();toast("Undone.");
 }
-function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on")}
-function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML=""}
+/* ---------- scroll ownership ----------
+   Any full-screen layer takes the page with it. iOS will happily scroll the document
+   behind a fixed overlay and chain momentum through it, so the page is pinned at its
+   current offset for as long as any layer is up, and put back exactly where it was. */
+let lockY=0,locked=false;
+const anyOverlay=()=>["#veil","#callwrap","#endday"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
+function syncScrollLock(){
+  const want=anyOverlay();
+  if(want==locked)return;
+  const b=document.body;
+  if(want){
+    lockY=window.scrollY||window.pageYOffset||0;
+    b.style.top=(-lockY)+"px";b.classList.add("locked");locked=true;
+  }else{
+    b.classList.remove("locked");b.style.top="";locked=false;
+    window.scrollTo(0,lockY);
+  }
+}
+function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on");syncScrollLock()}
+function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML="";syncScrollLock()}
 let backTo="today";
 function go(s,id,from){
   if(s=="acct"&&from&&from!="acct")backTo=from;
@@ -1519,6 +1653,10 @@ function render(){
 /* ---------- today ---------- */
 function actionBlock(n){const k2=n.kind||"call";return ["meet","visit","follow","call"].includes(k2)?k2:"call"}
 /* one account, one row per day — the highest-priority due action decides the block */
+/* a timed action is a commitment somebody else is also holding — it outranks anything
+   loose on the same day, and the earliest one outranks the rest */
+const rowAt=r=>(r.due||[]).map(n=>n.at).filter(Boolean).sort()[0]||"";
+const byTime=(x,y)=>{const a=rowAt(x),b=rowAt(y);return a&&b?(a<b?-1:a>b?1:0):a?-1:b?1:0};
 function todayRows(d){
   const isNow=isActive(d),rows=[];
   A().forEach(a=>{
@@ -1527,7 +1665,8 @@ function todayRows(d){
     if(!due.length)return;
     due.sort((x,y)=>x.date<y.date?-1:1);
     const rank={meet:0,visit:1,call:2,follow:3};
-    const lead=due.slice().sort((x,y)=>rank[actionBlock(x)]-rank[actionBlock(y)])[0];
+    const lead=due.slice().sort((x,y)=>((y.at?1:0)-(x.at?1:0))||(x.at&&y.at?(x.at<y.at?-1:1):0)
+      ||rank[actionBlock(x)]-rank[actionBlock(y)])[0];
     rows.push({a,due,lead,block:actionBlock(lead),over:due[0].date<iso(today())});
   });
   return rows.sort((x,y)=>score(y.a)-score(x.a));
@@ -1879,7 +2018,7 @@ function showDebrief(s,animate){
         <button class="edok" data-act="edclose">Done</button>
       </div>
     </div></div>`;
-  el.classList.add("on");
+  el.classList.add("on");syncScrollLock();
   /* a CSS transition needs one frame at the start value before it's given the end value,
      otherwise the rings simply appear already full */
   if(animate){
@@ -2028,6 +2167,17 @@ function missionDone(d){
     follow:t.filter(x=>x.e.kind=="emailed"||x.e.kind=="texted").length
   };
 }
+/* The mission doesn't move with the mode — only the advice about how to hit it does. */
+function paceLine(mode,booked){
+  const held=booked?` ${booked} meeting${booked==1?"":"s"} still on the books — honor ${booked==1?"it":"them"}, then back to the desk.`:"";
+  if(mode=="office")return `Office day. Run the phones, clear the desk, plan the week.${held}`;
+  if(mode=="mixed")return booked
+    ? `Mixed day. ${booked} scheduled meeting${booked==1?"":"s"} — build the drive around ${booked==1?"it":"them"} and work the phone either side.`
+    : `Mixed day. Nothing on the calendar, so you choose: doors while people are in, phone when they're not.`;
+  return booked
+    ? `${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`
+    : `Nothing on the calendar. This is a build day: field first, phones second.`;
+}
 function renderPace(rows,day){
   const D0=day||activeD();
   const tgt=+D.cfg.touchTarget||40,got=touchesOn(D0);
@@ -2036,7 +2186,7 @@ function renderPace(rows,day){
   /* only what is actually on today's calendar — an overdue meeting from last week
      is not a reason to trim today's calls */
   const booked=rows.filter(r=>r.block=="meet"&&r.lead.date==iso(D0)).length;
-  const office=officeDay(D0);
+  const mode=dayMode(D0),office=mode=="office";
   const plan=Object.assign({},m);
   /* a booked day is not a cold-call day — scheduled work eats the dial time first.
      Except office days: the phone IS the plan, meetings are the exception */
@@ -2055,7 +2205,7 @@ function renderPace(rows,day){
     </button>
     <div class="pbody">
       ${rowsHtml}
-      <div class="pfoot">${office?`Office day. Run the phones, clear the desk, plan the week.${booked?` ${booked} meeting${booked==1?"":"s"} still on the books — honor them, then back to the desk.`:""}`:booked?`${booked} scheduled meeting${booked==1?"":"s"} today — call target trimmed to protect the drive time.`:"Nothing on the calendar. This is a build day: field first, phones second."}${wk?` Your real weekly average is ${wk} a day.`:""}</div>
+      <div class="pfoot">${paceLine(mode,booked)}${wk?` Your real weekly average is ${wk} a day.`:""}</div>
     </div>
   </div>`;
 }
@@ -2090,11 +2240,15 @@ function nearbyHtml(rows){
 /* the one thing to do right now: meetings first, then field, then whatever scores highest */
 function nowPick(rows){
   if(!rows.length)return null;
-  const office=officeDay(today());
-  /* meetings are commitments and always lead; on office days the field waits behind the phone */
-  const pri=b=>b=="meet"?0:b=="visit"?(office?3:1):2;
+  const mode=dayMode(today());
+  /* Meetings are commitments and always lead. After that the mode decides:
+     out in the field a door beats a dial, at the desk it's the reverse, and on a mixed
+     day neither wins by type — the highest-value account does. */
+  const vis=mode=="office"?3:mode=="mixed"?2:1;
+  const pri=b=>b=="meet"?0:b=="visit"?vis:2;
   const skipped=r=>r.a.skip==iso(today())?1:0;
-  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
+  /* an appointment at a named hour beats anything loose — somebody is expecting you */
+  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||byTime(x,y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
 }
 function renderNow(rows,day){
   const el=$("#now"),got=touchesOn(day||activeD());
@@ -2118,7 +2272,10 @@ function renderNow(rows,day){
   const r=nowPick(rows),a=r.a,n=r.lead;
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
   const lt=lastTouch(a),val=dealValue(a);
-  const kindLab={meet:"meeting",visit:"drop-in",call:"call",follow:"follow-up"}[r.block]
+  /* if somebody is expecting you at an hour, that hour is the most important word on the card */
+  const nowAt=rowAt(r);
+  const kindLab=(nowAt?fmtTime(nowAt)+" · ":"")
+    +{meet:"meeting",visit:"drop-in",call:"call",follow:"follow-up"}[r.block]
     +(isRel(a)?" · "+(TYPESHORT[a.type]||"client"):"");
   let pri;
   if(r.block=="call"&&ph)pri=`<a class="npri dial2" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call ${esc(who||ph)}</a>`;
@@ -2160,7 +2317,7 @@ function dayShape(rows){
   if(c.follow)p.push(`<b>${c.follow}</b> follow-up${c.follow==1?"":"s"}`);
   return p.join(" &nbsp;·&nbsp; ");
 }
-function renderList(rows,isNow){
+function renderList(rows,isNow,day){
   const el=$("#blocks");
   if(!rows.length){
     el.innerHTML=isNow?"":`<div class="empty"><div class="said">Nothing scheduled.</div>
@@ -2171,13 +2328,15 @@ function renderList(rows,isNow){
   const nowR=isNow?nowPick(rows):null;
   const rest=rows.filter(r=>r!==nowR);
   const rank={meet:0,visit:1};
-  const field=rest.filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
-  const calls=rest.filter(r=>r.block=="call");
-  const desk=rest.filter(r=>r.block=="follow");
+  const field=rest.filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  const calls=rest.filter(r=>r.block=="call").sort(byTime);
+  const desk=rest.filter(r=>r.block=="follow").sort(byTime);
   const row=r=>{
     const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
     const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
-    const mt=(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
+    const at=rowAt(r);
+    const mt=(at?`<span class="tagm at">${fmtTime(at)}</span>`:"")
+      +(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
       +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
     return `<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
       <button class="rtick" data-rowdone="${r.a.id}|${r.lead.id}" aria-label="Mark done"></button>
@@ -2195,7 +2354,10 @@ function renderList(rows,isNow){
   return h;
   };
   let html="";
-  const office=isNow&&officeDay(today());
+  /* the mode changes the order of the day, never the size of it — the mission is the mission
+     whether it gets done from the car or from the desk */
+  const mode=day?dayMode(day):"field",office=mode=="office";
+  /* you can't drop in on anyone from the ADP office, so don't suggest it */
   const nb=(isNow&&!office)?nearbyHtml(rows):"";
   const runcard=()=>{
     if(!isNow||!calls.length)return "";
@@ -2204,19 +2366,47 @@ function renderList(rows,isNow){
         <p>${esc(names)}</p>
         <button class="runbtn" data-act="run">Start calling</button></div>`;
   };
+  const callgroup=()=>isNow?runcard():(calls.length?group("Calls",calls):"");
   if(office){
-    /* office day: phones and desk work lead, the field falls in behind */
-    html+=runcard();
+    /* office day: the phone is the plan and the desk is the place. Anything already booked
+       in the field is honoured — you don't stand someone up because you changed the mode —
+       but it stops leading, and no new drop-ins get suggested. */
+    html+=callgroup();
     if(desk.length)html+=group("From the desk",desk);
     if(field.length)html+=group("Still booked in the field",field);
   }else{
+    /* out of the office, the field leads because it's the part that can't be done later.
+       Field and mixed days differ in what gets recommended next, not in the shape of the
+       screen — see nowPick, where a mixed day stops auto-promoting the doors. */
     if(field.length||nb)html+=group("In the field",field,nb);
-    if(isNow)html+=runcard();
-    else if(calls.length)html+=group("Calls",calls);
+    html+=callgroup();
     if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
   }
   if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
   el.innerHTML=html;
+}
+/* The week template says what a Tuesday normally is. Today gets to disagree, for today only,
+   without editing the template — so changing your mind in the car costs one tap and
+   never quietly rewrites how you normally work. */
+function rhythmHtml(d,isNow){
+  const wd=d.getDay();
+  if(wd==0||wd==6)return "";
+  const mode=dayMode(d),norm=weekMode(d),fixed=recurFor(d);
+  const dayName=d.toLocaleDateString(undefined,{weekday:"long"});
+  /* a past or future day is a statement of fact, not a control */
+  const seg=isNow
+    ? `<div class="dmseg" role="group" aria-label="Day mode">${MODES.map(([v,l])=>
+        `<button data-dm="${v}"${mode==v?' class="on" aria-pressed="true"':' aria-pressed="false"'}>${l}</button>`).join("")}</div>`
+    : "";
+  const note=isNow
+    ? (modeOverridden(d)
+        ? `<span><b>${MODELABEL[mode]}</b> — just for today. ${dayName}s are normally ${MODELABEL[norm].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button>`
+        : `<span>${dayName} — normally a <b>${MODELABEL[norm].toLowerCase()}</b>.</span>`)
+    : `<span><b>${MODELABEL[mode]}</b></span>`;
+  const fx=fixed.length
+    ? `<div class="dmfix">${fixed.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
+    : "";
+  return seg+`<div class="dmnote">${note}</div>`+fx;
 }
 function renderWeek(cur){
   if(!A().length){$("#week").innerHTML="";return}
@@ -2256,8 +2446,7 @@ function renderToday(){
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
-  const rl=(D.cfg.rhythm||{})[DOW[d.getDay()]];
-  $("#rhythm").innerHTML=rl?`<span>${esc(rl)}</span>`:"";
+  $("#rhythm").innerHTML=rhythmHtml(d,isNow);
   const cn=isNow?carryNote():null;
   $("#carry").innerHTML=cn
     ? `<div class="carry"><s>You wanted to remember &mdash; ${cn.d.toLocaleDateString(undefined,{weekday:"long"})}</s><p>${esc(cn.text)}</p></div>`
@@ -2272,7 +2461,7 @@ function renderToday(){
   renderClock(isNow&&A().length>0);
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
-  renderList(rows,isNow);
+  renderList(rows,isNow,d);
   /* every business day has a beginning and an ending — one button, whichever applies */
   const mins=new Date().getHours()*60+new Date().getMinutes();
   $("#endbtn").innerHTML=
@@ -2333,9 +2522,9 @@ function buildQueue(){
 function startRun(){
   queue=buildQueue();qi=0;
   if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
-  $("#callwrap").classList.add("on");drawCard();
+  $("#callwrap").classList.add("on");syncScrollLock();drawCard();
 }
-function endRun(){$("#callwrap").classList.remove("on");save();render()}
+function endRun(){$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
 function drawCard(){
   if(qi>=queue.length){
     $("#ccard").innerHTML=`<div class="co">Run complete</div><div class="why">${queue.length} accounts worked. ${touchesOn(today())} touches logged today.</div>`;
@@ -2435,10 +2624,10 @@ function renderAccount(){
 
   h+=`<div class="sect"><div class="h"><b>Open actions</b><span>${openActions(a).length}</span></div>`;
   if(!openActions(a).length)h+=`<div class="hist">Nothing scheduled. That's how accounts go quiet.</div>`;
-  openActions(a).sort((x,y)=>x.date<y.date?-1:1).forEach(n=>{
+  openActions(a).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:((y.at?1:0)-(x.at?1:0))||(x.at&&y.at&&x.at<y.at?-1:1)).forEach(n=>{
     const od=n.date<iso(today());
     h+=`<div class="act${od?" due":""}"><button class="tick" data-tick="${n.id}" aria-label="Mark done"></button>
-      <div class="i" data-editnext="${n.id}"><b>${esc(n.why)}</b><s>${fmt(parseD(n.date))}${od?" · overdue":""} · ${n.kind||"call"}</s></div>
+      <div class="i" data-editnext="${n.id}"><b>${esc(n.why)}</b><s>${fmt(parseD(n.date))}${n.at?" · "+fmtTime(n.at):""}${od?" · overdue":""} · ${n.kind||"call"}</s></div>
       <button class="push" data-push="${n.id}" aria-label="Push a week">+7d</button></div>`;
   });
   h+=`<div class="sa" style="justify-content:flex-start"><button class="b" data-act="addnext">+ next action</button></div></div>`;
@@ -2612,15 +2801,19 @@ function terrList(){
 }
 function renderTerritory(){
   const searching=!!(norm(terrQ)||digits(terrQ).length>=3);
-  /* while searching, the filters are irrelevant — say so instead of showing dead chips */
-  $("#tfilters").innerHTML=searching
-    ? `<div class="srchnote">Searching every account &mdash; filters off.</div>`
+  /* while searching, the filters are irrelevant — the rail goes away entirely rather than
+     sitting there greyed out, and the meta line says what's being searched */
+  $("#tfilters").innerHTML=searching ? ""
     : TFILTERS.map(([k2,l])=>(()=>{const n=filterCount(k2);
         return `<button class="chip${terrFilter==k2?" on":""}" data-tf="${k2}">${l}${n?`<s>${n}</s>`:""}</button>`})()).join("");
   const list=terrList(),cap=60*terrPage;
   const sl=(SORTS.find(([v])=>v==(D.cfg.terrSort||"reco"))||SORTS[0])[1];
+  /* left half names what you're looking at, right half names the order — one balanced line */
+  $("#tcount").innerHTML=!list.length ? ""
+    : searching ? `<b>${list.length}</b> found <s style="opacity:.7">&middot; every account</s>`
+                : `<b>${list.length}</b> ${list.length==1?"account":"accounts"}`;
   $("#tsort").innerHTML=list.length
-    ? `<button class="sortbtn" data-act="sortmenu">${searching?list.length+" found":sl}<span>&#9662;</span></button>`
+    ? `<button class="sortbtn" data-act="sortmenu">${sl}<span>&#9662;</span></button>`
     : "";
   /* the right column answers "what has this been worth?" — dollars for deals, referrals for relationships */
   const worth=a=>{const v=dealValue(a);if(v)return k(v);
@@ -2791,9 +2984,8 @@ function renderSetup(){
   const ms=Object.assign({},DEF.mission,c.mission||{});
   set("mVisits",ms.visits);set("mClients",ms.clients);set("mPartners",ms.partners);set("mCalls",ms.calls);set("mFollow",ms.follow);
   renderHistory();
-  const rh=Object.assign({},DEF.rhythm,c.rhythm||{});
-  set("rMon",rh.mon);set("rTue",rh.tue);set("rWed",rh.wed);set("rThu",rh.thu);set("rFri",rh.fri);
-  set("rOffice",c.officeDays||"fri");
+  renderWeekCfg();
+
   $("#bakbanner").innerHTML=needsBackup()
     ? `<div class="banner"><b>You haven't exported in ${daysSinceExport()>900?"a while":daysSinceExport()+" days"}</b>, and the data has changed since. One tap and it's on your phone.
        <div class="sa" style="justify-content:flex-start"><button class="b pri" data-act="export">Export backup</button></div></div>`
@@ -2812,6 +3004,30 @@ function renderSetup(){
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
     <button class="b danger" data-act="wipe">Erase everything</button>`;
 }
+/* Teaching Bellwether the week, not building a calendar: a mode per day, and the handful of
+   things that are simply true every week. One item per line — a leading time is understood. */
+const WDAYS=[["mon","Monday"],["tue","Tuesday"],["wed","Wednesday"],["thu","Thursday"],["fri","Friday"]];
+function renderWeekCfg(){
+  const el=$("#weekcfg");if(!el)return;
+  const wk=Object.assign({},DEF.week,D.cfg.week||{}),rc=D.cfg.recur||{};
+  el.innerHTML=WDAYS.map(([k2,label])=>{
+    const items=(rc[k2]||[]).map(x=>(x.at?fmtTime(x.at)+" ":"")+x.what).join("\n");
+    return `<div class="wcd"><b>${label}</b>
+      <div class="dmseg" role="group" aria-label="${label} mode">${MODES.map(([v,l])=>
+        `<button data-wm="${k2}|${v}"${(wk[k2]||"field")==v?' class="on" aria-pressed="true"':' aria-pressed="false"'}>${l}</button>`).join("")}</div>
+      <textarea id="wr_${k2}" rows="${Math.max(1,(rc[k2]||[]).length)}" placeholder="8:30 Banker huddle — BoA Medfield">${esc(items)}</textarea>
+      <s>One per line. Start with a time and Bellwether will read it.</s></div>`;
+  }).join("");
+}
+/* "8:30 Banker huddle — BoA Medfield" → {at:"08:30", what:"Banker huddle — BoA Medfield"} */
+function parseRecurLine(line){
+  const raw=String(line||"").trim();if(!raw)return null;
+  const at=nlpTime(raw)||"";
+  const what=at
+    ? raw.replace(/^\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s*(?:[·\-—:]\s*)?/i,"").trim()
+    : raw;
+  return what?{at,what}:null;
+}
 let setupT=null;
 function saveSetup(quiet){
   const g=id=>{const e=$("#"+id);return e?e.value:""};
@@ -2820,8 +3036,11 @@ function saveSetup(quiet){
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
     me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
     mission:{visits:+g("mVisits")||0,clients:+g("mClients")||0,partners:+g("mPartners")||0,calls:+g("mCalls")||0,follow:+g("mFollow")||0},
-    rhythm:{mon:g("rMon"),tue:g("rTue"),wed:g("rWed"),thu:g("rThu"),fri:g("rFri")},
-    officeDays:(g("rOffice")||"fri").toLowerCase()});
+    recur:(()=>{const out={};WDAYS.forEach(([k2])=>{
+      const el=$("#wr_"+k2);
+      out[k2]=el?String(el.value||"").split(/\n/).map(parseRecurLine).filter(Boolean):((D.cfg.recur||{})[k2]||[]);
+    });return out})(),
+    week:Object.assign({},DEF.week,D.cfg.week||{})});
   $$("[data-pb]").forEach(el=>{const[bi,f,which]=el.dataset.pb.split("|");const b=D.cfg.book[+bi];
     if(!b||!b.f[f])return;
     if(which=="base")b.f[f].t=b.f[f].t.map((t,i)=>i==0?[t[0],+el.value]:[t[0],+el.value+(t[1]-b.f[f].t[0][1])]);
@@ -2860,26 +3079,35 @@ function spread(items,startOffset){
 }
 /* a pile of overdue work is dead weight — re-plan it once, at a pace you can keep */
 function catchUp(){
-  const over=todayRows(today()).filter(r=>r.over);
+  const rows=todayRows(today()),over=rows.filter(r=>r.over);
   if(!over.length){toast("Nothing behind. Work the day.");return}
   const cap=dayCapacity();
-  /* today's real commitments come first — the backlog only fills the room that's left */
-  const already=todayRows(today()).filter(r=>!r.over).length;
+  const now=iso(today());
+  /* An account can be behind AND already have something dated today. It's still one stop,
+     and it's staying on today whatever we decide about its backlog — so it has to be counted
+     against capacity up front. Counting it as backlog instead is how the day quietly
+     overfilled by exactly the number of these accounts. */
+  const anchored=over.filter(r=>r.due.some(n=>n.date==now));
+  const movable=over.filter(r=>!anchored.includes(r));
+  const already=rows.filter(r=>!r.over).length+anchored.length;
   const room=Math.max(0,cap-already);
-  const keep=over.slice(0,room),move=over.slice(room);
-  const stale=r=>r.due.filter(n=>n.date<iso(today()));
+  const keep=movable.slice(0,room),move=movable.slice(room);
+  const stale=r=>r.due.filter(n=>n.date<now);
   /* remember every date being touched, so one Undo puts the whole plan back */
   const before=[];
   over.forEach(r=>stale(r).forEach(n=>before.push({n,was:n.date})));
   const land=iso(bizDay(today()));
+  /* anchored accounts get their overdue work pulled forward for free — you're going
+     there anyway, so it costs no extra room */
+  anchored.forEach(r=>stale(r).forEach(n=>n.date=land));
   keep.forEach(r=>stale(r).forEach(n=>n.date=land));
   /* an account moves as a unit — its overdue work stays together on the new day */
   const plan=spread(move.map(r=>({kind:r.lead.kind,row:r})),1);
   plan.forEach(p=>stale(p.it.row).forEach(n=>n.date=p.date));
   const last=plan.length?plan[plan.length-1].date:null;
   commit(move.length
-    ?`Re-planned. ${keep.length} today, the rest through ${fmt(parseD(last))}.`
-    :`Re-planned — all ${keep.length} land today.`,
+    ?`Re-planned. ${keep.length+anchored.length} today, the rest through ${fmt(parseD(last))}.`
+    :`Re-planned — all ${keep.length+anchored.length} land today.`,
     ()=>before.forEach(b=>b.n.date=b.was));
 }
 /* the one rule that keeps a book alive: nothing leaves a conversation without a next date.
@@ -2930,48 +3158,108 @@ function dateField(id,ph){
   return `<div class="dfield">
     <input class="t" id="${id}" placeholder="${ph||"tuesday, the 28th, 7/28/26"}" autocomplete="off">
     <label class="cal">${CALICON}<input type="date" id="${id}_pick" aria-label="Pick a date"></label>
-  </div><div class="parse" id="${id}_out"></div>`;
+  </div><div class="parse"><span id="${id}_out"></span>
+    <label class="tpick" id="${id}_tw"><span id="${id}_tl">add a time</span><input type="time" id="${id}_time" aria-label="Set a time"></label>
+  </div>`;
 }
-/* the field owns one resolved date; typing and picking both write to it */
-const dateVals={};
+/* the field owns one resolved date and, optionally, one time; typing and picking both write to it */
+const dateVals={},timeVals={};
 function wireDate(id){
   const txt=$("#"+id),pick=$("#"+id+"_pick"),out=$("#"+id+"_out");
   if(!txt)return;
-  dateVals[id]="";
+  dateVals[id]="";timeVals[id]="";
+  const tw=$("#"+id+"_tw"),tl=$("#"+id+"_tl"),tin=$("#"+id+"_time");
+  /* no date, nothing to put a time on — the control only appears once there's a day */
+  const paintTime=()=>{
+    if(!tw)return;
+    tw.classList.toggle("show",!!dateVals[id]);
+    tw.classList.toggle("set",!!timeVals[id]);
+    if(tl)tl.textContent=timeVals[id]?fmtTime(timeVals[id]):"add a time";
+    if(tin)tin.value=timeVals[id]||"";
+  };
   const show=(d,note)=>{
     dateVals[id]=d||"";
     if(pick)pick.value=d||"";
     out.textContent=d?parseD(d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+(note?" · "+note:""):(txt.value.trim()?"Not a date I know — use the calendar":"");
+    paintTime();
   };
-  txt.addEventListener("input",()=>{const r=nlp(txt.value);show(r?r.date:"",r&&r.kind&&r.kind!="call"?r.kind:"")});
+  txt.addEventListener("input",()=>{
+    const r=nlp(txt.value);
+    /* a time spoken in the sentence wins; one picked by hand is never overwritten by typing */
+    if(r&&r.at)timeVals[id]=r.at;
+    show(r?r.date:"",r&&r.kind&&r.kind!="call"?r.kind:"");
+  });
+  if(tin)tin.addEventListener("change",()=>{timeVals[id]=tin.value||"";paintTime()});
   if(pick)pick.addEventListener("change",()=>{
     if(!pick.value)return;
     dateVals[id]=pick.value;
     txt.value=parseD(pick.value).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
     out.textContent=parseD(pick.value).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+    paintTime();
   });
+  paintTime();
 }
 const dateOf=id=>dateVals[id]||"";
+const timeOf=id=>timeVals[id]||"";
+function seedDate(id,date,at){
+  dateVals[id]=date||"";timeVals[id]=at||"";
+  const tw=$("#"+id+"_tw"),tl=$("#"+id+"_tl"),tin=$("#"+id+"_time");
+  if(tw){tw.classList.toggle("show",!!date);tw.classList.toggle("set",!!at)}
+  if(tl)tl.textContent=at?fmtTime(at):"add a time";
+  if(tin)tin.value=at||"";
+}
 const kindOf=id=>{const t=$("#"+id);const r=t?nlp(t.value):null;return r?r.kind:"call"};
 
 /* ---------- sheets ---------- */
+/* A CPA has no headcount and a bank branch has no payroll — asking anyway is a field to skip,
+   and a field to skip is a reason not to add the account standing on the sidewalk.
+   Every type asks for the four things it actually has, and nothing else.
+   City stays on all of them: it's what clusters drop-ins and answers "while you're in town". */
+const NEWFORM={
+  prospect:{name:"Business name",contact:"Contact",emps:true,
+    sub:"Name is the only thing required."},
+  client:{name:"Business name",contact:"Contact",emps:true,
+    sub:"Name is the only thing required."},
+  cpa:{name:"Firm name",contact:"CPA / contact",emps:false,
+    sub:"A few seconds — a firm is a relationship, not a deal."},
+  bank:{name:"Branch name",contact:"Banker",emps:false,
+    sub:"One account per branch. Referrals come from bankers, not banks."},
+  partner:{name:"Company",contact:"Contact",emps:false,
+    sub:"A few seconds — a partner is a relationship, not a deal."}
+};
 let lastCity="",dupeOK=false;
-function newAcctSheet(){
-  chipVal.nt="prospect";
-  openSheet(`<h3>New account</h3><div class="sub">Name is the only thing required.</div>
-    <label class="f">Name<input class="t" id="naName" autocomplete="off"></label>
-    <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-nt="${v}">${l}</button>`).join("")}</div>
-    <div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number"></label>
-      <label class="f">City<input class="t" id="naCity" value="${esc(lastCity)}"></label></div>
-    <label class="f">Street address <s style="font-weight:400;text-transform:none;letter-spacing:0">optional &mdash; powers Navigate</s><input class="t" id="naAddr" autocomplete="off" placeholder="12 Union Ave"></label>
-    <div class="two"><label class="f">Contact<input class="t" id="naContact"></label>
-      <label class="f">Phone<input class="t" id="naPhone" type="tel"></label></div>
-    <label class="f">First next action &mdash; leave it blank and the first call goes out tomorrow</label>${dateField("naNext","call tuesday")}
+function newAcctSheet(carry){
+  const t=ACCTTYPES.includes(chipVal.nt)?chipVal.nt:"prospect";
+  chipVal.nt=t;
+  const f=NEWFORM[t];
+  const v=carry||{};
+  openSheet(`<h3>New account</h3><div class="sub">${f.sub}</div>
+    <label class="f">${f.name}<input class="t" id="naName" autocomplete="off" value="${esc(v.name||"")}"></label>
+    <div class="chips" id="naType">${[["prospect","Prospect"],["client","Client"],["cpa","CPA"],["bank","Bank"],["partner","Partner"]].map(([val,l])=>`<button class="chip${val==t?" on":""}" data-nt="${val}">${l}</button>`).join("")}</div>
+    ${f.emps
+      ? `<div class="two"><label class="f">Employees<input class="t mono" id="naEmps" type="number" value="${esc(v.emps||"")}"></label>
+         <label class="f">City<input class="t" id="naCity" value="${esc(v.city!=null?v.city:lastCity)}"></label></div>`
+      : `<label class="f">City<input class="t" id="naCity" value="${esc(v.city!=null?v.city:lastCity)}"></label>`}
+    <label class="f">Street address <s style="font-weight:400;text-transform:none;letter-spacing:0">optional &mdash; powers Navigate</s><input class="t" id="naAddr" autocomplete="off" placeholder="12 Union Ave" value="${esc(v.addr||"")}"></label>
+    <div class="two"><label class="f">${f.contact}<input class="t" id="naContact" value="${esc(v.contact||"")}"></label>
+      <label class="f">Phone<input class="t" id="naPhone" type="tel" value="${esc(v.phone||"")}"></label></div>
+    <label class="f">First next action &mdash; leave it blank and the first ${isRelType(t)?"introduction goes out":"call goes out"} tomorrow</label>${dateField("naNext",isRelType(t)?"stop by tuesday":"call tuesday")}
     <div id="dupewarn"></div>
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" id="naSave" data-act="savenew">Add</button></div>`);
   dupeOK=false;
   wireDate("naNext");
-  setTimeout(()=>$("#naName").focus(),90);
+  if(v.next){$("#naNext").value=v.next;seedDate("naNext",v.nextDate||"",v.nextAt||"")}
+  if(!carry)setTimeout(()=>$("#naName").focus(),90);
+}
+/* the + button is always a fresh start: the type is a decision to make now, not a leftover
+   from the last thing you added */
+function openNewAccount(){chipVal.nt="prospect";newAcctSheet()}
+/* switching type mid-entry must never cost you what you already typed */
+function newAcctCarry(){
+  const g=id=>{const e=$("#"+id);return e?e.value:""};
+  return {name:g("naName"),emps:g("naEmps"),city:g("naCity"),addr:g("naAddr"),
+    contact:g("naContact"),phone:g("naPhone"),
+    next:g("naNext"),nextDate:dateOf("naNext"),nextAt:timeOf("naNext")};
 }
 function editNextSheet(nid){
   const a=acct(curId),n=(a.next||[]).find(x=>x.id==nid);if(!n)return;
@@ -2984,7 +3272,7 @@ function editNextSheet(nid){
       <button class="b pri" data-act="saveedit-next" data-n="${nid}">Save</button></div>`);
   wireDate("enWhen");
   $("#enWhen").value=parseD(n.date).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
-  dateVals.enWhen=n.date;$("#enWhen_pick").value=n.date;
+  $("#enWhen_pick").value=n.date;seedDate("enWhen",n.date,n.at||"");
   chipVal.ek=n.kind||"call";
 }
 function addNextSheet(){
@@ -3261,6 +3549,14 @@ tap("open",t=>{openQ=null;showAllQ=false;go("acct",t.dataset.open,screen)});
 tap("week",t=>{viewDate=parseD(t.dataset.week);showAllRows=false;render()});
 tap("start",t=>startDay(t.dataset.start));
 tap("tf",t=>{terrFilter=t.dataset.tf;render()});
+/* the override is always about the day you're actually working, never the day you're browsing */
+tap("wm",t=>{const [k2,v]=String(t.dataset.wm||"").split("|");
+  if(!MODEK.includes(v))return;
+  D.cfg.week=Object.assign({},DEF.week,D.cfg.week||{});D.cfg.week[k2]=v;
+  save();renderWeekCfg();
+  toast((WDAYS.find(w=>w[0]==k2)||["",k2])[1]+"s are now "+MODELABEL[v].toLowerCase()+"s.")});
+tap("dm",t=>{setDayMode(activeD(),t.dataset.dm);showAllRows=false;save();render();
+  toast(MODELABEL[dayMode(activeD())]+(modeOverridden(activeD())?" — today only.":"."))});
 tap("sort",t=>{D.cfg.terrSort=t.dataset.sort;terrPage=1;save();closeSheet();render()});
 tap("ru",t=>{rUnit=t.dataset.ru;render()});
 tap("th",t=>{D.cfg.theme=t.dataset.th;save();applyTheme()});
@@ -3272,7 +3568,10 @@ tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
 
 /* chip groups — every one of these behaves identically */
-["imptype","nt","et","wb","ak","ek"].forEach(g=>tap(g,t=>pickChip(t,g)));
+["imptype","et","wb","ak","ek"].forEach(g=>tap(g,t=>pickChip(t,g)));
+/* the new-account type doesn't just tag the record, it decides which questions are worth
+   asking — so changing it rebuilds the form around what you've already typed */
+tap("nt",t=>{chipVal.nt=t.dataset.nt;newAcctSheet(newAcctCarry())});
 
 /* one account + one action, encoded as "accountId|actionId" */
 const pair=s=>{const [aid,nid]=String(s).split("|");const ac=acct(aid);
@@ -3330,6 +3629,8 @@ document.addEventListener("click",async e=>{
       if(!a)break;const n=(a.next||[]).find(x=>x.id==t.dataset.n);if(!n)break;
       n.why=$("#enWhy").value.trim()||n.why;
       n.date=dateOf("enWhen")||n.date;n.kind=chipVal.ek||n.kind;
+      /* an appointment can lose its time — clearing the control has to mean clearing it */
+      n.at=timeOf("enWhen")||"";
       save();closeSheet();render();toast("Updated.");break}
     case"pace":paceOpen=!paceOpen;render();break;
     case"nearby":showNearby=!showNearby;render();break;
@@ -3339,9 +3640,14 @@ document.addEventListener("click",async e=>{
       const dt=dateOf("ltWhen");
       if(!dt){toast("Pick a date — the calendar button is right there.");break}
       if(n)moveAction(ac,n,dt);break}
+    case"dmreset":{const dd=activeD();delete (D.modes||{})[iso(dd)];await save();render();
+      toast("Back to your normal "+MODELABEL[weekMode(dd)].toLowerCase()+".");break}
     case"morerows":showAllRows=true;render();break;
     case"moreterr":terrPage++;renderTerritory();break;
-    case"newfromsearch":{newAcctSheet();const el=$("#naName");if(el)el.value=terrQ.trim();break}
+    case"newfromsearch":{
+      /* if they're filtered to CPAs and searching, they're adding a CPA */
+      chipVal.nt=ACCTTYPES.includes(terrFilter)?terrFilter:"prospect";
+      newAcctSheet({name:terrQ.trim()});break}
     case"reopen":{
       if(!a)break;
       a.outcome="open";a.lostReason="";
@@ -3355,7 +3661,7 @@ document.addEventListener("click",async e=>{
     case"editacct":editAcctSheet();break;
     case"savenew":{
       const nm=$("#naName").value.trim();if(!nm){toast("Needs a name.");break}
-      const nph=$("#naPhone").value.trim(),nad=($("#naAddr")?$("#naAddr").value.trim():"");
+      const nph=($("#naPhone")?$("#naPhone").value.trim():""),nad=($("#naAddr")?$("#naAddr").value.trim():"");
       /* warn once, then take the rep at their word — they can see the street, we can't */
       /* warn in place — never blow away what they just typed — then take them at
          their word on the second tap. They can see the street; we can't. */
@@ -3372,12 +3678,13 @@ document.addEventListener("click",async e=>{
         }
       }
       dupeOK=false;
-      const na=blankAcct({name:nm,type:chipVal.nt||"prospect",emps:+$("#naEmps").value||0,city:$("#naCity").value.trim(),addr:nad});
+      const gv=id=>{const e=$("#"+id);return e?e.value:""};
+      const na=blankAcct({name:nm,type:chipVal.nt||"prospect",emps:+gv("naEmps")||0,city:gv("naCity").trim(),addr:nad});
       if(isRel(na))na.rel="notmet";
-      na.contact={name:$("#naContact").value.trim(),phone:$("#naPhone").value.trim(),email:""};
+      na.contact={name:gv("naContact").trim(),phone:nph,email:""};
       const dt=dateOf("naNext");
       /* an account without a next action is just a name — Bellwether never creates one */
-      na.next.push(dt?{id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false}
+      na.next.push(dt?{id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),at:timeOf("naNext"),done:false}
         :{id:uid(),date:isoBiz(today(),1),why:"First contact",kind:isRel(na)?"visit":"call",done:false});
       lastCity=na.city||lastCity;
       D.accounts.push(na);await save();closeSheet();go("acct",na.id);
@@ -3386,8 +3693,9 @@ document.addEventListener("click",async e=>{
       if(!a)break;
       const dt=dateOf("anWhen");
       if(!dt){toast("Pick a date — the calendar button is right there.");break}
-      a.next.push({id:uid(),date:dt,why:$("#anWhy").value.trim()||"Follow up",kind:chipVal.ak||"call",done:false});
-      await save();closeSheet();render();toast("Scheduled "+fmt(parseD(dt))+".");break}
+      const atv=timeOf("anWhen");
+      a.next.push({id:uid(),date:dt,why:$("#anWhy").value.trim()||"Follow up",kind:chipVal.ak||"call",at:atv,done:false});
+      await save();closeSheet();render();toast("Scheduled "+fmt(parseD(dt))+(atv?" at "+fmtTime(atv):"")+".");break}
     case"saveedit":{
       if(!a)break;
       const oldName=a.name;
@@ -3480,7 +3788,7 @@ document.addEventListener("click",async e=>{
       const key=activeISO(),rec=(D.days||{})[key];
       if(rec){const wv=$("#edWin"),tv=$("#edTom");
         rec.win=wv?wv.value.trim():"";rec.tomorrow=tv?tv.value.trim():"";await save()}
-      $("#endday").classList.remove("on");$("#endday").innerHTML="";render();
+      $("#endday").classList.remove("on");syncScrollLock();$("#endday").innerHTML="";render();
       toast("Day closed. Tomorrow starts fresh.");break}
     case"reopenday":{
       const key=iso(viewDate||today());
@@ -3512,7 +3820,7 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",e=>{if(e.target.id=="disc"&&curId)render()});
 $("#veil").addEventListener("click",e=>{if(e.target.id=="veil")closeSheet()});
-$("#fab").addEventListener("click",newAcctSheet);
+$("#fab").addEventListener("click",openNewAccount);
 $("#aback").addEventListener("click",()=>go(backTo||"today"));
 $("#cexit").addEventListener("click",endRun);
 $("#cskip").addEventListener("click",()=>{if(qi<queue.length){advance()}});
@@ -3630,9 +3938,14 @@ $("#impj").addEventListener("click",importFile);
 if(sysDark&&sysDark.addEventListener)sysDark.addEventListener("change",applyTheme);
 /* swipe between days on Today */
 let sx=0,sy=0;
-document.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+let swipeOK=true;
+document.addEventListener("touchstart",e=>{
+  sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+  /* a drag that starts inside any layer belongs to that layer, start to finish */
+  swipeOK=!anyOverlay()&&!e.target.closest(".sheet,.callwrap,#endday");
+},{passive:true});
 document.addEventListener("touchend",e=>{
-  if(screen!="today"||$("#callwrap").classList.contains("on"))return;
+  if(!swipeOK||screen!="today"||anyOverlay())return;
   const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
   if(Math.abs(dx)>70&&Math.abs(dy)<50){viewDate=addDays(viewDate||today(),dx<0?1:-1);render()}
 },{passive:true});
