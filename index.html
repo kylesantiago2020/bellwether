@@ -66,6 +66,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .wm span{display:block;font-size:10.5px;color:var(--ink3);font-family:'IBM Plex Mono',monospace}
 
 /* day nav + shape */
+.jump{display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;
+  font-size:12.5px;color:var(--ac);cursor:pointer;letter-spacing:-.1px}
+.jump:before{content:"\2039";margin-right:5px;opacity:.7}
+.jump:active{opacity:.6}
 .daynav{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .dnbtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--sunk);color:var(--ink2);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
 .dnbtn:active{transform:scale(.92)}
@@ -164,13 +168,20 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .bh{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:8px}
 .bh .t{font-size:13px;font-weight:500}
 .bh .n{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
-.qr{display:flex;align-items:center;gap:9px;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
+.qr{display:flex;align-items:center;gap:0;padding:13px 2px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform .08s ease}
 .qr:active,.bk:active{transform:scale(.985)}
 .npri:active,.nq:active,.runbtn:active,.cb:active,.b:active,.chip:active,.wd:active{transform:scale(.97)}
 .qr:last-child{border-bottom:none}
-.rtick{width:30px;height:30px;flex:none;background:none;border:none;padding:0;position:relative;margin-left:-4px}
-.rtick:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card)}
-.rtick:active{transform:scale(.88)}
+/* 20px circle sitting right beside the name, with an invisible 44px-tall target
+   around it — padding grows the tap area, negative margin keeps the circle put */
+/* the circle sits 8px from the name, but the tap area reaches back past the row edge:
+   38x44 to hit, 20px to look at. Padding grows the target, negative margin keeps the
+   circle flush left and the row height unchanged. */
+.rtick{width:20px;height:20px;flex:none;background:none;border:none;position:relative;
+  box-sizing:content-box;padding:12px 8px 12px 10px;margin:-12px 0 -12px -10px}
+.rtick:before{content:"";position:absolute;top:12px;left:10px;width:20px;height:20px;
+  border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);box-sizing:border-box}
+.rtick:active:before{transform:scale(.88)}
 .qr .i{min-width:0;flex:1}
 .qr .nm{font-size:14.5px;font-weight:500;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qr .rs{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -221,9 +232,10 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .brief .said{font-size:18px}
 .brief .mt{margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7}
 .brief .flag{margin-top:11px;padding:10px 12px;border-radius:8px;background:var(--ambsoft);color:var(--amb);font-size:12.5px;line-height:1.55}
-.act{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--rule)}
+.act{display:flex;align-items:center;gap:0;padding:12px 2px;border-bottom:1px solid var(--rule)}
 .act:last-child{border-bottom:none}
-.tick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);flex:none;padding:0}
+.tick{width:20px;height:20px;flex:none;background:none;border:none;position:relative;box-sizing:content-box;padding:12px 8px 12px 10px;margin:-12px 0 -12px -10px}
+.tick:before{content:"";position:absolute;top:12px;left:10px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule2);background:var(--card);box-sizing:border-box}
 .tick:active{transform:scale(.9)}
 .act .i{min-width:0;flex:1;cursor:pointer}
 .push{flex:none;background:none;border:1px solid var(--rule2);border-radius:7px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 8px}
@@ -414,11 +426,11 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .rings.go .r3{transition-delay:.18s}
 .rings.go.fill .rval{stroke-dashoffset:var(--o)}
 .rings.set .rval{stroke-dashoffset:var(--o)}
-.rtick{fill:none;stroke:var(--grn);stroke-width:0;stroke-linecap:round;stroke-linejoin:round;
+.rchk{fill:none;stroke:var(--grn);stroke-width:0;stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:30;stroke-dashoffset:30;transform:rotate(90deg);transform-origin:50px 50px}
-.rings.all .rtick{stroke-width:4}
-.rings.all.set .rtick{stroke-dashoffset:0}
-.rings.all.go.fill .rtick{animation:edcheck .38s cubic-bezier(.4,0,.2,1) 1.05s forwards}
+.rings.all .rchk{stroke-width:4}
+.rings.all.set .rchk{stroke-dashoffset:0}
+.rings.all.go.fill .rchk{animation:edcheck .38s cubic-bezier(.4,0,.2,1) 1.05s forwards}
 .rleg{margin-top:20px;display:inline-block;text-align:left}
 .rl{display:flex;align-items:center;gap:9px;padding:6px 0}
 .rd{width:9px;height:9px;border-radius:50%;flex:none}
@@ -450,6 +462,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .edok:active{transform:scale(.98)}
 .endbtn{width:100%;margin-top:20px;padding:13px;border-radius:11px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-size:14.5px;font-family:inherit;cursor:pointer;transition:transform .08s ease}
 .endbtn:active{transform:scale(.98)}
+.endbtn.go{border-color:var(--ac);color:var(--ac)}
+.endbtn+.endbtn{margin-top:9px}
 .doneday{margin-top:16px;background:var(--sunk);border:1px solid var(--rule2);border-radius:14px;padding:16px 17px}
 .doneday .dh{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600}
 .doneday .dh i{font-style:normal;color:var(--grn)}
@@ -499,7 +513,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   <div id="carry"></div>
   <div id="catchup"></div>
   <div id="warm"></div>
-  <button class="b quiet" id="dnToday" style="display:none;margin-top:6px">Jump to today</button>
+  <button class="jump" id="dnToday" style="display:none">Back to today</button>
   <div id="now"></div>
   <div id="pace"></div>
   <div id="blocks"></div>
@@ -737,6 +751,22 @@ const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
    A date you type or tap is yours and is never moved — this is only for automatic choices. */
 const isWeekend=d=>d.getDay()==0||d.getDay()==6;
 function bizDay(d){let x=new Date(d.getTime());while(isWeekend(x))x=addDays(x,1);return x}
+/* Every business day has a beginning. The active day is simply the one the Today screen
+   is operating on — normally the real today, but you can start a future day early.
+   A day in the past is never still active. */
+function activeISO(){
+  const t=iso(today()),a=D.cfg&&D.cfg.activeDay;
+  return (a&&a>t)?a:t;
+}
+const activeD=()=>parseD(activeISO());
+const isActive=d=>iso(d)==activeISO();
+/* the next business day after a given one — what "start tomorrow" means */
+const nextBiz=d=>bizDay(addDays(d,1));
+async function startDay(k){
+  D.cfg.activeDay=k;viewDate=parseD(k);showAllRows=false;
+  await save();render();
+  toast(k==iso(today())?"Back on today.":fmt(parseD(k))+" is your active day.");
+}
 /* "next week" is a place in the calendar, not an arithmetic offset. From a Sunday it's
    tomorrow; from a Wednesday it's the Monday after this one. That's what people mean. */
 function nextWeekStart(from){
@@ -1586,7 +1616,7 @@ function ringsSvg(r,animate){
   const closed=RINGGEO.every(([,k])=>(r[k]||{v:0}).v>=(r[k]||{goal:1}).goal);
   return `<div class="rings ${animate?"go":"set"}${closed?" all":""}">
     <svg viewBox="0 0 100 100" aria-hidden="true">${arcs}
-      <path class="rtick" d="M39 50.5l7.5 7.4L63 41.5"/></svg></div>`;
+      <path class="rchk" d="M39 50.5l7.5 7.4L63 41.5"/></svg></div>`;
 }
 /* the legend says what each ring is — a ring with no label is just decoration */
 function ringLegend(r){
@@ -1792,12 +1822,12 @@ function weekRecap(ref,cur){
     ${line?`<div class="wkline">${esc(line)}</div>`:""}</div>`;
 }
 function endDay(){
-  const s=iso(today());
+  const s=activeISO();
   if((D.days||{})[s])return;
   const now=new Date();
   const hh=now.getHours(),mm=String(now.getMinutes()).padStart(2,"0");
   const t12=`${((hh+11)%12)+1}:${mm} ${hh<12?"AM":"PM"}`;
-  const stats=daySummary(today());
+  const stats=daySummary(activeD());
   const rec={ended:t12,stats};
   rec.msg=missionMessage(ringsClosed({stats}));
   (D.days=D.days||{})[s]=rec;
@@ -2181,10 +2211,11 @@ function renderWeek(cur){
     </div></div>`;
 }
 function renderToday(){
-  const d=viewDate||today(),isNow=iso(d)==iso(today());
+  const d=viewDate||today(),isNow=isActive(d);
   const rec=sealed(d);
   $("#datestr").textContent=fmtFull(d);
   $("#dnToday").style.display=isNow?"none":"";
+  $("#dnToday").textContent=activeISO()==iso(today())?"Back to today":"Back to "+fmt(activeD());
   const rows=todayRows(d);
   const quiet=s=>{$(s).innerHTML=""};
 
@@ -2193,7 +2224,9 @@ function renderToday(){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
     ["#shape","#rhythm","#carry","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
     $("#blocks").innerHTML=doneCard(rec,d);
-    $("#endbtn").innerHTML=`<button class="endbtn" data-act="reopenday">Reopen this day</button>`;
+    const nb=nextBiz(d);
+    $("#endbtn").innerHTML=(isNow&&!sealed(nb)?`<button class="endbtn go" data-start="${iso(nb)}">Start ${fmt(nb)}</button>`:"")
+      +`<button class="endbtn" data-act="reopenday">Reopen this day</button>`;
     renderWeek(d);
     $("#quote").innerHTML=weekRecap(d,d);
     return;
@@ -2220,10 +2253,13 @@ function renderToday(){
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows);if(A().length)renderPace(rows);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderList(rows,isNow);
-  /* the button appears once the day is actually under way — not at 6am */
+  /* every business day has a beginning and an ending — one button, whichever applies */
   const mins=new Date().getHours()*60+new Date().getMinutes();
-  $("#endbtn").innerHTML=(isNow&&A().length&&mins>=MSTART)
-    ? `<button class="endbtn" data-act="endday">End my day</button>` : "";
+  $("#endbtn").innerHTML=
+    (!isNow&&d>today()&&!isWeekend(d)&&A().length)
+      ? `<button class="endbtn go" data-start="${iso(d)}">Start ${fmt(d)}</button>`
+    :(isNow&&A().length&&mins>=MSTART)
+      ? `<button class="endbtn" data-act="endday">End my day</button>` : "";
   renderWeek(d);
   const q=isNow?dailyQuote():null;
   $("#quote").innerHTML=(weekRecap(d,d))+
@@ -3179,6 +3215,7 @@ function pickChip(t,group){
 tap("go",t=>go(t.dataset.go));
 tap("open",t=>{openQ=null;showAllQ=false;go("acct",t.dataset.open,screen)});
 tap("week",t=>{viewDate=parseD(t.dataset.week);showAllRows=false;render()});
+tap("start",t=>startDay(t.dataset.start));
 tap("tf",t=>{terrFilter=t.dataset.tf;render()});
 tap("sort",t=>{D.cfg.terrSort=t.dataset.sort;terrPage=1;save();closeSheet();render()});
 tap("ru",t=>{rUnit=t.dataset.ru;render()});
@@ -3396,7 +3433,7 @@ document.addEventListener("click",async e=>{
     case"endday":endDay();break;
     case"edclose":{
       /* the numbers are a record; these two lines are the story. Written once, at the close. */
-      const key=iso(today()),rec=(D.days||{})[key];
+      const key=activeISO(),rec=(D.days||{})[key];
       if(rec){const wv=$("#edWin"),tv=$("#edTom");
         rec.win=wv?wv.value.trim():"";rec.tomorrow=tv?tv.value.trim():"";await save()}
       $("#endday").classList.remove("on");$("#endday").innerHTML="";render();
@@ -3404,7 +3441,8 @@ document.addEventListener("click",async e=>{
     case"reopenday":{
       const key=iso(viewDate||today());
       if(!confirm("Reopen this day? The saved summary is deleted and the day goes back to being a working list."))break;
-      delete D.days[key];await save();render();toast("Reopened.");break}
+      delete D.days[key];D.cfg.activeDay=key>iso(today())?key:"";
+      await save();render();toast("Reopened.");break}
     case"catchup":catchUp();break;
     case"sample":await loadSample();break;
     case"baknow":{const id=await makeBackup("manual");toast(id?"Backed up.":"Couldn't back up — storage is full.");await diagnostics();break}
@@ -3436,7 +3474,7 @@ $("#cexit").addEventListener("click",endRun);
 $("#cskip").addEventListener("click",()=>{if(qi<queue.length){advance()}});
 $("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);showAllRows=false;render()});
 $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
-$("#dnToday").addEventListener("click",()=>{viewDate=today();render()});
+$("#dnToday").addEventListener("click",()=>{viewDate=activeD();showAllRows=false;render()});
 $("#save").addEventListener("click",saveSetup);
 $("#doimp").addEventListener("click",()=>{
   const type=chipVal.imptype||"client";
