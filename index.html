@@ -2071,7 +2071,7 @@ function bRefSec(id,title,inner,acct){
   const on=!!bRef[id];
   return `<div class="pbsec${on?" open":""}"><button class="pbsh" data-bref="${id}"><span>${esc(title)}</span><span class="cv">${bCvSvg}</span></button>${on?`<div class="pbbody">${inner}</div>`:""}</div>`;
 }
-function bundlePanel(a,q,rec){
+function bundlePanel(a,q,rec,val){
   const rd=rec.rd||read(a,"bundle"), dec=rd.dec;
   const sel=q.bundle||rd.option, k=dec.key[sel];
   const yr=b=>annual({emps:a.emps,bundle:b,freq:q.freq,addons:[],disc:+q.disc||0});
@@ -2086,7 +2086,7 @@ function bundlePanel(a,q,rec){
 
   /* ── the read ───────────────────────────────────────────── */
   h+=`<div class="bdread">
-    <div class="bdconf ${rd.band.toLowerCase()}">${rd.band} confidence \u00b7 ${rd.support} of ${rd.total||0} signals</div>
+    ${bSafe?"":`<div class="bdconf ${rd.band.toLowerCase()}">${rd.band} confidence \u00b7 ${rd.support} of ${rd.total||0} signals</div>`}
     <div class="bdopt">${esc(rd.option)}</div>
     <div class="bdamt">${$$$(annual({emps:a.emps,bundle:rd.option,freq:q.freq,addons:[],disc:0}))} a year at list</div>
     ${rd.because.length?`<div class="bdsaid">Because ${esc(saidList(rd.because,3))}.</div>`
@@ -2157,6 +2157,13 @@ function bundlePanel(a,q,rec){
       `<div class="bdinc"><i>\u2713</i><span>${esc(f.n)}${f[k]!==1?" ("+esc(f[k])+")":""}</span></div>`).join("")+`</div>`:""}).join(""));
   h+=`</div>`;
 
+  if(!bSafe){
+    const list0=annual({emps:a.emps,bundle:sel,freq:q.freq,addons:q.addons||[],disc:0});
+    const net=annual({emps:a.emps,bundle:sel,freq:q.freq,addons:q.addons||[],disc:+q.disc||0});
+    if((+q.disc||0)>35)h+=`<div class="giveaway warn">You're giving away ${$$$(list0-net)} a year. Trade it for something.</div>`;
+    if(rec.peo)h+=`<div class="peo">Benefits ambition plus ${a.emps} employees \u2014 this is a PEO conversation, not a payroll one.</div>`;
+    h+=`<div class="est"><div class="n">${$$$(val)}</div><div class="l">${a.type=="client"?"incremental to your number":"annual to your number"}</div></div>`;
+  }
   h+=`<button class="bdsafe" data-bsafe="1">${bSafe?"Show my side":"Hand them the phone"}</button>`;
   return h+`</div>`;
 }
@@ -3241,19 +3248,7 @@ function renderAccount(){
   if(!a.emps)h+=`<div class="hist">Add an employee count and the pricing comes alive.</div>`;
   else{
     const q=a.quote||{bundle:rec.bundle,freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[],disc:0};
-    const rungs=["Enhanced","Complete & HR Plus","HR Pro"];
-    h+=`<div class="recbox"><div class="lab">what to put in front of them</div>
-      <div class="big">${esc(rec.bundle)}</div>
-      <div class="amt">${$$$(annual({emps:a.emps,bundle:rec.bundle,freq:q.freq,addons:[],disc:0}))} a year at list</div>
-      <ul>${rec.why.map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>
-      <div class="ladder">${rungs.map(r=>{
-        const v=annual({emps:a.emps,bundle:r,freq:q.freq,addons:[],disc:+q.disc||0});
-        return `<div class="rung${r==q.bundle?" pick":""}" data-rung="${esc(r)}"><em>${esc(r)}</em><strong>${k(v)}</strong></div>`}).join("")}</div>
-      ${bundlePanel(a,q,rec)}
-      <label class="f">Discount — ${+q.disc||0}%<input type="range" id="disc" min="0" max="59" value="${+q.disc||0}"></label>
-      ${rec.peo?`<div class="peo">Benefits ambition plus ${a.emps} employees — this is a PEO conversation, not a payroll one.</div>`:""}
-      ${(+q.disc||0)>35?`<div class="giveaway warn">You're giving away ${$$$(annual({emps:a.emps,bundle:q.bundle,freq:q.freq,addons:q.addons,disc:0})-annual({emps:a.emps,bundle:q.bundle,freq:q.freq,addons:q.addons,disc:+q.disc}))} a year. Trade it for something.</div>`:""}
-      <div class="est"><div class="n">${$$$(val)}</div><div class="l">${a.type=="client"?"incremental to your number":"annual to your number"}</div></div>`;
+    h+=bundlePanel(a,q,rec,val);
   }
   h+=`</div>`;
   }
