@@ -575,13 +575,15 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .wktot b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);margin-right:5px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 /* ---------- playbooks ---------- */
-.pbintro{margin-top:10px;font-size:14px;line-height:1.6;color:var(--ink2)}
-.pbgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:20px}
-.pbcard{display:flex;flex-direction:column;align-items:flex-start;min-height:124px;padding:16px;border:none;border-radius:18px;background:var(--card);color:var(--ink);font-family:inherit;text-align:left;transition:transform .12s ease}
+body[data-s="play"] .wrap{padding-left:22px;padding-right:22px}
+.pbintro{margin-top:9px;font-size:13.5px;line-height:1.6;color:var(--ink2)}
+.pbgrid{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:18px;margin-top:18px}
+.pbcard{display:flex;flex-direction:column;align-items:flex-start;min-height:94px;padding:13px;border:none;border-radius:15px;background:var(--card);color:var(--ink);font-family:inherit;text-align:left;transition:transform .12s ease}
 .pbcard:active{transform:scale(.97)}
-.pbcard svg{width:22px;height:22px;color:var(--ac);margin-bottom:auto}
-.pbcard .t{margin-top:14px;font-size:15px;font-weight:500;letter-spacing:-.2px;line-height:1.25}
-.pbcard .s{margin-top:4px;font-size:11.5px;color:var(--ink3);line-height:1.35}
+.pbcard svg{width:20px;height:20px;color:var(--ac);margin-bottom:auto}
+.pbcard .t{margin-top:11px;font-size:13.5px;font-weight:500;letter-spacing:-.2px;line-height:1.25}
+.pbcard .s{margin-top:3px;font-size:10.5px;color:var(--ink3);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#playbody .srch{margin-top:16px;border-radius:11px;padding:10px 13px}
 .pbback{margin:2px 0 0 -4px;padding:8px 4px;background:none;border:none;font-family:inherit;font-size:14.5px;color:var(--ac)}
 .pbhead{margin-top:14px}
 .pbhead svg{width:27px;height:27px;color:var(--ac)}
