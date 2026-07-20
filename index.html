@@ -425,6 +425,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .rt{font-size:13.5px;flex:1;min-width:0}
 .rn{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink3)}
 .rn.hit{color:var(--grn)}
+.mhgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.mh{background:var(--sunk);border-radius:11px;padding:12px 10px;text-align:center}
+.mh strong{display:block;font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500;font-variant-numeric:tabular-nums}
+.mh em{display:block;font-style:normal;font-size:10.5px;color:var(--ink3);margin-top:4px;line-height:1.3}
+.mhrow{display:flex;justify-content:space-between;align-items:baseline;padding:10px 2px;border-bottom:1px solid var(--rule);font-size:13.5px}
+.mhrow b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.mhnote,.mhempty{font-size:12px;color:var(--ink3);margin-top:11px;line-height:1.6}
+.dmsg{font-family:"Instrument Serif",Georgia,serif;font-size:16px;margin-top:9px;line-height:1.4}
 .dring{margin-top:14px;text-align:center;padding-bottom:4px}
 .dring .rings{width:104px;height:104px}
 .dring .rleg{margin-top:14px}
@@ -564,6 +572,9 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
     <label class="f">Outbound calls<input class="t mono" id="mCalls" type="number" min="0"></label>
   </div>
   <label class="f">Follow-ups cleared<input class="t mono" id="mFollow" type="number" min="0"></label>
+
+  <h2>Mission history</h2>
+  <div id="mhist"></div>
 
   <h2>Week rhythm &mdash; not every day serves the same purpose</h2>
   <p style="font-size:12px;color:var(--ink3);margin-top:4px">One line per day, shown on the Today screen. Office days keep you off the road: calls lead, drop-ins wait.</p>
@@ -722,6 +733,20 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s==null?"":s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
+/* THE scheduling rule. Every date Bellwether picks for itself lands on a working day.
+   A date you type or tap is yours and is never moved — this is only for automatic choices. */
+const isWeekend=d=>d.getDay()==0||d.getDay()==6;
+function bizDay(d){let x=new Date(d.getTime());while(isWeekend(x))x=addDays(x,1);return x}
+/* "next week" is a place in the calendar, not an arithmetic offset. From a Sunday it's
+   tomorrow; from a Wednesday it's the Monday after this one. That's what people mean. */
+function nextWeekStart(from){
+  let d=addDays(from||today(),1);
+  while(d.getDay()!=1)d=addDays(d,1);
+  return d;
+}
+/* the automatic scheduler: n days out from a date, landed on a working day */
+const plusBiz=(from,n)=>bizDay(addDays(from,n));
+const isoBiz=(from,n)=>iso(plusBiz(from,n));
 /* the only deep copy in the app — used for snapshots, backups and default templates */
 const clone=o=>JSON.parse(JSON.stringify(o));
 
@@ -1573,6 +1598,86 @@ function ringLegend(r){
       <span class="rn${hit?" hit":""}">${d2.v} / ${d2.goal}</span></div>`}).join("")}</div>`;
 }
 
+/* Earned, not cheerful. One line under the rings — the difference between closing all
+   three and not is tone, never praise versus blame. */
+const MSGDONE=["Mission accomplished.","Excellent work today.","That's how territories are won.",
+ "Strong day in the field.","Momentum compounds.","Every conversation mattered.",
+ "Another day of consistent execution.","Small actions. Big results.","You kept your promises today.",
+ "One more good day in the territory.","Progress made.","Relationships built.",
+ "The pipeline is stronger than it was this morning.","Well earned.","Another chapter complete."];
+const MSGPART=["Good work today.","Tomorrow is another opportunity.","Progress is cumulative.",
+ "Every conversation builds momentum.","Keep moving forward.","The book moved forward today.",
+ "Showing up is most of it.","Consistency beats a perfect day."];
+/* remembers what it said, so the same line doesn't land two days running */
+function missionMessage(closed){
+  const pool=closed?MSGDONE:MSGPART,key=closed?"done":"part";
+  const m=D.cfg.msg=Object.assign({done:[],part:[]},D.cfg.msg||{});
+  const recent=(m[key]||[]).slice(0,Math.ceil(pool.length/2));
+  let opts=pool.map((_,i)=>i).filter(i=>!recent.includes(i));
+  if(!opts.length)opts=pool.map((_,i)=>i);
+  const pick=opts[Math.floor(Math.random()*opts.length)];
+  m[key]=[pick].concat(recent);
+  return pool[pick];
+}
+const ringsClosed=rec=>{
+  const r=rec&&rec.stats&&rec.stats.rings;
+  return !!r&&RINGGEO.every(([,k])=>(r[k]||{v:0}).v>=(r[k]||{goal:1}).goal);
+};
+
+/* ---------- mission history ---------- */
+/* A mission day is one you chose to end. A perfect one closed all three rings.
+   Weekends are simply not counted — they can't break a streak you never started. */
+function renderHistory(){
+  const el=$("#mhist");if(!el)return;
+  const s=missionStats();
+  if(!s){el.innerHTML=`<p class="mhempty">Nothing here yet. Tap <b>End my day</b> on the Today screen and this fills in &mdash; days completed, streaks, and how often you close all three rings.</p>`;return}
+  const cell=(v,l)=>`<div class="mh"><strong>${v}</strong><em>${l}</em></div>`;
+  el.innerHTML=`<div class="mhgrid">
+      ${cell(s.streak,s.streak==1?"day streak":"day streak")}
+      ${cell(s.longest,"longest streak")}
+      ${cell(s.total,s.total==1?"mission day":"mission days")}
+      ${cell(s.perfect,"all three rings")}
+      ${cell(s.rate+"%","of working days ended")}
+      ${cell(s.perfectRate+"%","were perfect")}
+    </div>
+    <div class="mhrow"><span>This week</span><b>${s.week}</b></div>
+    <div class="mhrow"><span>This month</span><b>${s.month}</b></div>
+    <div class="mhrow"><span>This year</span><b>${s.year}</b></div>
+    <p class="mhnote">Counting since ${fmt(parseD(s.first))}. Weekends don't break a streak.</p>`;
+}
+function missionStats(){
+  const days=D.days||{},keys=Object.keys(days).sort();
+  if(!keys.length)return null;
+  const perfect=keys.filter(k=>ringsClosed(days[k])).length;
+  const first=parseD(keys[0]),t=today();
+  /* how many working days have there been since you started? */
+  let avail=0;
+  for(let d=new Date(first.getTime());iso(d)<=iso(t);d=addDays(d,1))if(!isWeekend(d))avail++;
+  const onBiz=keys.filter(k=>!isWeekend(parseD(k))).length;
+  /* a streak walks back through working days; a weekend is skipped, not failed */
+  const walk=from=>{
+    let n=0,d=new Date(from.getTime());
+    for(let guard=0;guard<4000;guard++){
+      const k=iso(d);
+      if(days[k]){n++;d=addDays(d,-1);continue}
+      if(isWeekend(d)){d=addDays(d,-1);continue}
+      break;
+    }
+    return n;
+  };
+  /* today still being open must not count against you */
+  const cur=walk(days[iso(t)]?t:addDays(t,-1));
+  let longest=0;
+  keys.forEach(k=>{longest=Math.max(longest,walk(parseD(k)))});
+  const since=(from)=>keys.filter(k=>k>=iso(from)).length;
+  let wk=new Date(t.getTime());while(wk.getDay()!=1)wk=addDays(wk,-1);
+  const mo=new Date(t.getFullYear(),t.getMonth(),1),yr=new Date(t.getFullYear(),0,1);
+  return {total:keys.length,perfect,
+    rate:avail?Math.round(onBiz/avail*100):0,
+    perfectRate:keys.length?Math.round(perfect/keys.length*100):0,
+    streak:cur,longest,week:since(wk),month:since(mo),year:since(yr),first:keys[0]};
+}
+
 /* ---------- ending the day ---------- */
 /* A day is a chapter. Sealing one saves what happened, never what changes later —
    the snapshot is written once and read forever after. */
@@ -1632,6 +1737,7 @@ function doneCard(rec,d){
   return `<div class="doneday">
     <div class="dh"><i>&#10003;</i> Completed</div>
     <div class="dw">${fmtFull(d)} &middot; mission ended ${esc(rec.ended)}</div>
+    ${rec.msg?`<div class="dmsg">${esc(rec.msg)}</div>`:""}
     ${rec.stats.rings?`<div class="dring">${ringsSvg(rec.stats.rings,false)}${ringLegend(rec.stats.rings)}</div>`:""}
     ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
       :`<div class="dw" style="margin-top:11px">Nothing was logged that day.</div>`}
@@ -1691,7 +1797,10 @@ function endDay(){
   const now=new Date();
   const hh=now.getHours(),mm=String(now.getMinutes()).padStart(2,"0");
   const t12=`${((hh+11)%12)+1}:${mm} ${hh<12?"AM":"PM"}`;
-  (D.days=D.days||{})[s]={ended:t12,stats:daySummary(today())};
+  const stats=daySummary(today());
+  const rec={ended:t12,stats};
+  rec.msg=missionMessage(ringsClosed({stats}));
+  (D.days=D.days||{})[s]=rec;
   save();
   showDebrief(s,true);
 }
@@ -1707,8 +1816,8 @@ function showDebrief(s,animate){
     <div class="edcard">
       ${ringsSvg(rec.stats.rings,animate)}
       <div class="edbody">
-        <h2>${nm?`Great work today, ${esc(nm)}.`:"Great work today."}</h2>
-        <div class="edwhen">${fmtFull(parseD(s))} &middot; ended ${esc(rec.ended)}</div>
+        <h2>${esc(rec.msg||"Day complete.")}</h2>
+        <div class="edwhen">${nm?esc(nm)+" &middot; ":""}${fmtFull(parseD(s))} &middot; ended ${esc(rec.ended)}</div>
         ${ringLegend(rec.stats.rings)}
         ${lines?`<div class="edsub">Today you</div><ul class="edlist">${lines}</ul>`
                :`<div class="edsub">Nothing logged today. Some days are like that &mdash; the day is closed either way.</div>`}
@@ -2141,7 +2250,7 @@ function laterSheet(aid,nid){
     <div class="chips" style="margin-top:16px">
       <button class="chip" data-later="${aid}|${nid}|1">Tomorrow</button>
       <button class="chip" data-later="${aid}|${nid}|3">In 3 days</button>
-      <button class="chip" data-later="${aid}|${nid}|7">Next week</button>
+      <button class="chip" data-later="${aid}|${nid}|week">Next week</button>
     </div>
     <label class="f">Or pick the day</label>${dateField("ltWhen","friday, the 28th")}
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
@@ -2191,7 +2300,7 @@ function drawCard(){
 function advance(){qi++;drawCard()}
 function reschedule(a,note){
   const att=attemptsOn(a);
-  const when=iso(addDays(today(),cadenceDays(att)));
+  const when=isoBiz(today(),cadenceDays(att));
   const cur=openActions(a).filter(n=>actionBlock(n)=="call")[0];
   if(cur)cur.date=when; else a.next.push({id:uid(),date:when,why:note||"Try again",kind:"call",done:false});
 }
@@ -2208,7 +2317,7 @@ function callOutcome(c){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
       <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
-      <label class="f" style="text-align:left">When next? <s style="font-weight:400;text-transform:none;letter-spacing:0">blank means ${fmt(addDays(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
+      <label class="f" style="text-align:left">When next? <s style="font-weight:400;text-transform:none;letter-spacing:0">blank means ${fmt(plusBiz(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
       <div class="sa"><button class="b quiet" data-c="cancel">Back</button><button class="b pri" data-c="savetalk">Save &amp; next</button></div>`;
     wireDate("cnext");
     setTimeout(()=>$("#csaid").focus(),80);return;
@@ -2601,6 +2710,7 @@ function renderSetup(){
   set("meName",(c.me||{}).name);set("meEmail",(c.me||{}).email);set("meTitle",(c.me||{}).title);set("mePhone",(c.me||{}).phone);
   const ms=Object.assign({},DEF.mission,c.mission||{});
   set("mVisits",ms.visits);set("mClients",ms.clients);set("mPartners",ms.partners);set("mCalls",ms.calls);set("mFollow",ms.follow);
+  renderHistory();
   const rh=Object.assign({},DEF.rhythm,c.rhythm||{});
   set("rMon",rh.mon);set("rTue",rh.tue);set("rWed",rh.wed);set("rThu",rh.thu);set("rFri",rh.fri);
   set("rOffice",c.officeDays||"fri");
@@ -2655,15 +2765,13 @@ function dayCapacity(){
    Field work slides off office days on its own — you can't drop in from the ADP office. */
 function spread(items,startOffset){
   const cap=dayCapacity();
-  let d=addDays(today(),startOffset||0),used=0;
-  const skipWk=x=>{while(x.getDay()==0||x.getDay()==6)x=addDays(x,1);return x};
-  d=skipWk(d);
+  let d=bizDay(addDays(today(),startOffset||0)),used=0;
   return items.map(it=>{
-    if(used>=cap){d=skipWk(addDays(d,1));used=0}
+    if(used>=cap){d=bizDay(addDays(d,1));used=0}
     let day=d;
     if((it.kind=="visit"||it.kind=="meet")&&officeDay(day)){
-      let alt=skipWk(addDays(day,1));
-      while(officeDay(alt))alt=skipWk(addDays(alt,1));
+      let alt=bizDay(addDays(day,1));
+      while(officeDay(alt))alt=bizDay(addDays(alt,1));
       day=alt;
     }
     used++;
@@ -2683,7 +2791,8 @@ function catchUp(){
   /* remember every date being touched, so one Undo puts the whole plan back */
   const before=[];
   over.forEach(r=>stale(r).forEach(n=>before.push({n,was:n.date})));
-  keep.forEach(r=>stale(r).forEach(n=>n.date=iso(today())));
+  const land=iso(bizDay(today()));
+  keep.forEach(r=>stale(r).forEach(n=>n.date=land));
   /* an account moves as a unit — its overdue work stays together on the new day */
   const plan=spread(move.map(r=>({kind:r.lead.kind,row:r})),1);
   plan.forEach(p=>stale(p.it.row).forEach(n=>n.date=p.date));
@@ -2723,7 +2832,7 @@ function findDupes(name,phone,addr,skipId){
 const sugBundle=a=>(a.quote||{}).bundle||recommend(a).bundle;
 function keepAlive(a,why){
   if(!isOpen(a)||openActions(a).length)return null;
-  const when=iso(addDays(today(),isRel(a)?30:cadenceDays(attemptsOn(a))));
+  const when=isoBiz(today(),isRel(a)?30:cadenceDays(attemptsOn(a)));
   const kind=isRel(a)?"visit":"call";
   a.next.push({id:uid(),date:when,why:why||(isRel(a)?"Stay in front of them":"Follow up"),kind,done:false});
   return when;
@@ -3091,12 +3200,12 @@ tap("nowdone",t=>{const p=pair(t.dataset.nowdone);if(p.a)completeAction(p.a,p.n&
 tap("rowdone",t=>{const p=pair(t.dataset.rowdone);if(p.a)completeAction(p.a,p.n&&p.n.id,"Logged.")});
 tap("nowlater",t=>{const [aid,nid]=t.dataset.nowlater.split("|");laterSheet(aid,nid)});
 tap("later",t=>{const [aid,nid,dd]=t.dataset.later.split("|"),p=pair(aid+"|"+nid);
-  if(p.n)moveAction(p.a,p.n,iso(addDays(today(),+dd)))});
+  if(p.n)moveAction(p.a,p.n,dd=="week"?iso(nextWeekStart()):isoBiz(today(),+dd))});
 tap("nowskip",t=>{const sk=acct(t.dataset.nowskip);if(!sk)return;
   const was=sk.skip;sk.skip=iso(today());
   commit("Skipped for today.",()=>{sk.skip=was})});
 tap("push",t=>{const a=cur();const n=a&&(a.next||[]).find(x=>x.id==t.dataset.push);
-  if(n)moveAction(a,n,iso(addDays(parseD(n.date),7)))});
+  if(n)moveAction(a,n,isoBiz(parseD(n.date),7))});
 tap("tick",t=>{const a=cur();if(a)completeAction(a,t.dataset.tick)});
 tap("addvisit",t=>{const v=acct(t.dataset.addvisit);if(!v)return;
   v.next.push({id:uid(),date:iso(today()),why:"Drop in while you're in "+(v.city||"town"),kind:"visit",done:false});
@@ -3188,7 +3297,7 @@ document.addEventListener("click",async e=>{
       const dt=dateOf("naNext");
       /* an account without a next action is just a name — Bellwether never creates one */
       na.next.push(dt?{id:uid(),date:dt,why:"First contact",kind:kindOf("naNext"),done:false}
-        :{id:uid(),date:iso(addDays(today(),1)),why:"First contact",kind:isRel(na)?"visit":"call",done:false});
+        :{id:uid(),date:isoBiz(today(),1),why:"First contact",kind:isRel(na)?"visit":"call",done:false});
       lastCity=na.city||lastCity;
       D.accounts.push(na);await save();closeSheet();go("acct",na.id);
       toast(dt?"Added.":"Added — first "+(isRel(na)?"visit":"call")+" set for tomorrow.");break}
@@ -3228,8 +3337,8 @@ document.addEventListener("click",async e=>{
       logEvent(a,"won",$$$(v)+" · "+wb);
       openActions(a).forEach(n=>n.done=true);
       /* a new client is the best referral source you will ever have — don't let it go quiet */
-      a.next.push({id:uid(),date:iso(addDays(today(),14)),why:"First payroll check-in",kind:"call",done:false});
-      a.next.push({id:uid(),date:iso(addDays(today(),90)),why:"Add-on review — and ask who else they know",kind:"visit",done:false});
+      a.next.push({id:uid(),date:isoBiz(today(),14),why:"First payroll check-in",kind:"call",done:false});
+      a.next.push({id:uid(),date:isoBiz(today(),90),why:"Add-on review — and ask who else they know",kind:"visit",done:false});
       await save();closeSheet();render();
       toastUndo(wasProspect?`Booked — now a client. ${$$$(v)} to your number.`:`Booked — ${$$$(v)} to your number.`,
         ()=>restoreAcct(before));break}
@@ -3240,7 +3349,7 @@ document.addEventListener("click",async e=>{
         contact:{name:"",phone:$("#rfPhone").value.trim(),email:""},source:a.name});
       const said=$("#rfNote").value.trim();
       if(said){p.brief=said;p.events.push({when:iso(today()),kind:"note",text:said})}
-      p.next.push({id:uid(),date:iso(addDays(today(),1)),why:"Referral from "+a.name+" — first call",kind:"call",done:false});
+      p.next.push({id:uid(),date:isoBiz(today(),1),why:"Referral from "+a.name+" — first call",kind:"call",done:false});
       D.accounts.push(p);
       logEvent(a,"referral",nm);
       if(a.rel=="notmet"||a.rel=="intro"||a.rel=="building")a.rel="referring";
