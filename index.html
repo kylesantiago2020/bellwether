@@ -271,11 +271,14 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
 .hudpin+.hudpin{margin-top:9px}
 .hph{display:flex;align-items:baseline;gap:10px;width:100%;background:none;border:none;padding:0;
   font-family:inherit;color:var(--ink);text-align:left}
-.hph .t{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);flex:none;letter-spacing:.02em}
-.hph .n{font-size:15px;font-weight:500;letter-spacing:-.2px;flex:1;min-width:0;overflow:hidden;
+/* these were .t and .n until .t — the global text-input class — reached in and gave the
+   time a full-width bordered box, squeezing the branch name to nothing. Anything inside a
+   card gets a name that can't collide with a form control. */
+.hph .hwhen{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);flex:none;letter-spacing:.02em}
+.hph .hname{font-size:15px;font-weight:500;letter-spacing:-.2px;flex:1;min-width:0;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
-.hph .cv{flex:none;color:var(--ink3);font-size:19px;line-height:1;transform:rotate(90deg);transition:transform .18s ease}
-.hudpin.open .hph .cv{transform:rotate(-90deg)}
+.hph .hcv{flex:none;color:var(--ink3);font-size:19px;line-height:1;transform:rotate(90deg);transition:transform .18s ease}
+.hudpin.open .hph .hcv{transform:rotate(-90deg)}
 .hpg{margin-top:6px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
 .hpg b{color:var(--ink2);font-weight:500}
 .hpb{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule);font-size:13px;line-height:1.75;
@@ -2355,19 +2358,26 @@ function huddleBrief(a){
   const lastHud=h.on?days(parseD(h.on),today()):null;
   return {h,r,owed,lastHud,asks:asksFor(today()),win:winLine(),
     plan:h.next||"",                       /* what he said last week he'd teach today */
-    recall:!!(h.lesson&&h.recap)};
+    /* a lesson he taught but never wrote a recap for is still a lesson they were taught.
+       Requiring both made the card say "first huddle on record" one line under "ask them
+       about Workers' Comp" — two statements about the same branch that couldn't both be true. */
+    recall:!!h.lesson};
 }
 /* the sixty seconds before he walks in. One set of lines, three places they show up —
    pinned on Today, on the account screen, and nowhere else. */
 function huddleLines(a){
   const b=huddleBrief(a),lines=[];
-  if(b.recall)lines.push(`Last huddle${b.lastHud!=null?` · ${b.lastHud}d ago`:""} you taught <b>${esc(b.h.lesson)}</b>. They get asked about it first.`);
+  if(b.recall)lines.push(`Last huddle${b.lastHud!=null?` · ${b.lastHud}d ago`:""} you taught <b>${esc(b.h.lesson)}</b>${b.h.recap?". They get asked about it first.":" — no recap saved, so you're going from memory."}`);
   else lines.push(`First huddle on record. Whatever you teach today becomes next week's opener.`);
-  if(b.plan)lines.push(`You planned to cover <b>${esc(b.plan)}</b> today.`);
+  if(b.plan)lines.push(`Teaching <b>${esc(b.plan)}</b> today.`);
   lines.push(b.r.last90
-    ? `<b>${b.r.last90}</b> referral${b.r.last90==1?"":"s"} in the last 90 days${b.r.prior90?` · ${b.r.prior90} in the 90 before that`:""}.`
+    ? `<b>${b.r.last90}</b> referral${b.r.last90==1?"":"s"} in 90 days${b.r.prior90?` · ${b.r.prior90} in the 90 before`:""}.`
     : `No referrals in 90 days. That's the number this huddle exists to move.`);
-  if(b.owed.length)lines.push(`You owe them: ${b.owed.map(n=>esc(n.why)).join(" · ")}`);
+  /* three near-identical chase lines is a wall, not a briefing */
+  if(b.owed.length){
+    const show=b.owed.slice(0,2).map(n=>esc(n.why)).join(" · ");
+    lines.push(`You owe them: ${show}${b.owed.length>2?` · +${b.owed.length-2} more`:""}`);
+  }
   return lines;
 }
 /* the one line that has to survive being collapsed */
@@ -2407,7 +2417,7 @@ function drawHuddle(){
         <div class="k">last week</div>
         <div class="ask said">Who remembers what we talked about last week?</div>
         ${hudShown
-          ? `<div class="reveal"><b>${esc(b.h.lesson)}</b><p>${esc(b.h.recap)}</p></div>`
+          ? `<div class="reveal"><b>${esc(b.h.lesson)}</b><p>${b.h.recap?esc(b.h.recap):"No recap was saved that week — say it your own way."}</p></div>`
           : `<button class="b" data-hreveal="1">Reveal</button>`}
       </div>`
     : `<div class="hudq"><div class="k">last week</div>
@@ -2455,6 +2465,12 @@ function saveHuddleRef(){
    the lesson becomes next week's opener, a promise becomes a dated action, each referral
    becomes a follow-up, and the next huddle becomes a meeting. Nothing is copied by hand
    because nothing is stored twice. */
+/* failing everything else, the hour of the last meeting actually booked on this branch —
+   whatever time he chose last week is the best guess for next week */
+function lastHuddleAt(a){
+  const m=(a.next||[]).filter(n=>n.kind=="meet"&&n.at).sort((x,y)=>x.date<y.date?1:-1)[0];
+  return m?m.at:"";
+}
 function huddleWrapSheet(){
   const a=acct(hudId);if(!a)return;
   const h=hud(a);
@@ -2477,7 +2493,7 @@ function huddleWrapSheet(){
   wireDate("hwWhen");
   /* the next one is pre-filled, including the standing hour — a huddle that loses its time
      stops being an appointment and quietly becomes a wish */
-  seedDate("hwWhen",iso(nx),(meet&&meet.at)||"");
+  seedDate("hwWhen",iso(nx),(meet&&meet.at)||standingAt(a)||lastHuddleAt(a)||"");
   const w=$("#hwWhen");
   if(w){w.value=nx.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
     const o=$("#hwWhen_out");if(o)o.textContent=nx.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}
@@ -2498,9 +2514,16 @@ async function saveHuddle(){
   openActions(a).filter(n=>n.kind=="meet"&&n.date<=activeISO()).forEach(n=>n.done=true);
   if(owe)a.next.push({id:uid(),date:isoBiz(today(),3),why:owe,kind:"follow",done:false,made:activeISO()});
   hudRefs.forEach(nm=>a.next.push({id:uid(),date:isoBiz(today(),2),why:"Chase referral — "+nm,kind:"call",done:false,made:activeISO()}));
-  /* next week's huddle, booked before he leaves the lobby */
-  if(!openActions(a).some(n=>n.kind=="meet"&&n.date==when))
-    a.next.push({id:uid(),date:when,why:"Huddle"+(plan?" — "+plan:""),kind:"meet",at,done:false,made:activeISO()});
+  /* next week's huddle, booked before he leaves the lobby. If something is already on that
+     date — he booked it by hand, or a previous debrief did — it gets updated rather than
+     skipped, which is how a meeting ended up sitting there with no hour on it. */
+  const already=openActions(a).find(n=>n.kind=="meet"&&n.date==when);
+  if(already){already.at=at||already.at;already.why="Huddle"+(plan?" — "+plan:"")}
+  else a.next.push({id:uid(),date:when,why:"Huddle"+(plan?" — "+plan:""),kind:"meet",at,done:false,made:activeISO()});
+  /* a branch has exactly one next huddle. Any other open one is a date this debrief has
+     just superseded — only huddles we booked get reaped, so a ride-along you put on the
+     calendar by hand stays where you put it. */
+  openActions(a).filter(n=>n.kind=="meet"&&n.date!=when&&/^huddle/i.test(n.why||"")).forEach(n=>n.done=true);
   if(hudRefs.length&&a.rel!="trusted"&&a.rel!="referring")a.rel="referring";
   else if(a.rel=="notmet")a.rel="intro";
 
@@ -3155,6 +3178,21 @@ function matchBank(v){
 /* the standing line named a branch we don't have a record for. Rather than silently
    showing nothing, say so and make it one tap to fix — the huddle can't remember
    anything until there's something to remember it on. */
+/* the hour a branch is visited every week. A huddle adopted from the week template has
+   no booked meeting to copy a time from, so the standing line is where the hour lives —
+   without this the next huddle came back with no time at all. */
+function standingAt(a){
+  /* a branch has one standing hour, and it doesn't matter which weekday the line sits on —
+     scoping this to the active day meant a huddle run on any other day found nothing */
+  for(const k of DOW){
+    for(const f of ((D.cfg.recur||{})[k]||[])){
+      if(!HUDRE.test(f.what||"")||!f.at)continue;
+      const m=matchBank(parseVenue(f.what));
+      if(m&&m.id==a.id)return f.at;
+    }
+  }
+  return "";
+}
 async function adoptBranch(raw){
   const v=parseVenue(raw);
   if(!v.name){toast("Couldn't read a branch name out of that line.");return}
@@ -3176,25 +3214,27 @@ function renderHuddles(rows,isNow,day){
   if(!cards.length){el.innerHTML="";return}
   cards.sort((x,y)=>(x.at||"")<(y.at||"")?-1:(x.at||"")>(y.at||"")?1:0);
   el.innerHTML=cards.map(c=>{
+    /* the hour is a detail; the branch is the headline. An hour we don't have is simply
+       absent — printing the word "huddle" where the time goes told him nothing he didn't
+       already know and cost him the one thing he needed to read. */
+    const when=c.at?`<span class="hwhen">${fmtTime(c.at)}</span>`:"";
     if(!c.a)return `<div class="hudpin unlinked">
-      <div class="hph static">
-        <span class="t">${c.at?fmtTime(c.at):"huddle"}</span>
-        <span class="n">${esc(c.v.name||"Banker huddle")}</span>
+      <div class="hph static">${when}
+        <span class="hname">${esc(c.v.name||"Banker huddle")}</span>
       </div>
       <div class="hpg">Standing huddle with no branch on file — nothing to remember it on yet.</div>
       ${isNow?`<button class="runbtn" data-adopt="${esc(c.raw)}">Add this branch</button>`:""}
     </div>`;
     const a=c.a,open=!!hudOpen[a.id];
     return `<div class="hudpin${open?" open":""}">
-      <button class="hph" data-hudopen="${a.id}" aria-expanded="${open?"true":"false"}">
-        <span class="t">${c.at?fmtTime(c.at):"huddle"}</span>
-        <span class="n">${esc(a.name)}</span>
-        <span class="cv" aria-hidden="true">&rsaquo;</span>
+      <button class="hph" data-hudopen="${a.id}" aria-expanded="${open?"true":"false"}">${when}
+        <span class="hname">${esc(a.name)}</span>
+        <span class="hcv" aria-hidden="true">&rsaquo;</span>
       </button>
-      <div class="hpg">${huddleGist(a)}</div>
-      ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`:""}
+      ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`
+            :`<div class="hpg">${huddleGist(a)}</div>`}
       ${isNow?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
-             :`<div class="hpq">${c.over?"Missed — it's still open.":"Not today."}</div>`}
+             :(c.over?`<div class="hpq">Missed — it's still open.</div>`:"")}
     </div>`;
   }).join("");
 }
