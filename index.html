@@ -529,25 +529,25 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
 /* Two rows that were mostly air now carry the day's numbers: the mark sits beside the
    mission clock, and the day-mode switch runs down the margin next to the greeting. */
-.hdr>#clock{flex:1;min-width:0}
-.hdr>#warmslot{flex:0 0 84px}
-.hdr>#warmslot:empty{display:none}
-.hdr .clk{margin-top:0;padding-top:0;border-top:none}
-.hdr .clk .cl{font-size:9.5px}
-.hdr .clk .ct{font-size:22px;line-height:1.15}
-.hdr .clk .cs{font-size:11px;margin-top:1px}
 .greetrow{display:flex;gap:14px;align-items:flex-start}
 .greetcol{flex:1;min-width:0}
-.greetrow>.rhythm{flex:0 0 92px;margin-top:6px}
-.greetrow>.rhythm:empty{display:none}
-.greetrow .dmseg{grid-template-columns:1fr;gap:1px}
-.greetrow .dmseg button{padding:9px 0;font-size:12px}
+.greetrow>#clock{flex:0 0 auto;max-width:44%;text-align:right;margin-top:6px}
+.greetrow>#clock:empty{display:none}
+.greetrow .clk{margin-top:0;padding-top:0;border-top:none}
+.greetrow .clk .cl{font-size:9.5px}
+.greetrow .clk .ct{font-size:23px;line-height:1.15}
+.greetrow .clk .cs{font-size:11px;margin-top:2px;line-height:1.4}
+.plansec{margin-top:20px}
+.plansec>.pl{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.sheet .dmseg{grid-template-columns:repeat(3,1fr)}
+.sheet .warm{margin-top:0;border:none;background:transparent}
+.planwarm{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;background:var(--sunk);border:none;border-radius:10px;font-family:inherit;font-size:13.5px;color:var(--ink);text-align:left;cursor:pointer}
+.planwarm s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
 .warmsq{width:100%;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:11px 6px;
   font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
 .warmsq i{font-style:normal;font-size:14px;color:var(--grn);line-height:1}
 .warmsq b{font-size:11.5px;font-weight:500;color:var(--ink)}
 .warmsq s{text-decoration:none;font-size:10px;color:var(--ink3)}
-#warmbody .warm{margin-top:12px}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -849,7 +849,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 <body>
 <div class="wrap">
 
-<header class="hdr"><div class="mark" role="img" aria-label="Bellwether"><svg class="sheep" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M26 36a8 8 0 0 1 16 0 8 8 0 0 1 16 0 8 8 0 0 1 16 0c10 1 14 10 12 20 -2 8 -8 14 -18 14H32c-10 0-14-6-14-16 0-9 4-17 8-18Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 50c-8-3-10 7-3 9 3 1 5-3 5-6" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 70v19M44 70v19M57 70v19M67 70v19" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><path d="M80 42c-8-5-14-1-11 5 3 5 9 2 11-2Z" fill="currentColor"/><path d="M77 45c6-9 20-9 25 1 3 7 0 14-5 19-3 3-7 5-10 3-5-3-9-11-10-18Z" fill="currentColor"/></svg></div><div id="clock"></div><div id="warmslot"></div></header>
+<header class="hdr"><div class="mark" role="img" aria-label="Bellwether"><svg class="sheep" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M26 36a8 8 0 0 1 16 0 8 8 0 0 1 16 0 8 8 0 0 1 16 0c10 1 14 10 12 20 -2 8 -8 14 -18 14H32c-10 0-14-6-14-16 0-9 4-17 8-18Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 50c-8-3-10 7-3 9 3 1 5-3 5-6" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 70v19M44 70v19M57 70v19M67 70v19" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><path d="M80 42c-8-5-14-1-11 5 3 5 9 2 11-2Z" fill="currentColor"/><path d="M77 45c6-9 20-9 25 1 3 7 0 14-5 19-3 3-7 5-10 3-5-3-9-11-10-18Z" fill="currentColor"/></svg></div></header>
 
 <!-- ===== TODAY ===== -->
 <section class="screen on" id="s-today">
@@ -859,15 +859,16 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <button class="dnbtn" id="dnNext" aria-label="Next day">&rsaquo;</button>
   </div>
   <!-- the day-mode switch runs down the gap beside the greeting; nothing was using it -->
+  <!-- the clock sits with the greeting; everything you set for the day lives behind
+       one button, because setting up a day is a thing you do once, not something
+       that should occupy the screen you work from all day -->
   <div class="greetrow">
     <div class="greetcol">
       <h1 id="hd">Loading&hellip;</h1>
       <p class="daily" id="dailyline"></p>
     </div>
-    <div class="rhythm" id="rhythm"></div>
+    <div id="clock"></div>
   </div>
-  <div id="warmbody"></div>
-  <div id="rhythmnote"></div>
   <div id="anchorslot"></div>
   <div id="topbtn"></div>
   <!-- the morning cockpit: what the day weighs, then what shape it takes. Folds away
@@ -1094,7 +1095,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.14 header-rail";
+const BUILD="2026-07-22.15 daily-plan";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2449,7 +2450,7 @@ function render(){
   applyTheme();
   /* the mission clock and warm-up live in the app header now, which every screen shares —
      so anything but Today hands that space back rather than leaving yesterday's numbers up */
-  if(screen!="today"){const c=$("#clock"),w=$("#warmslot");if(c)c.innerHTML="";if(w)w.innerHTML=""}
+  if(screen!="today"){const c=$("#clock");if(c)c.innerHTML=""}
   if(screen=="today")renderToday();
   else if(screen=="acct")renderAccount();
   else if(screen=="terr")renderTerritory();
@@ -3166,26 +3167,9 @@ function warmState(){
   return w;
 }
 function renderWarm(show){
-  const sq=$("#warmslot"),bd=$("#warmbody");
-  if(!sq||!bd)return;
-  if(!show){sq.innerHTML="";bd.innerHTML="";return}
-  const w=warmState(),body=w.open;
-  const item=k2=>WARM[k2][Math.min(w.pick[k2]||0,WARM[k2].length-1)];
-  const rows=WARMORDER.map(([k2,label])=>{
-    if(k2=="objection"){const [o,r]=item(k2);
-      return `<div class="wsec"><div class="wl">${label}</div>
-        <div class="wq">&ldquo;${esc(o)}&rdquo;</div><div class="wa">${esc(r)}</div></div>`}
-    const v=item(k2);
-    const cls=(k2=="discovery"||k2=="mindset"||k2=="challenge")?"wshort":"wsay";
-    return `<div class="wsec"><div class="wl">${label}</div><div class="${cls}">${esc(v)}</div></div>`;
-  }).join("");
-  /* a square in the rail, because that gap was doing nothing — the talk track itself
-     needs the full width, so it opens underneath rather than inside 84 pixels */
-  sq.innerHTML=`<button class="warmsq" data-act="warmtoggle" aria-expanded="${body}">
-    ${body?"":`<i>&#10003;</i>`}<b>Warm-up</b><s>${body?"close":"ready"}</s></button>`;
-  bd.innerHTML=body?`<div class="warm"><div class="wbody">${rows}
-    <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div></div>`:"";
+  /* the talk track lives in the Daily plan sheet now — nothing to paint on Today */
 }
+
 
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
@@ -3327,25 +3311,60 @@ function anchorTowns(){
 }
 function anchorBar(){
   const an=anchorOn();
-  if(!an)return `<button class="anchbar" data-act="anchor"><span>Working the plan &mdash; tap if you&rsquo;re somewhere else today</span><s>set area</s></button>`;
+  if(!an)return `<button class="anchbar" data-act="anchor"><span>Daily plan</span><s>open</s></button>`;
   const near=A().filter(a=>isOpen(a)&&anchorTier(a)<=1).length;
-  return `<button class="anchbar set" data-act="anchor"><span>Today only &mdash; working from <b>${esc(an.town)}</b>${an.by?`, wrapping by ${fmtTime(an.by)}`:""}</span><s>change</s></button>
+  return `<button class="anchbar set" data-act="anchor"><span>Daily plan &mdash; working from <b>${esc(an.town)}</b>${an.by?`, wrapping by ${fmtTime(an.by)}`:""}</span><s>change</s></button>
     <p class="anchnote">${near} open account${near==1?"":"s"} in and around ${esc(an.town)}. Anything further out is folded away below, not deleted.</p>`;
 }
+function warmPlanHtml(){
+  const w=warmState(),body=w.open;
+  const item=k2=>WARM[k2][Math.min(w.pick[k2]||0,WARM[k2].length-1)];
+  const rows=WARMORDER.map(([k2,label])=>{
+    if(k2=="objection"){const [o,r]=item(k2);
+      return `<div class="wsec"><div class="wl">${label}</div>
+        <div class="wq">&ldquo;${esc(o)}&rdquo;</div><div class="wa">${esc(r)}</div></div>`}
+    const v=item(k2);
+    const cls=(k2=="discovery"||k2=="mindset"||k2=="challenge")?"wshort":"wsay";
+    return `<div class="wsec"><div class="wl">${label}</div><div class="${cls}">${esc(v)}</div></div>`;
+  }).join("");
+  return body
+    ? `<div class="warm"><div class="wbody">${rows}
+        <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div></div>`
+    : `<button class="planwarm" data-act="warmtoggle"><span>Warm-up done &mdash; talk track set</span><s>reopen</s></button>`;
+}
+/* Everything you decide once a day, in one place: what kind of day it is, where you're
+   working from, when you have to stop, and the talk track. The Today screen keeps none
+   of it — it's a screen you work from, not a screen you configure. */
 function anchorSheet(){
-  const an=anchorOn(),towns=anchorTowns();
-  openSheet(`<h3>Where are you today?</h3>
-    <div class="sub">Today only. Your week, your huddles and everything you&rsquo;ve committed to stay exactly as they are.</div>
-    <div class="chips" id="anTown">${towns.map(t=>`<button class="chip${an&&an.town===t?" on":""}" data-antown="${esc(t)}">${esc(t)}</button>`).join("")}</div>
-    <label class="f">Need to be done by <s class="hint">optional &mdash; 3pm, 14:30</s>
-      <input class="t" id="anBy" placeholder="3:00" value="${an&&an.by?fmtTime(an.by):""}"></label>
-    <div class="sa">
-      ${an?`<button class="b danger" data-act="anchoroff">Back to the plan</button>`:""}
-      <button class="b quiet" data-act="close">Cancel</button>
-      <button class="b pri" data-act="anchorsave">Use this today</button>
+  const an=anchorOn(),towns=anchorTowns(),d=activeD();
+  const mode=dayMode(d),normal=weekMode(d);
+  const dayName=d.toLocaleDateString(undefined,{weekday:"long"});
+  openSheet(`<h3>Daily plan</h3>
+    <div class="sub">${esc(fmtFull(d))}</div>
+
+    <div class="plansec"><div class="pl">What kind of day</div>
+      <div class="dmseg" role="group" aria-label="Day mode">${MODES.map(([v,l])=>
+        `<button data-dm="${v}"${mode==v?' class="on" aria-pressed="true"':' aria-pressed="false"'}>${l}</button>`).join("")}</div>
+      ${modeOverridden(d)
+        ? `<div class="dmnote"><span><b>${MODELABEL[mode]}</b> &mdash; just for today. ${dayName}s are normally ${MODELABEL[normal].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button></div>`
+        : ""}</div>
+
+    <div class="plansec"><div class="pl">Where you&rsquo;re working from</div>
+      <div class="chips" id="anTown">${towns.map(t=>`<button class="chip${an&&an.town===t?" on":""}" data-antown="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+      <label class="f">Need to be done by <s class="hint">optional &mdash; 3pm, 14:30</s>
+        <input class="t" id="anBy" placeholder="3:00" value="${an&&an.by?fmtTime(an.by):""}"></label>
+      <p class="read" style="font-size:12px;margin-top:6px">Today only. Your week and your huddles stay exactly as they are.</p></div>
+
+    <div class="plansec"><div class="pl">Warm-up</div>${warmPlanHtml()}</div>
+
+    <div class="sa" style="margin-top:22px">
+      ${an?`<button class="b danger" data-act="anchoroff">Clear the area</button>`:""}
+      <button class="b quiet" data-act="close">Close</button>
+      <button class="b pri" data-act="anchorsave">Save plan</button>
     </div>`);
   chipVal.antown=an?an.town:"";
 }
+
 function anchorSave(){
   const town=chipVal.antown;
   if(!town){toast("Pick a town first.");return}
@@ -3973,12 +3992,12 @@ function renderToday(){
   $("#dnToday").style.display=isNow?"none":"";
   $("#dnToday").textContent=activeISO()==iso(today())?"Back to today":"Back to "+fmt(activeD());
   const rows=todayRows(d);
-  const quiet=s=>{$(s).innerHTML=""};
+  const quiet=s=>{const el=$(s);if(el)el.innerHTML=""};
 
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#rhythmnote","#huddles","#carry","#catchup","#clock","#warmslot","#warmbody","#now","#pace","#setupsummary"].forEach(quiet);
+    ["#shape","#huddles","#carry","#catchup","#clock","#now","#pace","#setupsummary"].forEach(quiet);
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
@@ -4001,8 +4020,6 @@ function renderToday(){
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
   renderHuddles(rows,isNow,d);
-  $("#rhythm").innerHTML=rhythmHtml(d,isNow);
-  $("#rhythmnote").innerHTML=rhythmNoteHtml(d,isNow);
   const cn=isNow?carryNote():null;
   $("#carry").innerHTML=cn
     ? `<div class="carry"><s>You wanted to remember &mdash; ${cn.d.toLocaleDateString(undefined,{weekday:"long"})}</s><p>${esc(cn.text)}</p></div>`
@@ -5545,7 +5562,9 @@ tap("wm",t=>{const [k2,v]=String(t.dataset.wm||"").split("|");
   D.cfg.week=Object.assign({},DEF.week,D.cfg.week||{});D.cfg.week[k2]=v;
   save();renderWeekCfg();
   toast((WDAYS.find(w=>w[0]==k2)||["",k2])[1]+"s are now "+MODELABEL[v].toLowerCase()+"s.")});
+const sheetOpen=()=>{const v=$("#veil");return v&&v.classList.contains("on")};
 tap("dm",t=>{setDayMode(activeD(),t.dataset.dm);showAllRows=false;save();render();
+  if(sheetOpen())anchorSheet();
   toast(MODELABEL[dayMode(activeD())]+(modeOverridden(activeD())?" — today only.":"."))});
 tap("sort",t=>{D.cfg.terrSort=t.dataset.sort;terrPage=1;save();closeSheet();render()});
 tap("ru",t=>{rUnit=t.dataset.ru;render()});
@@ -6301,8 +6320,9 @@ document.addEventListener("click",async e=>{
           `<button class="chip${(D.cfg.terrSort||"reco")==v?" on":""}" data-sort="${v}">${l}</button>`).join("")}</div>
         <div class="parse" style="margin-top:12px">Recommended puts the biggest opportunity and the coldest accounts first &mdash; the order Bellwether would work them in.</div>
         <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
-    case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();break}
-    case"warmdone":{const w=warmState();w.open=false;save();render();toast("Go get it.");break}
+    /* the talk track lives in the Daily plan sheet, so these redraw the sheet, not the page */
+    case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();if(sheetOpen())anchorSheet();break}
+    case"warmdone":{const w=warmState();w.open=false;save();render();if(sheetOpen())anchorSheet();toast("Go get it.");break}
     case"endday":endDay();break;
     case"edclose":{
       /* the numbers are a record; these two lines are the story. Written once, at the close. */
