@@ -532,13 +532,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .topgrid>.rhythm{flex:0 0 92px;margin-top:2px}
 .topgrid .dmseg{grid-template-columns:1fr;gap:1px}
 .topgrid .dmseg button{padding:9px 0;font-size:12px}
-.tiles{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:flex-start}
-.tiles>div{flex:1 1 0;min-width:0}
-.tiles>div:empty{display:none}
-.tiles>div.open{flex:1 1 100%}
-.tiles .warm,.tiles .hudpin{margin-top:0}
-.tiles .hph{width:100%}
-.tiles .hname{white-space:normal}
+.topgrid>#warmslot{flex:0 0 84px}
+.topgrid>#warmslot:empty{display:none}
+.warmsq{width:100%;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:11px 6px;
+  font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
+.warmsq i{font-style:normal;font-size:14px;color:var(--grn);line-height:1}
+.warmsq b{font-size:11.5px;font-weight:500;color:var(--ink)}
+.warmsq s{text-decoration:none;font-size:10px;color:var(--ink3)}
+#warmbody .warm{margin-top:12px}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -862,15 +863,14 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
          exists to get the stack of businesses above the fold. -->
     <div class="topgrid">
       <div id="clock"></div>
+      <div id="warmslot"></div>
       <div class="rhythm" id="rhythm"></div>
     </div>
+    <div id="warmbody"></div>
     <div id="rhythmnote"></div>
     <div class="shape" id="shape"></div>
     <div id="pace"></div>
-    <div class="tiles">
-      <div id="warm"></div>
-      <div id="huddles"></div>
-    </div>
+    <div id="huddles"></div>
   </div>
   <div id="carry"></div>
   <div id="catchup"></div>
@@ -1085,7 +1085,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.12 compact-setup";
+const BUILD="2026-07-22.13 huddle-card";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3154,10 +3154,10 @@ function warmState(){
   return w;
 }
 function renderWarm(show){
-  const el=$("#warm");
-  if(!show){el.innerHTML="";el.className="";return}
+  const sq=$("#warmslot"),bd=$("#warmbody");
+  if(!sq||!bd)return;
+  if(!show){sq.innerHTML="";bd.innerHTML="";return}
   const w=warmState(),body=w.open;
-  el.className=body?"open":"";
   const item=k2=>WARM[k2][Math.min(w.pick[k2]||0,WARM[k2].length-1)];
   const rows=WARMORDER.map(([k2,label])=>{
     if(k2=="objection"){const [o,r]=item(k2);
@@ -3167,14 +3167,14 @@ function renderWarm(show){
     const cls=(k2=="discovery"||k2=="mindset"||k2=="challenge")?"wshort":"wsay";
     return `<div class="wsec"><div class="wl">${label}</div><div class="${cls}">${esc(v)}</div></div>`;
   }).join("");
-  el.innerHTML=`<div class="warm">
-    <button class="whead${body?"":" done"}" data-act="warmtoggle" aria-expanded="${body}">
-      <span><b>${body?"Today's warm-up":"Warm-up ready"}</b><s>${body?"Takes about two minutes.":"Talk track set."}</s></span>
-      <span class="chev${body?" up":""}">&#9662;</span></button>
-    ${body?`<div class="wbody">${rows}
-      <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div>`:""}
-  </div>`;
+  /* a square in the rail, because that gap was doing nothing — the talk track itself
+     needs the full width, so it opens underneath rather than inside 84 pixels */
+  sq.innerHTML=`<button class="warmsq" data-act="warmtoggle" aria-expanded="${body}">
+    ${body?"":`<i>&#10003;</i>`}<b>Warm-up</b><s>${body?"close":"ready"}</s></button>`;
+  bd.innerHTML=body?`<div class="warm"><div class="wbody">${rows}
+    <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div></div>`:"";
 }
+
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
 function todayTouches(d){
@@ -3538,8 +3538,8 @@ async function adoptBranch(raw){
   await save();render();
   toast(`${v.name} added — its huddles will remember from here.`);
 }
-function renderHuddles(rows,isNow,day){
-  const el=$("#huddles"),d=day||activeD(),cards=[],seen=new Set();
+function huddleList(rows,d){
+  const cards=[],seen=new Set();
   /* a meeting actually booked on a branch */
   huddleRows(rows).forEach(r=>{cards.push({a:r.a,at:rowAt(r),over:r.over});seen.add(r.a.id)});
   /* and the standing line for this weekday */
@@ -3548,9 +3548,20 @@ function renderHuddles(rows,isNow,day){
     if(a){if(seen.has(a.id))return;seen.add(a.id);cards.push({a,at:f.at,over:false,raw:f.what})}
     else cards.push({raw:f.what,v:parseVenue(f.what),at:f.at});
   });
-  if(!cards.length){el.innerHTML="";el.className="";return}
   cards.sort((x,y)=>(x.at||"")<(y.at||"")?-1:(x.at||"")>(y.at||"")?1:0);
-  el.className=cards.some(c=>c.a&&hudOpen[c.a.id])?"open":"";
+  return cards;
+}
+/* a branch you've already sat with this morning stops leading the day */
+function huddleStackCards(rows,d){
+  return huddleList(rows,d).filter(c=>c.a&&hud(c.a).on!==iso(d));
+}
+function renderHuddles(rows,isNow,day){
+  const el=$("#huddles"),d=day||activeD();
+  let cards=huddleList(rows,d);
+  /* on the live day the linked branches ride at the front of the stack instead, so all
+     that's left down here is a standing line with no branch on file yet */
+  if(isNow)cards=cards.filter(c=>!c.a||hud(c.a).on===iso(d));
+  if(!cards.length){el.innerHTML="";return}
   el.innerHTML=cards.map(c=>{
     /* the hour is a detail; the branch is the headline. An hour we don't have is simply
        absent — printing the word "huddle" where the time goes told him nothing he didn't
@@ -3620,22 +3631,37 @@ function renderNow(rows,day){
       <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
     return null;
   }
-  const picks=nowOrder(rows).slice(0,NOWMAX);
+  const huds=huddleStackCards(rows,day||today());
+  const picks=nowOrder(rows).slice(0,NOWMAX-huds.length);
+  const tot=huds.length+picks.length;
   el.innerHTML=`<div class="nowstack" id="nowstack" role="group" aria-label="Today's queue, swipe for more">${
-      picks.map((x,i)=>nowCardHtml(x,i,picks.length)).join("")}</div>`
-    +(picks.length>1
-       ? (picks.length<=8
-          ? `<div class="nowdots" id="nowdots" aria-hidden="true">${picks.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`
-          : `<div class="nowcount" id="nowcount" aria-hidden="true"><b>1</b> of ${picks.length}</div>`)
+      huds.map((c,i)=>huddleCardHtml(c,i,tot)).join("")
+      +picks.map((x,i)=>nowCardHtml(x,i+huds.length,tot)).join("")}</div>`
+    +(tot>1
+       ? (tot<=8
+          ? `<div class="nowdots" id="nowdots" aria-hidden="true">${Array.from({length:tot},(_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`
+          : `<div class="nowcount" id="nowcount" aria-hidden="true"><b>1</b> of ${tot}</div>`)
        : "")
-    +(picks.length>1&&!D.cfg.sawSwipe
-      ? `<p class="nowhint">Swipe &mdash; ${picks.length-1} more behind this one.</p>`:"");
+    +(tot>1&&!D.cfg.sawSwipe
+      ? `<p class="nowhint">Swipe &mdash; ${tot-1} more behind this one.</p>`:"");
   wireNowStack();
   return picks[0];
 }
 
 /* Every card is complete on its own — its own directions, its own Done/Later/Skip — so
    starting the third one costs exactly what starting the first does. */
+/* the huddle is a card like any other now — same shape, same place, one less row above it */
+function huddleCardHtml(c,i,tot){
+  const a=c.a;
+  return `<div class="now" role="group" aria-label="${i+1} of ${tot}: huddle at ${esc(a.name)}">
+    <div class="nh"><span class="eyebrow">${i?"next · "+(i+1)+" of "+tot:"now"} · ${c.at?fmtTime(c.at)+" · ":""}huddle${c.over?" · missed":""}</span></div>
+    <div class="nbody" data-open="${a.id}">
+      <div class="nname">${esc(a.name)}</div>
+      <div class="nwhy">${huddleGist(a)}</div>
+    </div>
+    <button class="npri" data-huddle="${a.id}">Start the huddle</button>
+  </div>`;
+}
 function callsDue(){
   return todayRows(today()).filter(x=>x.block=="call").length;
 }
@@ -3899,10 +3925,10 @@ function renderSetup(isNow,d){
     return;
   }
   const done=touchesOn(today()),target=+D.cfg.touchTarget||40;
-  const hud=recurHuddles(d)[0];
+  const firstHud=recurHuddles(d)[0];
   sum.innerHTML=`<button class="setupsum" data-act="setupopen">
     <span>${esc(MODELABEL[dayMode(d)]||"Field day")} &middot; ${done} of ${target} done${
-      hud&&hud.at?` &middot; huddle ${fmtTime(hud.at)}`:""}</span><s>show</s></button>`;
+      firstHud&&firstHud.at?` &middot; huddle ${fmtTime(firstHud.at)}`:""}</span><s>show</s></button>`;
 }
 
 /* A day that's already gone isn't waiting on a decision. Rather than leaving "End my day"
@@ -3940,7 +3966,7 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#rhythmnote","#huddles","#carry","#catchup","#clock","#warm","#now","#pace","#setupsummary"].forEach(quiet);
+    ["#shape","#rhythm","#rhythmnote","#huddles","#carry","#catchup","#clock","#warmslot","#warmbody","#now","#pace","#setupsummary"].forEach(quiet);
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
