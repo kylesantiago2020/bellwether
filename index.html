@@ -1095,7 +1095,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.15 daily-plan";
+const BUILD="2026-07-22.17 day-mode-fix";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3349,19 +3349,21 @@ function anchorSheet(){
         ? `<div class="dmnote"><span><b>${MODELABEL[mode]}</b> &mdash; just for today. ${dayName}s are normally ${MODELABEL[normal].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button></div>`
         : ""}</div>
 
-    <div class="plansec"><div class="pl">Where you&rsquo;re working from</div>
+    ${dayMode(d)=="office"?"":`<div class="plansec"><div class="pl">Where you&rsquo;re working from</div>
       <div class="chips" id="anTown">${towns.map(t=>`<button class="chip${an&&an.town===t?" on":""}" data-antown="${esc(t)}">${esc(t)}</button>`).join("")}</div>
       <label class="f">Need to be done by <s class="hint">optional &mdash; 3pm, 14:30</s>
         <input class="t" id="anBy" placeholder="3:00" value="${an&&an.by?fmtTime(an.by):""}"></label>
-      <p class="read" style="font-size:12px;margin-top:6px">Today only. Your week and your huddles stay exactly as they are.</p></div>
+      <p class="read" style="font-size:12px;margin-top:6px">Today only. Your week and your huddles stay exactly as they are.</p></div>`}
 
     <div class="plansec"><div class="pl">Warm-up</div>${warmPlanHtml()}</div>
 
     <div class="sa" style="margin-top:22px">
-      ${an?`<button class="b danger" data-act="anchoroff">Clear the area</button>`:""}
       <button class="b quiet" data-act="close">Close</button>
       <button class="b pri" data-act="anchorsave">Save plan</button>
-    </div>`);
+    </div>
+    <div class="plansec"><div class="pl">Start over</div>
+      <button class="b danger" data-act="restartday" style="width:100%">Restart this day</button>
+      <p class="read" style="font-size:12px;margin-top:8px">Clears the area, the wrap-up time and any day-mode change, and puts the day back to un-started so you can set it again.</p></div>`);
   chipVal.antown=an?an.town:"";
 }
 
@@ -3449,13 +3451,22 @@ function nowOrder(rows){
   /* no falling back to a far stop — he told us he isn't going there today */
   if(anchorOn())rows=rows.filter(r=>!isParked(r));
   if(!rows.length)return [];
-  const mode=dayMode(today());
+  /* The day being WORKED, not the calendar date. Start Friday early and the plan has to be
+     Friday's plan — reading today() here is exactly why an office day led with a drop-in
+     and a Directions button on a day you're spending at a desk. */
+  const mode=dayMode(activeD());
   /* Meetings are commitments and always lead. After that the mode decides:
      out in the field a door beats a dial, at the desk it's the reverse, and on a mixed
      day neither wins by type — the highest-value account does. */
   const vis=mode=="office"?3:mode=="mixed"?2:1;
   const pri=b=>b=="meet"?0:b=="visit"?vis:2;
   const skipped=r=>r.a.skip==iso(today())?1:0;
+  /* At a desk you cannot drop in on anybody. An overdue drop-in carried forward onto an
+     office day is still real work, but it is not the next thing to do — so on those days
+     the kind of work decides the order before the clock gets a say. */
+  /* Only the doors get demoted. Pushing every kind by type meant a 3:30 meeting sat on
+     card one all morning; the clock should still govern meetings and calls. */
+  const doorLast=r=>(mode=="office"&&r.block=="visit")?1:0;
   /* A clock on a card doesn't make it the next thing to do. A 3:30 meeting isn't what you
      do at ten in the morning — untimed work is available RIGHT NOW, so it sorts as though
      it were scheduled for this minute and the appointment falls into its own slot. Anything
@@ -3471,6 +3482,7 @@ function nowOrder(rows){
     return hhmm(Math.floor(mm/60),mm%60);
   };
   return rows.slice().sort((x,y)=>skipped(x)-skipped(y)
+    ||doorLast(x)-doorLast(y)
     ||(when(x)<when(y)?-1:when(x)>when(y)?1:0)
     ||pri(x.block)-pri(y.block)||score(y.a)-score(x.a));
 }
@@ -3761,23 +3773,27 @@ function greeting(){
   const part=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
   /* two short lines rather than one long one — it reads like a briefing on a phone,
      and it degrades to the old headline when no name is set */
-  return nm?`${part}, ${nm}.<em>Here's your day.</em>`:`${part}.<em>Here's your day.</em>`;
+  /* one line, not two — the second one said nothing and cost 38 pixels every morning */
+  return nm?`${part}, ${nm}.`:`${part}.`;
 }
-function dayShape(rows){
+function dayShape(rows,d){
   const c={meet:0,visit:0,call:0,follow:0};
   rows.forEach(r=>c[r.block]++);
-  const p=[];
-  if(c.meet)p.push(`<b>${c.meet}</b> meeting${c.meet==1?"":"s"}`);
-  if(c.visit)p.push(`<b>${c.visit}</b> drop-in${c.visit==1?"":"s"}`);
-  if(c.call)p.push(`<b>${c.call}</b> call${c.call==1?"":"s"}`);
-  if(c.follow)p.push(`<b>${c.follow}</b> follow-up${c.follow==1?"":"s"}`);
-  return p.join(" &nbsp;·&nbsp; ");
+  const lab={meet:["meeting","meetings"],visit:["drop-in","drop-ins"],
+             call:["call","calls"],follow:["follow-up","follow-ups"]};
+  /* the order says what the day is for — at a desk that's the phone, not the parking lot */
+  const order=(d&&dayMode(d)=="office")?["call","follow","meet","visit"]:["meet","visit","call","follow"];
+  return order.filter(k2=>c[k2])
+    .map(k2=>`<b>${c[k2]}</b> ${c[k2]==1?lab[k2][0]:lab[k2][1]}`)
+    .join(" &nbsp;·&nbsp; ");
 }
 function renderList(rows,isNow,day){
   const el=$("#blocks");
   /* set before any early return — an empty day still needs the control, and a stale
      bar left over from the last render is worse than none */
-  $("#anchorslot").innerHTML=(isNow&&dayMode(day||today())!="office")?anchorBar():"";
+  /* an office day still has a day mode, a wrap-up hour and a warm-up — hiding the whole
+     plan because you can't drop in from a desk left no way back to your own settings */
+  $("#anchorslot").innerHTML=isNow?anchorBar():"";
   if(!rows.length){
     el.innerHTML=isNow?"":`<div class="empty"><div class="said">Nothing scheduled.</div>
       <p>Tap a day below, or use Territory to add work to this one.</p></div>`;
@@ -3984,6 +4000,20 @@ function autoSealPast(){
   }
   if(wrote)save();
 }
+
+/* Un-starting a day. Everything a day plan decides is a choice about one date, so putting
+   it back means clearing all of them at once and returning the day to the state where the
+   only thing on screen is the button that starts it. Nothing about the accounts moves. */
+async function restartDay(){
+  const s=activeISO();
+  if(D.modes)delete D.modes[s];
+  if(D.cfg.anchor&&D.cfg.anchor.on===s)delete D.cfg.anchor;
+  D.cfg.activeDay="";D.cfg.activeSetOn="";
+  viewDate=null;showAllRows=false;setupManual=null;showParked=false;
+  closeSheet();
+  await save();render();toTop();
+  toast("Day reset. Set it up again whenever you like.");
+}
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
   autoSealPast();unhideCreed();
@@ -4009,16 +4039,13 @@ function renderToday(){
     return;
   }
 
-  /* the dismiss control is gone — it was one tap from deleting something he wanted */
-  if(isNow){
-    const c=creedFor(today());
-    const dl=$("#dailyline");
-    if(dl)dl.textContent=c[0];
-  }else{const dl=$("#dailyline");if(dl)dl.innerHTML=""}
+  /* the day's line lives at the foot of the screen with the quote — the top of Today is
+     for the day itself */
+  {const dl=$("#dailyline");if(dl)dl.innerHTML=""}
   $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
-  $("#shape").innerHTML=rows.length?dayShape(rows):"";
+  $("#shape").innerHTML=rows.length?dayShape(rows,d):"";
   renderHuddles(rows,isNow,d);
   const cn=isNow?carryNote():null;
   $("#carry").innerHTML=cn
@@ -4040,8 +4067,10 @@ function renderToday(){
   /* on a day you haven't started yet, the only thing you can do is start it — that button
      belongs at the top of the screen, not underneath a plan you can't act on */
   const startable=(!isNow&&d>today()&&!isWeekend(d)&&A().length);
+  const jumped=isNow&&activeISO()!=iso(today());
   $("#topbtn").innerHTML=startable
-    ? `<button class="endbtn go" data-start="${iso(d)}" style="margin-top:14px">Start ${fmt(d)}</button>`:"";
+    ? `<button class="endbtn go" data-start="${iso(d)}" style="margin-top:14px">Start ${fmt(d)}</button>`
+    : (jumped ? `<button class="endbtn" data-act="restartday" style="margin-top:14px">Restart &mdash; back to today</button>`:"");
   $("#endbtn").innerHTML=
     (false)
       ? ``
@@ -6172,6 +6201,7 @@ document.addEventListener("click",async e=>{
     case"setupfold":setupManual=false;render();break;
     case"anchorsave":anchorSave();break;
     case"anchoroff":anchorOff();break;
+    case"restartday":restartDay();break;
     case"topup":topUpHere(5);break;
     case"parked":showParked=!showParked;render();break;
     case"laterpick":{
