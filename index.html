@@ -509,6 +509,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .nowcount{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink3);margin-top:11px}
 .nowcount b{color:var(--ink);font-weight:500}
 @media (prefers-reduced-motion:reduce){.nowstack{scroll-behavior:auto}}
+#setupblock.folded{display:none}
+.setupsum{margin-top:14px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:var(--sunk);border:none;border-radius:10px;font-family:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer}
+.setupsum s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
+.now{position:relative}
+.callorb{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:22px;border:1px solid var(--rule2);background:var(--paper);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;font-family:inherit;z-index:2}
+.callorb svg{width:16px;height:16px;display:block}
+.callorb b{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:500;line-height:1;color:var(--ink2)}
+.now .nh{padding-right:52px}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -822,16 +830,21 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <h1 id="hd">Loading&hellip;</h1>
   <p class="daily" id="dailyline"></p>
   <div id="anchorslot"></div>
-  <div id="clock"></div>
-  <div class="shape" id="shape"></div>
-  <div id="huddles"></div>
-  <div class="rhythm" id="rhythm"></div>
+  <!-- the morning cockpit: what the day weighs, then what shape it takes. Folds away
+       once the first touch is logged so the stack rises to the top for the rest of it. -->
+  <div id="setupsummary"></div>
+  <div id="setupblock">
+    <div id="clock"></div>
+    <div class="shape" id="shape"></div>
+    <div id="pace"></div>
+    <div class="rhythm" id="rhythm"></div>
+    <div id="warm"></div>
+    <div id="huddles"></div>
+  </div>
   <div id="carry"></div>
   <div id="catchup"></div>
-  <div id="warm"></div>
   <button class="jump" id="dnToday" style="display:none">Back to today</button>
   <div id="now"></div>
-  <div id="pace"></div>
   <div id="blocks"></div>
   <div id="endbtn"></div>
   <div id="week"></div>
@@ -1041,7 +1054,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.6 full-day-stack";
+const BUILD="2026-07-22.7 today-reorder";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3523,8 +3536,7 @@ function renderHuddles(rows,isNow,day){
         <span class="hname">${esc(a.name)}</span>
         <span class="hcv" aria-hidden="true">&rsaquo;</span>
       </button>
-      ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`
-            :`<div class="hpg">${huddleGist(a)}</div>`}
+      ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`:""}
       ${(isNow&&c.raw&&strayBranches(a,c.raw).length)
         ? `<div class="hpstray">Also on file, empty: ${strayBranches(a,c.raw).map(x=>esc(x.name)).join(", ")}
            <button class="b" data-stray="${a.id}|${esc(c.raw)}">Clear ${strayBranches(a,c.raw).length==1?"it":"them"}</button></div>`:""}
@@ -3591,6 +3603,9 @@ function renderNow(rows,day){
 
 /* Every card is complete on its own — its own directions, its own Done/Later/Skip — so
    starting the third one costs exactly what starting the first does. */
+function callsDue(){
+  return todayRows(today()).filter(x=>x.block=="call").length;
+}
 function nowCardHtml(r,i,tot){
   const a=r.a,n=r.lead;
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
@@ -3605,7 +3620,14 @@ function nowCardHtml(r,i,tot){
   else if((r.block=="meet"||r.block=="visit")&&canMap(a))pri=`<a class="npri" href="${mapURL(a)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city||"go")}</a>`;
   else if(r.block=="follow"&&em)pri=`<a class="npri" href="mailto:${esc(em)}">Email ${esc(who||a.name)}</a>`;
   else pri=`<button class="npri" data-open="${a.id}">Open the brief</button>`;
+  /* the phone is one tap from every card in the stack, not twenty-one swipes away —
+     you can start a call run from the third card as easily as the first */
+  const due=callsDue();
+  const orb=due?`<button class="callorb" data-act="run" aria-label="Start the call run, ${due} due">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.8 2Z"/></svg>
+      <b>${due}</b></button>`:"";
   return `<div class="now" role="group" aria-label="${i+1} of ${tot}: ${esc(a.name)}">
+    ${orb}
     <div class="nh"><span class="eyebrow">${i?"next · "+(i+1)+" of "+tot:"now"} · ${kindLab}${r.over?" · overdue":""}</span><span class="nval">${val?k(val):""}</span></div>
     <div class="nbody" data-open="${a.id}">
       <div class="nname">${esc(a.name)}</div>
@@ -3754,12 +3776,19 @@ function renderList(rows,isNow,day){
           parked.some(r=>pastCutoff(rowAt(r)))?"or after your cutoff":""].filter(Boolean).join(" ")}</span>
         <s>${showParked?"hide":"show"}</s></button>
       ${showParked?parked.map(row).join(""):""}`:"";
-    const allNear=field.every(r=>anchorTier(r.a)<=1);
-    if(field.length||nb||parkedHtml)
-      html+=group(an?(allNear?`Near you in ${esc(an.town)}`:`In the field &mdash; ${esc(an.town)} first`):"In the field",
-        field,nb+parkedHtml);
+    /* On the active day the stack IS the list — printing the same accounts again under a
+       heading was just making him read his day twice. What survives is the part the stack
+       can't do: what's nearby to add, and what got folded out. */
+    if(isNow){
+      html+=nb+parkedHtml;
+    }else{
+      const allNear=field.every(r=>anchorTier(r.a)<=1);
+      if(field.length||nb||parkedHtml)
+        html+=group(an?(allNear?`Near you in ${esc(an.town)}`:`In the field &mdash; ${esc(an.town)} first`):"In the field",
+          field,nb+parkedHtml);
+      if(desk.length)html+=group("Follow-ups",desk);
+    }
     html+=callgroup();
-    if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
   }
   if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
   el.innerHTML=html;
@@ -3802,6 +3831,32 @@ function renderWeek(cur){
         <s class="${done?"":n?"has":""}">${done?"&#10003;":(n||"·")}</s></button>`}).join("")}
     </div></div>`;
 }
+
+/* The morning needs the cockpit; two in the afternoon needs the next door. Same screen,
+   different job, so the top block folds itself once the day is genuinely under way.
+   Session-scoped on purpose — a manual choice shouldn't outlive the day it was made in. */
+let setupManual=null;
+function setupFolded(){
+  if(setupManual!==null)return !setupManual;
+  return touchesOn(today())>0;
+}
+function renderSetup(isNow,d){
+  const block=$("#setupblock"),sum=$("#setupsummary");
+  if(!block||!sum)return;
+  if(!isNow){block.classList.remove("folded");sum.innerHTML="";return}
+  const folded=setupFolded();
+  block.classList.toggle("folded",folded);
+  if(!folded){
+    sum.innerHTML=touchesOn(today())>0
+      ? `<button class="setupsum" data-act="setupfold"><span>Hide the day's set-up</span><s>hide</s></button>`:"";
+    return;
+  }
+  const done=touchesOn(today()),target=+D.cfg.touchTarget||40;
+  const hud=recurHuddles(d)[0];
+  sum.innerHTML=`<button class="setupsum" data-act="setupopen">
+    <span>${esc(MODELABEL[dayMode(d)]||"Field day")} &middot; ${done} of ${target} done${
+      hud&&hud.at?` &middot; huddle ${fmtTime(hud.at)}`:""}</span><s>show</s></button>`;
+}
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
   const rec=sealed(d);
@@ -3814,7 +3869,8 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#huddles","#carry","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
+    ["#shape","#rhythm","#huddles","#carry","#catchup","#clock","#warm","#now","#pace","#setupsummary"].forEach(quiet);
+    $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
     $("#endbtn").innerHTML=(isNow&&!sealed(nb)?`<button class="endbtn go" data-start="${iso(nb)}">Start ${fmt(nb)}</button>`:"")
@@ -3849,6 +3905,7 @@ function renderToday(){
   renderClock(isNow&&A().length>0);
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
+  renderSetup(isNow,d);
   renderList(rows,isNow,d);
   /* every business day has a beginning and an ending — one button, whichever applies */
   $("#endbtn").innerHTML=
@@ -5922,6 +5979,8 @@ document.addEventListener("click",async e=>{
     case"nearby":showNearby=!showNearby;render();break;
     case"anchor":anchorSheet();break;
     case"hidecreed":D.cfg.hideCreed=1;save();render();break;
+    case"setupopen":setupManual=true;render();break;
+    case"setupfold":setupManual=false;render();break;
     case"anchorsave":anchorSave();break;
     case"anchoroff":anchorOff();break;
     case"topup":topUpHere(5);break;
