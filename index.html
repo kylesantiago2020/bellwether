@@ -467,6 +467,17 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .syncline{font-size:12px;color:var(--ink2);margin-top:4px}
 .syncdot{display:inline-block;width:7px;height:7px;border-radius:4px;background:var(--ink3);margin-right:6px;vertical-align:middle}
 .syncdot.ok{background:#3E8E5A}.syncdot.wait{background:#C08A2E}.syncdot.off{background:var(--ink3)}
+.cospeak{font:600 12px/1 ui-sans-serif,system-ui;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink2)}
+.cospeak.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.dbf{width:100%;min-height:110px;font:400 16px/1.5 ui-sans-serif,system-ui;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+.dbhint{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.45}
+.prop{text-align:left;margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.prow{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
+.prow:last-child{border-bottom:0}
+.plab{flex:0 0 88px;color:var(--ink3);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+.pval{flex:1;font-weight:600}
+.pval.dim{font-weight:400;color:var(--ink3)}
+.pheard{font-size:12.5px;color:var(--ink2);font-style:italic;margin:10px 0 0;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -952,6 +963,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <div class="ctopbar">
     <button class="b quiet" id="cexit">Done</button>
     <span class="pg" id="cpg"></span>
+    <button class="cospeak" id="cospeak" type="button">Brief aloud</button>
     <button class="b quiet" id="cskip">Skip &rsaquo;</button>
   </div>
   <div class="ccard" id="ccard"></div>
@@ -1173,9 +1185,13 @@ function nlp(txt){
     prec=(u=="m"||u=="y")?"month":"day";
   }
   /* tuesday, next tuesday — anchored so "months" can't read as Monday */
-  else if(m=t.match(/\b(?:next\s+|this\s+|on\s+)?(sunday|sun|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat)\b/)){
-    const want=DOW.indexOf(m[1].slice(0,3));let delta=(want-n.getDay()+7)%7;
+  else if(m=t.match(/\b(next|this|on)?\s*(sunday|sun|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat)\b/)){
+    const want=DOW.indexOf(m[2].slice(0,3));let delta=(want-n.getDay()+7)%7;
     if(delta==0)delta=7;                       /* "tuesday" on a Tuesday means the next one */
+    /* "next Thursday" said on a Wednesday does not mean tomorrow — but "next Tuesday"
+       already lands in the following week, so only push when the day is still ahead
+       of us in THIS calendar week */
+    if(m[1]=="next"&&want>n.getDay())delta+=7;
     d=add(delta,"d");
   }
   else if(/end of (the )?month|month.?end/.test(t)){d=mk(n.getFullYear(),n.getMonth()+1,0);prec="month"}
@@ -3614,11 +3630,17 @@ function startRun(){
   queue=buildQueue();qi=0;
   if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
   $("#callwrap").classList.add("on");syncScrollLock();drawCard();
+  if(!D.cfg.sawSpeakTip){D.cfg.sawSpeakTip=1;save();
+    toast(D.cfg.speakBriefs?"Briefs read aloud — tap Silent to mute.":"Tap “Brief aloud” to have each one read to you.")}
 }
-function endRun(){$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
+function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
 function drawCard(){
   if(qi>=queue.length){
-    $("#ccard").innerHTML=`<div class="co">Run complete</div><div class="why">${queue.length} accounts worked. ${touchesOn(today())} touches logged today.</div>`;
+    const bh=bestHourLine(),L=learnStore();
+    $("#ccard").innerHTML=`<div class="co">Run complete</div>
+      <div class="why">${queue.length} accounts worked. ${touchesOn(today())} touches logged today.</div>
+      ${bh?`<div class="last" style="margin-top:14px">${bh}</div>`:""}
+      ${L.fixes>=3?`<div class="last">Learned from ${L.fixes} corrections you've made — the read-back is getting closer to how you talk.</div>`:""}`;
     $(".cbtns").style.display="none";return;
   }
   $(".cbtns").style.display="grid";
@@ -3631,9 +3653,14 @@ function drawCard(){
     <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
     <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
     ${lt?`<div class="last">Last touch ${days(parseD(lt),today())} days ago${le&&le.text?" — "+esc(le.text.slice(0,70)):""}</div>`:`<div class="last">Never touched. Attempt ${attemptsOn(a)+1}.</div>`}
-    ${ph?`<a class="dial" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}`;
+    ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
+    ${ph?`<a class="dial" id="cdial" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}`;
+  const dl=$("#cdial");
+  if(dl)dl.addEventListener("click",()=>armReturn(a));
+  paintSpeakBtn();
+  speakBrief(a);
 }
-function advance(){qi++;drawCard()}
+function advance(){_prop=null;qi++;drawCard()}
 function reschedule(a,note){
   const att=attemptsOn(a);
   const when=isoBiz(today(),cadenceDays(att));
@@ -3649,7 +3676,28 @@ function callOutcome(c){
     if(nxt)toast((c=="message"?"Message logged":"Logged")+" — back to them "+fmt(parseD(nxt.date))+".");
     save();advance();return;
   }
-  if(c=="talked"){
+  if(c=="talked"){ debriefView(a); return }
+  if(c=="dbparse"){
+    const txt=($("#dbtext").value||"").trim();
+    if(!txt){toast("Say what happened first.");return}
+    proposalView(a,parseDebrief(txt,a));return;
+  }
+  if(c=="dbback"){ debriefView(a); return }
+  if(c=="dbsave"){ if(_prop)commitProposal(a,_prop); return }
+  if(c&&c.indexOf("fix:")===0){
+    if(_prop){
+      const want=c.slice(4);
+      if(want!==_prop.outcome){
+        learnCorrection(_prop.heard,_prop.guessed||_prop.outcome,want);
+        _prop.guessed=_prop.guessed||_prop.outcome;
+        _prop.outcome=want;
+        save();
+      }
+      proposalView(a,_prop);
+    }
+    return;
+  }
+  if(c=="__legacy_talked"){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
       <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
@@ -3681,6 +3729,353 @@ function callOutcome(c){
 function markLost(a,reason){
   a.outcome="lost";a.lostReason=reason;logEvent(a,"lost",reason);
   openActions(a).forEach(n=>n.done=true);
+}
+
+
+/* ================= copilot: brief, debrief, extraction ==========================
+   Phase one of the copilot, and deliberately the boring half: capture. The app has
+   never held a single conversation Kyle logged himself, so before anything can be
+   intelligent about his territory something has to start remembering it.
+   Everything here runs on-device. No network, no key, no cost, works in a dead zone.
+   The extractor is rules, not a model — when the Worker exists, parseDebrief is the
+   one function that gets swapped and the rest of the loop is unchanged.
+   ------------------------------------------------------------------------------ */
+
+/* ---------- spoken brief ---------- */
+function briefLine(a){
+  const bits=[a.name];
+  const meta=[a.emps?a.emps+" employees":"", a.city].filter(Boolean).join(", ");
+  if(meta)bits.push(meta);
+  const prov=(a.notes||"").match(/On ([A-Za-z0-9&.\- ]+?) today\./);
+  if(prov)bits.push("currently on "+prov[1]);
+  else if(a.today&&a.today.bundle)bits.push("on "+a.today.bundle);
+  const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
+  if(nx&&nx.why)bits.push(nx.why);
+  const lt=lastTouch(a);
+  bits.push(lt?("Last touch "+days(parseD(lt),today())+" days ago"):"Never touched");
+  if(a.contact&&a.contact.name)bits.push("Ask for "+a.contact.name);
+  else bits.push("No name on file — get one");
+  return bits.join(". ")+".";
+}
+function speakBrief(a){
+  if(!D.cfg.speakBriefs||!window.speechSynthesis)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(briefLine(a));
+    u.rate=1.05;u.pitch=1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function hushBrief(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
+function paintSpeakBtn(){
+  const b=$("#cospeak");if(!b)return;
+  b.classList.toggle("on",!!D.cfg.speakBriefs);
+  b.textContent=D.cfg.speakBriefs?"Brief aloud":"Silent";
+}
+
+/* ---------- the dial hand-off ----------
+   iOS gives a web app no way to know a call started or ended, so the app arms itself
+   on the way out and watches for the tab coming back. The armed state is written to
+   storage immediately, because iOS will happily kill this tab during a long call. */
+function armReturn(a){
+  D.cfg.pendingCall={id:a.id,at:Date.now()};
+  save();
+}
+function disarmReturn(){ if(D.cfg.pendingCall){delete D.cfg.pendingCall;save()} }
+
+function onBackFromCall(){
+  const p=D.cfg.pendingCall;
+  if(!p)return;
+  const gone=Date.now()-p.at;
+  if(gone<6000)return;                        /* misfire — he never actually dialled */
+  const a=acct(p.id);
+  disarmReturn();
+  if(!a)return;
+  if(!$("#callwrap").classList.contains("on")){
+    /* the run was killed mid-call — reopen it exactly where he left off */
+    queue=buildQueue();
+    let i=queue.findIndex(x=>x.id===a.id);
+    if(i<0){queue=[a];i=0}
+    qi=i;
+    $("#callwrap").classList.add("on");syncScrollLock();
+  }
+  debriefView(a);
+}
+
+/* ---------- debrief ---------- */
+function debriefView(a){
+  hushBrief();
+  $(".cbtns").style.display="none";
+  $("#ccard").innerHTML=`
+    <div class="co" style="font-size:20px">${esc(a.name)}</div>
+    <div class="why" style="margin-bottom:12px">How did it go?</div>
+    <textarea class="dbf" id="dbtext" rows="4" placeholder="Just say what happened."></textarea>
+    <p class="dbhint">Tap the mic on your keyboard and talk normally &mdash; &ldquo;spoke with the owner,
+      they&rsquo;re locked into Paychex until October, call back in September.&rdquo;</p>
+    <div class="sa" style="margin-top:14px">
+      <button class="b quiet" data-c="cancel">Back</button>
+      <button class="b pri" data-c="dbparse">Log it</button>
+    </div>`;
+  setTimeout(()=>{const t=$("#dbtext");if(t)t.focus()},120);
+}
+
+/* ---------- extraction ----------
+   Rules, tuned to how someone actually talks after hanging up a phone. Every field it
+   produces is shown before it is written, so a bad guess costs a tap, never a deal. */
+/* brand names are unambiguous; "bookkeeper" is only a payroll provider when the sentence
+   frames it as one, otherwise it is just the job title of the person who answered */
+const PROV_BRAND=["Paychex","Gusto","QuickBooks","Intuit","Square","Wave","Heartland","Insperity",
+  "TriNet","Justworks","Rippling","Patriot","SurePayroll","Zenefits","BambooHR","Paycom","Paylocity",
+  "Paycor","PrimePay","CBIZ","Netchex","Millennium","Payality"];
+const PROV_GENERIC=["accountant","bookkeeper","cpa","in-house","in house","by hand","spreadsheet"];
+
+function parseDebrief(text,a){
+  const t=(text||"").trim();
+  const low=t.toLowerCase();
+  const p={heard:t,outcome:"talked",date:"",why:"",email:"",phone:"",contact:"",title:"",
+           provider:"",objection:"",dnc:false,stage:"",flags:[]};
+  if(!t)return p;
+
+  /* --- outcome, most decisive signal first --- */
+  if(/\b(take me off|do not call|don'?t call( me)? again|stop calling|remove me|lose my number)\b/.test(low)){
+    p.outcome="notint";p.dnc=true;p.objection="Rude / do not call";
+  } else if(/\b(wrong number|disconnected|not in service|no longer (in business|there)|out of business|closed down)\b/.test(low)){
+    p.outcome="bad";
+  } else if(/\bleft\b[^.]{0,20}\b(message|voicemail|vm|mail)\b|\bvoicemail\b[^.]{0,12}\bleft\b/.test(low)){
+    p.outcome="message";
+  } else if(/\b(not interested|no interest|not looking|all set|we'?re good|we'?re fine|no thanks|hung up( on me)?|shut me down)\b/.test(low)){
+    p.outcome="notint";
+  } else if(/\b(spoke|talked|speaking|chatted|caught|reached|connected|got (the|a) (owner|manager|him|her))\b/.test(low)){
+    p.outcome="talked";
+  } else if(/\b(no answer|didn'?t (answer|pick up)|nobody (answered|picked)|no one (answered|picked)|rang out|straight to voicemail|went to voicemail|couldn'?t reach|line was busy|busy signal|gatekeeper)\b/.test(low)){
+    p.outcome="noanswer";
+  } else { p.ruleHit=false }
+  if(p.ruleHit!==false)p.ruleHit=true;
+
+  /* --- follow-up date: hand it to the parser the app already trusts --- */
+  let dm=t.match(/\b(?:call|callback|call back|follow up|check back|circle back|reach out|try|touch base|get back|come back|revisit|reconnect)\b[^.!?]{0,60}/i);
+  if(!dm)dm=t.match(/\b(?:until|after|before|around|in|on|by|next|end of)\b[^.!?]{0,45}/i);
+  if(dm){const r=nlp(dm[0]);if(r&&r.date)p.date=r.date;}
+  if(!p.date){const r=nlp(t);if(r&&r.date)p.date=r.date;}
+
+  /* --- contact details --- */
+  let m=t.match(/[\w.+-]+@[\w-]+\.[\w.]{2,}/);
+  if(m)p.email=m[0].toLowerCase();
+  else{
+    /* dictation spells addresses out: "john at acme dot com" */
+    m=t.match(/([\w.+-]{2,})\s+at\s+([\w-]{2,})\s+dot\s+(com|net|org|co|us|biz)\b/i);
+    if(m)p.email=(m[1]+"@"+m[2]+"."+m[3]).toLowerCase();
+  }
+  m=t.match(/\b(\d{3})[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+  if(m&&!/\d{5,}/.test(m[0].replace(/\D/g,"").slice(0,4)))p.phone="("+m[1]+") "+m[2]+"-"+m[3];
+
+  /* the verb may be capitalised at the start of a sentence, the name must be capitalised —
+     so the verb alternatives carry both cases rather than the whole pattern going /i */
+  m=t.match(/\b[SsTt](?:poke|alked|peaking)\s+(?:with|to)\s+(?:the\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/);
+  if(!m)m=t.match(/\b(?:[Aa]sk(?:ed)? for|[Hh]is name is|[Hh]er name is|[Nn]ame is|[Oo]wner is|[Tt]alk to|[Gg]ot hold of|[Rr]eached)\s+(?:the\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/);
+  if(m&&!/^(The|They|She|He|It|Paychex|Gusto)$/i.test(m[1]))p.contact=m[1];
+
+  m=low.match(/\b(owner|payroll manager|office manager|office admin|controller|bookkeeper|cfo|hr manager|general manager|operations manager|receptionist)\b/);
+  if(m)p.title=m[1].replace(/\b\w/g,c=>c.toUpperCase());
+
+  /* --- competitor --- */
+  for(const v of PROV_BRAND){
+    if(new RegExp("\\b"+v+"\\b","i").test(t)){p.provider=v;break}
+  }
+  if(!p.provider)for(const v of PROV_GENERIC){
+    if(new RegExp("\\b(?:on|with|uses?|using|through|at|into|from|handled by|done by)\\s+(?:their\\s+|the\\s+|his\\s+|her\\s+)?"+v.replace(/[- ]/g,"[- ]?")+"\\b","i").test(t)){
+      p.provider=v.replace(/\b\w/g,c=>c.toUpperCase());break}
+  }
+
+  /* --- objections, using the same labels the Not-interested chips already write --- */
+  if(!p.objection){
+    if(/\b(happy|fine|satisfied|content|no complaints|like (our|their)|been with them)\b/.test(low))p.objection="Happy with incumbent";
+    else if(/\b(price|cost|expensive|cheaper|too much|budget|afford)\b/.test(low))p.objection="Price";
+    else if(/\b(too small|only \d+ employee|just me|one employee|two employees)\b/.test(low))p.objection="Too small";
+    else if(/\b(busy season|bad time|not (a )?good time|not right now|timing|swamped|slammed|after the (summer|season|holidays))\b/.test(low))p.objection="Wrong timing";
+    else if(/\b(locked in|under contract|contract (until|through|runs)|committed until)\b/.test(low))p.objection="Under contract";
+  }
+
+  /* --- forward momentum --- */
+  if(/\b(send|email me|shoot me|proposal|quote|pricing|information|one.?pager|paperwork)\b/.test(low))p.flags.push("Send something");
+  if(/\b(meet|meeting|appointment|stop by|come by|sit down|demo)\b/.test(low))p.flags.push("Meeting wanted");
+  if(/\b(referral|referred|introduce|introduction)\b/.test(low))p.flags.push("Referral mentioned");
+
+  /* rules first; his own corrections fill the gaps they leave */
+  if(!p.ruleHit){
+    const g=learnedOutcome(t);
+    if(g){p.outcome=g;p.learned=true}
+  }
+  if(p.outcome=="talked"&&a&&a.stage=="callback")p.stage="interested";
+  p.why=t.replace(/\s+/g," ").slice(0,70);
+  return p;
+}
+
+
+/* ================= what the app keeps ==========================================
+   Kyle's rule: every interaction should leave the app permanently smarter. Data
+   accumulating is not the same as the app getting better at its job, so three
+   things are learned here rather than merely stored.
+
+   All of it follows learnedRate()'s existing discipline — nothing learned is acted
+   on until there is enough of it to mean something, and everything learned can be
+   read back in plain language. Nothing here is a model; it is counting, which is
+   why it works offline and can always explain itself.
+   ------------------------------------------------------------------------------ */
+const LEARN_MIN=3;      /* before a pattern is shown at all */
+function learnStore(){
+  D.cfg.learn=D.cfg.learn||{vocab:{},obj:{},hour:{},fixes:0};
+  const L=D.cfg.learn;
+  L.vocab=L.vocab||{};L.obj=L.obj||{};L.hour=L.hour||{};L.fixes=L.fixes||0;
+  return L;
+}
+const STOP=new Set(("the a an and or but so then they them their there here with without to from for of on in at by is was were are be been am i me my we our you your he she it that this these those got get gets said say says just really very about into out up down over under again more most some any no not don't didn't doesn't will would could should can").split(" "));
+function learnTokens(txt){
+  return [...new Set(String(txt||"").toLowerCase().replace(/[^a-z' ]/g," ").split(/\s+/)
+    .filter(w=>w.length>2&&w.length<16&&!STOP.has(w)))].slice(0,24);
+}
+
+/* 1 — vocabulary. Every correction he makes on the proposal card is a labelled example:
+      "I said this, you guessed that, the answer was this." The confirm step was added
+      for safety; it turns out to be the training signal too. */
+function learnCorrection(text,guessed,actual){
+  if(guessed===actual)return;
+  const L=learnStore();
+  L.fixes++;
+  learnTokens(text).forEach(w=>{
+    L.vocab[w]=L.vocab[w]||{};
+    L.vocab[w][actual]=(L.vocab[w][actual]||0)+1;
+    if(guessed)L.vocab[w][guessed]=(L.vocab[w][guessed]||0)-1;
+  });
+}
+function learnedOutcome(text){
+  const L=learnStore(),tally={};
+  learnTokens(text).forEach(w=>{
+    const v=L.vocab[w];if(!v)return;
+    for(const k in v)tally[k]=(tally[k]||0)+v[k];
+  });
+  let best=null,n=0;
+  for(const k in tally)if(tally[k]>n){n=tally[k];best=k}
+  return n>=2?best:null;          /* two independent corrections before it speaks up */
+}
+
+/* 2 — objections, remembered against who the account is running today, because
+      "happy with incumbent" from a Paychex shop is a different conversation from
+      the same words out of a bookkeeper-run shop. */
+function providerOf(a){
+  const m=(a&&a.notes||"").match(/(?:On|Confirmed on) ([A-Za-z0-9&.\- ]+?)(?: today)?\./);
+  return m?m[1].trim():"";
+}
+function learnObjection(a,label){
+  if(!label)return;
+  const L=learnStore(),prov=providerOf(a)||"unknown";
+  const k=label+"|"+prov;
+  L.obj[k]=(L.obj[k]||0)+1;
+}
+function objectionMemo(a){
+  const L=learnStore(),prov=providerOf(a);
+  if(!prov)return "";
+  let best="",n=0;
+  for(const k in L.obj){
+    const [lab,pv]=k.split("|");
+    if(pv.toLowerCase()===prov.toLowerCase()&&L.obj[k]>n){n=L.obj[k];best=lab}
+  }
+  return n>=LEARN_MIN?`Heard from ${esc(prov)} shops ${n}×: “${esc(best)}”`:"";
+}
+
+/* 3 — when he actually reaches people. Pure counting, and it quietly answers the
+      question every rep guesses at: what hour is worth dialling. */
+function learnHour(outcome){
+  const L=learnStore(),h=String(new Date().getHours());
+  L.hour[h]=L.hour[h]||{tried:0,reached:0};
+  L.hour[h].tried++;
+  if(outcome==="talked")L.hour[h].reached++;
+}
+function bestHourLine(){
+  const L=learnStore();let best=null,rate=0,total=0;
+  for(const h in L.hour){
+    const v=L.hour[h];total+=v.tried;
+    if(v.tried>=8&&v.reached/v.tried>rate){rate=v.reached/v.tried;best=+h}
+  }
+  if(best===null||total<25)return "";
+  const t=h=>((h%12)||12)+(h<12?"am":"pm");
+  return `You reach people most often between ${t(best)} and ${t(best+1)} — ${Math.round(rate*100)}% of those calls connect.`;
+}
+
+/* ---------- proposal ---------- */
+let _prop=null;
+function proposalView(a,p){
+  _prop=p;
+  const OUT={talked:"Spoke with them",message:"Left a message",noanswer:"No answer",
+             notint:"Not interested",bad:"Bad number"};
+  const fallback=isoBiz(today(),cadenceDays(attemptsOn(a)));
+  const row=(l,v,dim)=>`<div class="prow"><div class="plab">${l}</div><div class="pval${dim?" dim":""}">${esc(v)}</div></div>`;
+  let rows=row("Outcome",OUT[p.outcome]||"Logged");
+  if(p.contact||p.title)rows+=row("Contact",[p.contact,p.title].filter(Boolean).join(" · "));
+  if(p.email)rows+=row("Email",p.email);
+  if(p.phone)rows+=row("Phone",p.phone);
+  if(p.provider)rows+=row("Provider",p.provider);
+  if(p.objection)rows+=row("Objection",p.objection);
+  if(p.stage)rows+=row("Stage","Callback → Interested");
+  if(p.dnc)rows+=row("Flag","Do not call — will be honoured");
+  if(p.flags.length)rows+=row("Noted",p.flags.join(", "));
+  if(p.outcome!="notint"&&p.outcome!="bad")
+    rows+=row("Follow-up",p.date?fmt(parseD(p.date)):fmt(parseD(fallback))+" (your cadence)",!p.date);
+
+  const chips=[["talked","Spoke"],["message","Message"],["noanswer","No answer"],
+               ["notint","Not interested"],["bad","Bad number"]]
+    .map(([k,l])=>`<button class="chip${p.outcome==k?" on":""}" data-fix="${k}">${l}</button>`).join("");
+  $(".cbtns").style.display="none";
+  $("#ccard").innerHTML=`
+    <div class="co" style="font-size:20px">${esc(a.name)}</div>
+    <div class="why">Here&rsquo;s what I got${p.learned?" — from how you've phrased this before":""}. Change anything before it&rsquo;s saved.</div>
+    <div class="prop">${rows}</div>
+    <div class="chips" style="justify-content:center;margin-top:10px">${chips}</div>
+    <p class="pheard">&ldquo;${esc(p.heard.slice(0,220))}${p.heard.length>220?"…":""}&rdquo;</p>
+    <label class="f" style="text-align:left;margin-top:12px">Follow-up date
+      <s class="hint">blank keeps ${fmt(parseD(p.date||fallback))}</s></label>${dateField("cpdate","september, next tuesday, the 3rd")}
+    <div class="sa" style="margin-top:12px">
+      <button class="b quiet" data-c="dbback">Re-do</button>
+      <button class="b pri" data-c="dbsave">Save &amp; next</button>
+    </div>`;
+  wireDate("cpdate");
+}
+
+function commitProposal(a,p){
+  learnHour(p.outcome);
+  if(p.objection)learnObjection(a,p.objection);
+  const kindMap={talked:"called",message:"called",noanswer:"called",notint:"called",bad:"called"};
+  const label=p.heard||({message:"left message",noanswer:"no answer"}[p.outcome]||"talked");
+  logEvent(a,kindMap[p.outcome]||"called",label);
+  if(p.heard)a.brief=p.heard;
+
+  /* contact detail is additive — never overwrite something already confirmed */
+  a.contact=a.contact||{name:"",email:"",phone:""};
+  if(p.contact&&!a.contact.name)a.contact.name=p.contact;
+  if(p.email&&!a.contact.email)a.contact.email=p.email;
+  if(p.phone&&!a.contact.phone)a.contact.phone=p.phone;
+  if(p.title){const tn="Role: "+p.title;if((a.notes||"").indexOf(tn)<0)a.notes=(a.notes?a.notes+" ":"")+tn+"."}
+  if(p.provider){const pn="Confirmed on "+p.provider;if((a.notes||"").indexOf(pn)<0)a.notes=(a.notes?a.notes+" ":"")+pn+"."}
+
+  if(p.outcome=="notint"||p.outcome=="bad"){
+    markLost(a,p.objection||(p.outcome=="bad"?"Bad number":"Not interested"));
+    if(p.dnc)a.dnc=true;
+    save();advance();return;
+  }
+
+  openActions(a).filter(n=>actionBlock(n)=="call").forEach(n=>n.done=true);
+  const typed=dateOf("cpdate");
+  const when=typed||p.date;
+  if(when){
+    a.next.push({id:uid(),date:when,
+      why:(p.flags.indexOf("Send something")>=0?"Send what you promised — ":"")+(p.why||"Follow up"),
+      kind:(p.flags.indexOf("Meeting wanted")>=0?"meet":(p.flags.indexOf("Send something")>=0?"follow":"call")),
+      done:false,made:iso(today())});
+  } else {
+    reschedule(a,p.why||"Try again");
+  }
+  if(p.stage&&a.stage=="callback")a.stage="interested";
+  save();advance();
 }
 
 /* ---------- account ---------- */
@@ -4651,6 +5046,7 @@ tap("reopen",t=>{openQ=t.dataset.reopen;render()});
 tap("editnext",t=>editNextSheet(t.dataset.editnext));
 tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
+tap("fix",t=>callOutcome("fix:"+t.dataset.fix));
 tap("huddle",t=>startHuddle(t.dataset.huddle));
 tap("hreveal",()=>{hudShown=true;drawHuddle()});
 /* which pins are open is a fact about this glance at the screen, not about the account —
@@ -5838,6 +6234,14 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&sbUser&&o
   render();
   startClock();
   await syncBoot();
+  paintSpeakBtn();
+  $("#cospeak").addEventListener("click",()=>{
+    D.cfg.speakBriefs=!D.cfg.speakBriefs;
+    if(!D.cfg.speakBriefs)hushBrief(); else if(queue[qi])speakBrief(queue[qi]);
+    paintSpeakBtn();save();
+  });
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)onBackFromCall()});
+  onBackFromCall();
   $("#gbtn").addEventListener("click",gateSignIn);
   $("#glocal").addEventListener("click",gateOffline);
   $("#gpass").addEventListener("keydown",e=>{if(e.key=="Enter")gateSignIn()});
