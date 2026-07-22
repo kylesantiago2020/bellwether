@@ -517,9 +517,15 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .callorb svg{width:16px;height:16px;display:block}
 .callorb b{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:500;line-height:1;color:var(--ink2)}
 .now .nh{padding-right:52px}
-.cstack{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;width:100%}
+/* The track needs an unambiguous width to scroll inside, and .ccard is a centring column
+   flexbox — so while the stack is up, .ccard steps out of the way and becomes a plain box.
+   Cards sit at 86% so the next one peeks: that edge is the whole affordance, it's what
+   tells your thumb there's more without a caption saying so. */
+.ccard.stacked{display:block;padding:0;position:relative;overflow:hidden;min-height:0}
+.cstack{position:absolute;inset:0;display:flex;gap:12px;padding:4px 14px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
 .cstack::-webkit-scrollbar{display:none}
-.cstack>.cc{flex:0 0 100%;scroll-snap-align:center;min-width:0}
+.cstack>.cc{flex:0 0 86%;scroll-snap-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;
+  background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:26px 20px}
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
@@ -1059,7 +1065,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.8 call-stack";
+const BUILD="2026-07-22.11 call-cards";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2918,7 +2924,7 @@ function weekDays(ref){
 function doneCard(rec,d){
   return `<div class="doneday">
     <div class="dh"><i>&#10003;</i> Completed</div>
-    <div class="dw">${fmtFull(d)}${rec.auto?" &middot; closed automatically":(rec.ended?" &middot; mission ended "+esc(rec.ended):"")}</div>
+    <div class="dw">${fmtFull(d)}${rec.empty?" &middot; no work recorded":(rec.auto?" &middot; closed automatically":(rec.ended?" &middot; mission ended "+esc(rec.ended):""))}</div>
     ${rec.msg?`<div class="dmsg">${esc(rec.msg)}</div>`:""}
     ${rec.stats.rings?`<div class="dring">${ringsSvg(rec.stats.rings,false)}${ringLegend(rec.stats.rings)}</div>`:""}
     ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
@@ -3872,10 +3878,7 @@ function autoSealPast(){
     const s=iso(d);
     if((D.days||{})[s])continue;
     const stats=daySummary(d);
-    /* a day with nothing on it and nothing logged was never a working day — skip it */
-    const had=stats.logged>0||todayRows(d).length>0;
-    if(!had)continue;
-    const rec={ended:"",auto:true,stats};
+    const rec={ended:"",auto:true,stats,empty:!(stats.logged>0||todayRows(d).length>0)};
     rec.msg=missionMessage(ringsClosed({stats}));
     (D.days=D.days||{})[s]=rec;
     wrote=true;
@@ -4024,14 +4027,31 @@ function cardFace(a,idx){
 }
 function wireCallStack(){
   const t=$("#cstack");if(!t)return;
-  t.scrollLeft=qi*t.clientWidth;
+  const cards=()=>[...t.querySelectorAll(".cc")];
+  /* measure where the cards actually are rather than assuming a uniform step — snap
+     clamps at both ends, so arithmetic would drift on the first and last card */
+  const centreOn=k=>{
+    const c=cards()[k];if(!c)return;
+    t.scrollLeft=c.offsetLeft-(t.clientWidth-c.offsetWidth)/2;
+  };
+  const nearest=()=>{
+    const mid=t.scrollLeft+t.clientWidth/2;
+    let best=Infinity,idx=0;
+    cards().forEach((c,k)=>{
+      const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid);
+      if(d<best){best=d;idx=k}
+    });
+    return idx;
+  };
+  /* one frame later, so the track has a measured width to scroll within */
+  requestAnimationFrame(()=>centreOn(qi));
   let queued=false;
   t.addEventListener("scroll",()=>{
     if(queued)return;
     queued=true;
     requestAnimationFrame(()=>{
       queued=false;
-      const i=Math.max(0,Math.min(queue.length-1,Math.round(t.scrollLeft/Math.max(1,t.clientWidth))));
+      const i=nearest();
       if(i!==qi){qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();speakBrief(queue[qi])}
     });
   },{passive:true});
@@ -4042,6 +4062,7 @@ function wireCallStack(){
 function drawCard(){
   if(qi>=queue.length){
     const bh=bestHourLine(),L=learnStore();
+  $("#ccard").classList.remove("stacked");
     $("#ccard").innerHTML=`<div class="co">Run complete</div>
       <div class="why">${queue.length} accounts worked. ${touchesOn(today())} touches logged today.</div>
       ${bh?`<div class="last" style="margin-top:14px">${bh}</div>`:""}
@@ -4051,12 +4072,21 @@ function drawCard(){
   $(".cbtns").style.display="grid";
   const a=queue[qi];
   $("#cpg").textContent=`${qi+1} / ${queue.length}`;
+  $("#ccard").classList.add("stacked");
   $("#ccard").innerHTML=`<div class="cstack" id="cstack">${queue.map((x,i)=>cardFace(x,i)).join("")}</div>`;
   wireCallStack();
   paintSpeakBtn();
   speakBrief(a);
 }
 function advance(){_prop=null;qi++;drawCard()}
+/* the arrow at the top and your thumb are the same gesture now */
+function stepTo(k){
+  const t=$("#cstack");
+  if(!t){qi=k;drawCard();return}
+  const c=[...t.querySelectorAll(".cc")][k];
+  if(!c){qi=k;drawCard();return}
+  t.scrollTo({left:c.offsetLeft-(t.clientWidth-c.offsetWidth)/2,behavior:"smooth"});
+}
 function reschedule(a,note){
   const att=attemptsOn(a);
   const when=isoBiz(today(),cadenceDays(att));
@@ -4202,6 +4232,7 @@ function onBackFromCall(){
 function debriefView(a){
   hushBrief();
   $(".cbtns").style.display="none";
+  $("#ccard").classList.remove("stacked");
   $("#ccard").innerHTML=`
     <div class="co" style="font-size:20px">${esc(a.name)}</div>
     <div class="why" style="margin-bottom:12px">How did it go?</div>
@@ -4422,6 +4453,7 @@ function proposalView(a,p){
                ["notint","Not interested"],["bad","Bad number"]]
     .map(([k,l])=>`<button class="chip${p.outcome==k?" on":""}" data-fix="${k}">${l}</button>`).join("");
   $(".cbtns").style.display="none";
+  $("#ccard").classList.remove("stacked");
   $("#ccard").innerHTML=`
     <div class="co" style="font-size:20px">${esc(a.name)}</div>
     <div class="why">Here&rsquo;s what I got${p.learned?" — from how you've phrased this before":""}. Change anything before it&rsquo;s saved.</div>
@@ -6233,7 +6265,12 @@ $("#cexit").addEventListener("click",endRun);
 /* leaving without wrapping up is allowed — the referrals are already logged, and a huddle
    that got cut short shouldn't cost him the names */
 $("#hudexit").addEventListener("click",exitHuddle);
-$("#cskip").addEventListener("click",()=>{if(qi<queue.length){advance()}});
+$("#cskip").addEventListener("click",()=>{
+  /* Skip used to redraw the whole panel; now it just slides the stack, so the arrow and
+     the swipe do exactly the same thing and neither loses your place. */
+  if(qi>=queue.length)return;
+  if(qi+1<queue.length&&$("#cstack"))stepTo(qi+1); else advance();
+});
 $("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);showAllRows=false;render()});
 $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
 $("#dnToday").addEventListener("click",()=>{viewDate=activeD();showAllRows=false;render()});
