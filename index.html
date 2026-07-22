@@ -811,6 +811,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
   <h1 id="hd">Loading&hellip;</h1>
   <p class="daily" id="dailyline"></p>
+  <div id="anchorslot"></div>
   <div id="clock"></div>
   <div class="shape" id="shape"></div>
   <div id="huddles"></div>
@@ -1030,6 +1031,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
+const BUILD="2026-07-22.4 anchored-now-card";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3592,6 +3594,9 @@ function dayShape(rows){
 }
 function renderList(rows,isNow,day){
   const el=$("#blocks");
+  /* set before any early return — an empty day still needs the control, and a stale
+     bar left over from the last render is worse than none */
+  $("#anchorslot").innerHTML=(isNow&&dayMode(day||today())!="office")?anchorBar():"";
   if(!rows.length){
     el.innerHTML=isNow?"":`<div class="empty"><div class="said">Nothing scheduled.</div>
       <p>Tap a day below, or use Territory to add work to this one.</p></div>`;
@@ -3652,8 +3657,6 @@ function renderList(rows,isNow,day){
   /* the mode changes the order of the day, never the size of it — the mission is the mission
      whether it gets done from the car or from the desk */
   const mode=day?dayMode(day):"field",office=mode=="office";
-  /* you can't re-anchor a desk, so the control only shows on a day with driving in it */
-  if(isNow&&!office)html+=anchorBar();
   /* you can't drop in on anyone from the ADP office, so don't suggest it */
   const nb=(isNow&&!office)?nearbyHtml(rows):"";
   const runcard=()=>{
@@ -4691,7 +4694,7 @@ function renderSetup(){
   const l1=learnedRate("quoted"),l3=learnedRate("callback");
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderSyncLine();
-  $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA}.
+  $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
     <button class="b danger" data-act="wipe">Erase everything</button>`;
 }
