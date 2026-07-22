@@ -478,6 +478,12 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .pval{flex:1;font-weight:600}
 .pval.dim{font-weight:400;color:var(--ink3)}
 .pheard{font-size:12.5px;color:var(--ink2);font-style:italic;margin:10px 0 0;line-height:1.5}
+.anchbar{margin:0 0 14px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:var(--sunk);border:none;border-radius:10px;font-family:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer}
+.anchbar s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
+.anchbar.set{background:var(--ink);color:var(--paper)}
+.anchbar.set s{color:var(--paper);opacity:.75}
+.tagm.far{background:transparent;border:1px solid var(--line);color:var(--ink3)}
+.anchnote{font-size:12px;color:var(--ink3);margin:-8px 0 14px;line-height:1.45}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -3154,6 +3160,113 @@ function renderPace(rows,day){
   </div>`;
 }
 /* where are you already going today? that town gets the drop-ins */
+
+/* ================= working from ================================================
+   The queue is built the night before around where the week says he'll be. Most days
+   that holds. Some days it does not — he wakes up late, he's home in Ashland, and a
+   plan that starts in Westwood is worse than no plan at all.
+
+   This is the escape hatch, and it is deliberately for today only: it never edits the
+   week template, never touches a huddle, and never deletes a commitment. It re-orders
+   what he sees and offers to fill the gap with doors that are actually near him. It
+   expires on its own at midnight, so tomorrow goes back to the plan.
+   ------------------------------------------------------------------------------ */
+const NEIGHBORS={
+  "ashland":["framingham","holliston","sherborn","hopkinton","southborough","natick"],
+  "framingham":["ashland","natick","sherborn","sudbury","marlborough","southborough","wayland","holliston"],
+  "sherborn":["framingham","ashland","holliston","natick","dover","medfield","millis"],
+  "natick":["framingham","ashland","sherborn","wellesley","weston","wayland","dover"],
+  "weston":["wayland","natick","wellesley","lincoln","waltham","newton"],
+  "wayland":["framingham","weston","natick","sudbury","lincoln"],
+  "holliston":["ashland","sherborn","framingham","medway","milford","hopkinton","millis"],
+  "hopkinton":["ashland","holliston","southborough","milford","westborough"],
+  "southborough":["framingham","ashland","marlborough","hopkinton","westborough"],
+  "marlborough":["southborough","sudbury","hudson","framingham","northborough"],
+  "sudbury":["framingham","wayland","marlborough","hudson","concord"],
+  "medfield":["sherborn","dover","millis","walpole","norfolk","holliston"],
+  "millis":["medfield","holliston","sherborn","norfolk","medway"],
+  "dover":["sherborn","medfield","westwood","needham","natick","wellesley","walpole"],
+  "walpole":["medfield","norwood","sharon","foxborough","dover","norfolk","westwood"],
+  "westwood":["dedham","norwood","dover","walpole","needham","canton"],
+  "dedham":["westwood","norwood","needham","canton","milton","boston","newton"],
+  "norwood":["westwood","dedham","walpole","sharon","canton","dover"],
+  "sharon":["walpole","canton","foxborough","norwood","stoughton","norfolk"],
+  "canton":["sharon","westwood","norwood","dedham","milton","stoughton"],
+  "foxborough":["walpole","sharon","norfolk","wrentham","mansfield"],
+  "norfolk":["walpole","medfield","millis","wrentham","franklin"],
+  "needham":["wellesley","dedham","westwood","dover","newton"],
+  "wellesley":["natick","weston","needham","dover","newton"]
+};
+function anchorOn(){
+  const an=D.cfg.anchor;
+  return (an&&an.on===iso(today())&&an.town)?an:null;   /* expires by itself */
+}
+function townTier(city,town){
+  const a=String(city||"").trim().toLowerCase(),b=String(town||"").trim().toLowerCase();
+  if(!a||!b)return 2;
+  if(a===b)return 0;
+  return (NEIGHBORS[b]||[]).indexOf(a)>=0?1:2;
+}
+function anchorTier(a){const an=anchorOn();return an?townTier(a.city,an.town):0}
+function pastCutoff(at){
+  const an=anchorOn();
+  return !!(an&&an.by&&at&&at>an.by);
+}
+/* towns worth offering: anywhere he actually has open accounts */
+function anchorTowns(){
+  const c={};
+  A().forEach(a=>{if(isOpen(a)&&a.city)c[a.city.trim()]=(c[a.city.trim()]||0)+1});
+  return Object.keys(c).filter(t=>c[t]>=3).sort((x,y)=>c[y]-c[x]).slice(0,12);
+}
+function anchorBar(){
+  const an=anchorOn();
+  if(!an)return `<button class="anchbar" data-act="anchor"><span>Working the plan &mdash; tap if you&rsquo;re somewhere else today</span><s>set area</s></button>`;
+  const near=A().filter(a=>isOpen(a)&&anchorTier(a)<=1).length;
+  return `<button class="anchbar set" data-act="anchor"><span>Today only &mdash; working from <b>${esc(an.town)}</b>${an.by?`, wrapping by ${fmtTime(an.by)}`:""}</span><s>change</s></button>
+    <p class="anchnote">${near} open account${near==1?"":"s"} in and around ${esc(an.town)}. Anything further out has moved down the list, not off it.</p>`;
+}
+function anchorSheet(){
+  const an=anchorOn(),towns=anchorTowns();
+  openSheet(`<h3>Where are you today?</h3>
+    <div class="sub">Today only. Your week, your huddles and everything you&rsquo;ve committed to stay exactly as they are.</div>
+    <div class="chips" id="anTown">${towns.map(t=>`<button class="chip${an&&an.town===t?" on":""}" data-antown="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+    <label class="f">Need to be done by <s class="hint">optional &mdash; 3pm, 14:30</s>
+      <input class="t" id="anBy" placeholder="3:00" value="${an&&an.by?fmtTime(an.by):""}"></label>
+    <div class="sa">
+      ${an?`<button class="b danger" data-act="anchoroff">Back to the plan</button>`:""}
+      <button class="b quiet" data-act="close">Cancel</button>
+      <button class="b pri" data-act="anchorsave">Use this today</button>
+    </div>`);
+  chipVal.antown=an?an.town:"";
+}
+function anchorSave(){
+  const town=chipVal.antown;
+  if(!town){toast("Pick a town first.");return}
+  const by=nlpTime($("#anBy").value||"")||"";
+  D.cfg.anchor={on:iso(today()),town,by};
+  save();closeSheet();render();
+  const near=A().filter(a=>isOpen(a)&&anchorTier(a)<=1&&!openActions(a).length).length;
+  toast(near?`Set. ${near} accounts near ${town} you're not yet working — tap "Top up here".`:`Set to ${town} for today.`);
+}
+function anchorOff(){delete D.cfg.anchor;save();closeSheet();render();toast("Back to the plan.")}
+
+/* the woke-up-late button: fill the day with doors that are actually near him */
+function topUpHere(n){
+  const an=anchorOn();if(!an)return;
+  const have=new Set();
+  A().forEach(a=>{if(openActions(a).some(x=>x.date==iso(today())))have.add(a.id)});
+  /* branches are worked through the standing huddle, not topped up as cold drop-ins */
+  const pool=A().filter(a=>isOpen(a)&&!have.has(a.id)&&a.type!="bank"&&anchorTier(a)<=1&&a.addr
+      &&a.skip!=iso(today())&&lastTouch(a)!=iso(today()))
+    .sort((x,y)=>anchorTier(x)-anchorTier(y)||score(y)-score(x));
+  const add=pool.slice(0,n);
+  if(!add.length){toast("Nothing left nearby that you're not already working.");return}
+  add.forEach(a=>a.next.push({id:uid(),date:iso(today()),
+    why:"Drop in — you're in "+an.town+" today",kind:"visit",done:false,made:iso(today())}));
+  save();render();
+  toast(`Added ${add.length} drop-in${add.length==1?"":"s"} near ${an.town}.`);
+}
+
 function nearbyData(rows){
   const inPlay=new Set(rows.map(r=>r.a.id));
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
@@ -3161,7 +3274,14 @@ function nearbyData(rows){
   /* "in play" for a trip means open, not un-won — a client you closed is the best stop on the street */
   A().forEach(a=>{if(!isOpen(a)||!a.city||inPlay.has(a.id))return;
     (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
-  let town=anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null;
+  const forced=anchorOn();
+  let town=forced?forced.town:(anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null);
+  if(forced&&!byTown[town]){
+    /* nothing left in the town itself — widen to the ring around it */
+    const ring=Object.keys(byTown).filter(t=>townTier(t,town)===1)
+      .sort((x,y)=>byTown[y].length-byTown[x].length)[0];
+    if(ring)town=ring;
+  }
   if(!town){const best=Object.keys(byTown).sort((x,y)=>byTown[y].length-byTown[x].length)[0];
     if(best&&byTown[best].length>=3)town=best}
   if(!town)return null;
@@ -3174,7 +3294,8 @@ function nearbyHtml(rows){
   const nb=nearbyData(rows);if(!nb)return "";
   let h=`<button class="nearby" data-act="nearby"><span>While you're in <b>${esc(nb.town)}</b> — ${nb.all} more account${nb.all==1?"":"s"} you're working</span><s>${showNearby?"hide":"show"}</s></button>`;
   if(showNearby)h+=`<div class="cluster">
-    <p style="margin-top:0">${nb.anchor?`You're already headed there for ${esc(nb.anchor.name)}.`:""} Windshield time is the expensive part — spend it once.</p>
+    <p style="margin-top:0">${anchorOn()?`You said you're working from ${esc(anchorOn().town)} today.`:(nb.anchor?`You're already headed there for ${esc(nb.anchor.name)}.`:"")} Windshield time is the expensive part — spend it once.</p>
+    ${anchorOn()?`<div class="sa" style="margin:0 0 10px"><button class="b pri" data-act="topup">Top up — add 5 near me</button></div>`:""}
     ${nb.list.map(a=>{const lt=lastTouch(a);
       return `<div class="clrow" data-addvisit="${a.id}"><span>${esc(a.name)}</span>
         <s>${[a.emps?a.emps+" ee":"",lt?days(parseD(lt),today())+"d":"never"].filter(Boolean).join(" · ")} &nbsp;+ add</s></div>`}).join("")}
@@ -3423,15 +3544,22 @@ function renderList(rows,isNow,day){
   const rank={meet:0,visit:1};
   /* pinned above, so not repeated here — the day's counts still include it */
   const pinned=new Set(huddleRows(rows).map(r=>r.a.id));
-  const field=rest.filter(r=>!(pinned.has(r.a.id)&&r.block=="meet")).filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  /* with an area set for today, distance leads — but a meeting at a named hour is a
+     commitment to a human being and still outranks everything, wherever it is */
+  const field=rest.filter(r=>!(pinned.has(r.a.id)&&r.block=="meet")).filter(r=>r.block=="meet"||r.block=="visit")
+    .sort((x,y)=>(x.block=="meet"||y.block=="meet"?0:anchorTier(x.a)-anchorTier(y.a))
+      ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
   const calls=rest.filter(r=>r.block=="call").sort(byTime);
   const desk=rest.filter(r=>r.block=="follow").sort(byTime);
   const row=r=>{
     const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
     const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
     const at=rowAt(r);
-    const mt=(at?`<span class="tagm at">${fmtTime(at)}</span>`:"")
+    const far=anchorOn()&&r.block!="meet"&&anchorTier(r.a)>1;
+    const late=anchorOn()&&pastCutoff(at);
+    const mt=(at?`<span class="tagm at${late?" far":""}">${fmtTime(at)}${late?" · after your cutoff":""}</span>`:"")
       +(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
+      +(far?`<span class="tagm far">${esc(r.a.city||"further out")} · not near you today</span>`:"")
       +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
     /* a branch has no employee count and no deal value — the right-hand column would be
        two blanks. Bank meetings are pinned at the top of the day, so what lands here is a
@@ -3458,6 +3586,8 @@ function renderList(rows,isNow,day){
   /* the mode changes the order of the day, never the size of it — the mission is the mission
      whether it gets done from the car or from the desk */
   const mode=day?dayMode(day):"field",office=mode=="office";
+  /* you can't re-anchor a desk, so the control only shows on a day with driving in it */
+  if(isNow&&!office)html+=anchorBar();
   /* you can't drop in on anyone from the ADP office, so don't suggest it */
   const nb=(isNow&&!office)?nearbyHtml(rows):"";
   const runcard=()=>{
@@ -5047,6 +5177,7 @@ tap("editnext",t=>editNextSheet(t.dataset.editnext));
 tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
 tap("fix",t=>callOutcome("fix:"+t.dataset.fix));
+tap("antown",t=>{chipVal.antown=t.dataset.antown;$$("[data-antown]").forEach(b=>b.classList.toggle("on",b.dataset.antown==t.dataset.antown))});
 tap("huddle",t=>startHuddle(t.dataset.huddle));
 tap("hreveal",()=>{hudShown=true;drawHuddle()});
 /* which pins are open is a fact about this glance at the screen, not about the account —
@@ -5636,6 +5767,10 @@ document.addEventListener("click",async e=>{
     case"hrsave":saveHuddleRef();break;
     case"pace":paceOpen=!paceOpen;render();break;
     case"nearby":showNearby=!showNearby;render();break;
+    case"anchor":anchorSheet();break;
+    case"anchorsave":anchorSave();break;
+    case"anchoroff":anchorOff();break;
+    case"topup":topUpHere(5);break;
     case"laterpick":{
       const [aid,nid]=(t.dataset.n||"").split("|"),ac=acct(aid);
       const n=ac&&(ac.next||[]).find(x=>x.id==nid);
