@@ -249,6 +249,33 @@ body.dark .now{box-shadow:0 14px 34px -20px rgba(0,0,0,.65)}
 .ccard .last{margin-top:14px;font-size:12.5px;color:var(--ink3);line-height:1.6}
 .dial{display:block;margin:22px auto 0;max-width:280px;padding:15px;border-radius:12px;background:var(--grn);color:#fff;font-size:17px;font-weight:500;text-decoration:none;text-align:center;font-family:'IBM Plex Mono',monospace}
 .dial.off{background:var(--sunk);color:var(--ink3)}
+/* the huddle layer reuses the call block's frame — same full-bleed sheet, same top bar —
+   but it scrolls, because unlike a call card it is one whole screen rather than a stack */
+.hudwrap{--ac:#0C8C86;--acs:#E1F3F1}
+body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
+.hudbody{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:6px 0 14px;-webkit-overflow-scrolling:touch}
+.hudq{margin-top:22px}
+.hudq .k{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ac);margin-bottom:7px}
+.hudq .ask{font-size:20px;line-height:1.35;letter-spacing:-.3px}
+.hudq .chips{margin-top:2px}
+.hudq>.b{margin-top:13px}
+.reveal{margin-top:14px;background:var(--acs);border-radius:12px;padding:14px 15px;animation:f .22s ease both}
+.reveal b{font-size:14px;font-weight:500}
+.reveal p{margin-top:5px;font-size:14px;line-height:1.55;color:var(--ink2)}
+.askline{font-size:15px;line-height:1.5;padding:9px 0;border-bottom:1px solid var(--rule);color:var(--ink)}
+.askline:last-of-type{border-bottom:none}
+.rhud{flex:none;align-self:center;font-size:12.5px;padding:7px 11px;white-space:nowrap}
+.hudref{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.hudref span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
+.reflist{margin-top:9px;font-size:12.5px;color:var(--ink3);line-height:1.7}
+#hudwrapup{padding-top:6px}
+/* the brief, wherever it appears — Today's now card and the account screen show the same one */
+.hudbrief{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:15px 17px}
+.hudbrief>.h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hudbrief>.h b{font-size:13.5px;font-weight:500}
+.hudbrief>.h span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hudbrief .hbody{margin-top:9px;font-size:13px;line-height:1.75;color:var(--ink2)}
+.hudbrief .hbody b{color:var(--ink);font-weight:500}
 .cbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cb{padding:15px 10px;border-radius:11px;border:1px solid var(--rule2);background:var(--card);color:var(--ink);font-size:14px;font-weight:500}
 .cb:active{transform:scale(.97)}
@@ -877,6 +904,17 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
 </div>
 
+<!-- huddle -->
+<div class="callwrap hudwrap" id="hudwrap">
+  <div class="ctopbar">
+    <button class="b quiet" id="hudexit">&lsaquo; Leave</button>
+    <span class="pg" id="hudname"></span>
+    <span style="width:52px"></span>
+  </div>
+  <div class="hudbody" id="hudbody"></div>
+  <div id="hudwrapup"></div>
+</div>
+
 <!-- ===== PLAYBOOKS ===== -->
 <section class="screen" id="s-play">
   <div id="playbody"></div>
@@ -897,7 +935,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const SCHEMA=8;                       /* bump this and add a step to MIGRATIONS */
+const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -1186,6 +1224,8 @@ function repairAccount(a){
   a.events=Array.isArray(a.events)?a.events.filter(e=>e&&e.when):[];
   a.discovery=(a.discovery&&typeof a.discovery=="object")?a.discovery:{answers:{},updated:""};
   a.discovery.answers=a.discovery.answers||{};
+  a.huddle=(a.huddle&&typeof a.huddle=="object")?a.huddle:{lesson:"",recap:"",on:"",next:""};
+  ["lesson","recap","on","next"].forEach(f=>a.huddle[f]=String(a.huddle[f]||""));
   if(!["open","won","lost","dormant"].includes(a.outcome))a.outcome="open";
   a.handedOff=!!a.handedOff;
   a.stage=a.stage||"callback";
@@ -1264,6 +1304,18 @@ const MIGRATIONS={
     return d;
   }
   ,
+  8:function(d){
+    /* v8 → v9: a bank branch stops being a contact record and starts keeping a thread.
+       One object, four strings — what I taught, the line I want them to remember, when,
+       and what I intend to teach next. Everything else the huddle needs (promises,
+       referrals, the next meeting) already lives in next[] and events[], and putting it
+       anywhere else would give the app two answers to the same question. */
+    d.accounts.forEach(a=>{
+      if(a.type=="bank"&&!a.huddle)a.huddle={lesson:"",recap:"",on:"",next:""};
+    });
+    return d;
+  }
+  ,
   3:function(d){
     /* v3 → v4: discovery answers stored the English label; store the code instead
        so switching language can never alter saved data. */
@@ -1326,7 +1378,8 @@ function blankAcct(o){
     contact:{name:"",email:"",phone:""},
     today:{bundle:"",freq:"",addons:[],spend:0},
     next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",addr:"",notes:"",
-    discovery:{answers:{},updated:""},quote:null,events:[],batch:""},o||{});
+    discovery:{answers:{},updated:""},quote:null,events:[],batch:"",
+    huddle:{lesson:"",recap:"",on:"",next:""}},o||{});
 }
 /* the one-time lift from the old horizon app — produces schema 2, then the chain takes over */
 function migrateLegacy(old){
@@ -2200,7 +2253,7 @@ function restoreAcct(snap){
    behind a fixed overlay and chain momentum through it, so the page is pinned at its
    current offset for as long as any layer is up, and put back exactly where it was. */
 let lockY=0,locked=false;
-const anyOverlay=()=>["#veil","#callwrap","#endday"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
+const anyOverlay=()=>["#veil","#callwrap","#endday","#hudwrap"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
 function syncScrollLock(){
   const want=anyOverlay();
   if(want==locked)return;
@@ -2237,6 +2290,192 @@ function render(){
   else if(screen=="set")renderSetup();
   const n=todayRows(today()).length;
   const b=$("#bdg");b.style.display=n?"flex":"none";b.textContent=n;
+}
+
+/* ---------- the bank huddle ----------
+   A huddle is not a form and not a wizard. Three quarter-hours a week, standing in a
+   branch lobby, holding a phone — the app gets one glance before it starts, near-zero
+   attention while it runs, and one minute after. That's the whole shape:
+
+     brief  →  the room  →  debrief  →  (writes the next brief)
+
+   The only thing here that is genuinely a sequence is the recall ritual, because it's a
+   performance with a time axis: ask the room, let them squirm, then reveal. Everything
+   else is on one screen because a rep who is good at this doesn't need to be walked
+   through saying hello. */
+const HUDTOPICS=["Timekeeping","HR support","Workers' Comp","Retirement","Benefits","Integrations","Hiring / ATS","New business setup"];
+/* six standing asks; three show each week, rotated by week number so the same branch
+   doesn't hear the same question every Tuesday for a year */
+const HUDASKS=["Any new businesses opening up around here?",
+  "Anyone you've talked to who's hiring right now?",
+  "Which of your clients is fighting their payroll company?",
+  "Anybody opening a second location?",
+  "Whose books came in a mess this year?",
+  "Any of your business customers still doing payroll by hand?"];
+const hud=a=>(a&&a.huddle)||{lesson:"",recap:"",on:"",next:""};
+const weekIndex=d=>Math.floor((d-new Date(d.getFullYear(),0,1))/DAY/7);
+const asksFor=d=>{const i=weekIndex(d)*3;return [0,1,2].map(n=>HUDASKS[(i+n)%HUDASKS.length])};
+/* the success story is not a field to fill in — it's the last deal he actually won.
+   Pulling it from his own pipeline means it's true, current, and costs him nothing. */
+function lastWin(){
+  const w=A().filter(isWon).sort((x,y)=>((y.won||{}).on||"")<((x.won||{}).on||"")?-1:1);
+  return w[0]||null;
+}
+function winLine(){
+  const w=lastWin();if(!w)return "";
+  const bits=[w.emps?w.emps+" employees":"",w.industry,(w.won||{}).bundle||""].filter(Boolean);
+  const ago=(w.won||{}).on?days(parseD(w.won.on),today()):0;
+  return `${w.name}${bits.length?" — "+bits.join(", "):""}${ago?` · closed ${ago} day${ago==1?"":"s"} ago`:""}`;
+}
+/* everything the brief knows, gathered once so the card and the layer can't disagree */
+function huddleBrief(a){
+  const h=hud(a),r=refStats(a);
+  const owed=openActions(a).filter(n=>n.kind!="meet");
+  const lastHud=h.on?days(parseD(h.on),today()):null;
+  return {h,r,owed,lastHud,asks:asksFor(today()),win:winLine(),
+    plan:h.next||"",                       /* what he said last week he'd teach today */
+    recall:!!(h.lesson&&h.recap)};
+}
+/* the sixty seconds before he walks in */
+function huddleBriefHtml(a){
+  const b=huddleBrief(a);
+  const lines=[];
+  if(b.recall)lines.push(`Last huddle${b.lastHud!=null?` · ${b.lastHud}d ago`:""} you taught <b>${esc(b.h.lesson)}</b>. They get asked about it first.`);
+  else lines.push(`First huddle on record. Whatever you teach today becomes next week's opener.`);
+  if(b.plan)lines.push(`You planned to cover <b>${esc(b.plan)}</b> today.`);
+  lines.push(b.r.last90
+    ? `<b>${b.r.last90}</b> referral${b.r.last90==1?"":"s"} in the last 90 days${b.r.prior90?` · ${b.r.prior90} in the 90 before that`:""}.`
+    : `No referrals in 90 days. That's the number this huddle exists to move.`);
+  if(b.owed.length)lines.push(`You owe them: ${b.owed.map(n=>esc(n.why)).join(" · ")}`);
+  return `<div class="hudbrief"><div class="h"><b>Before you walk in</b><span>${esc(a.name)}</span></div>
+    <div class="hbody">${lines.join("<br>")}</div>
+    <button class="runbtn" data-huddle="${a.id}">Start the huddle</button></div>`;
+}
+
+let hudId=null,hudShown=false,hudRefs=[];
+function startHuddle(id){
+  const a=acct(id);if(!a)return;
+  hudId=id;hudShown=false;hudRefs=[];
+  /* last week's chip selections are not this week's — start the layer clean */
+  delete chipVal.htopic;delete chipVal.wtopic;
+  $("#hudwrap").classList.add("on");syncScrollLock();drawHuddle();
+}
+function exitHuddle(){
+  $("#hudwrap").classList.remove("on");hudId=null;syncScrollLock();save();render();
+}
+function drawHuddle(){
+  const a=acct(hudId);if(!a){exitHuddle();return}
+  const b=huddleBrief(a);
+  /* a topic picked in this session survives a redraw — logging a referral mid-huddle
+     must not silently un-pick what he's teaching */
+  const teaching=chipVal.htopic||b.plan||hud(a).lesson||"";
+  /* the ritual: the question is on the screen, the answer is behind a tap. He calls on
+     somebody first — that's the entire point of the delay, and why this can't be one card. */
+  const recall=b.recall
+    ? `<div class="hudq">
+        <div class="k">last week</div>
+        <div class="ask said">Who remembers what we talked about last week?</div>
+        ${hudShown
+          ? `<div class="reveal"><b>${esc(b.h.lesson)}</b><p>${esc(b.h.recap)}</p></div>`
+          : `<button class="b" data-hreveal="1">Reveal</button>`}
+      </div>`
+    : `<div class="hudq"><div class="k">last week</div>
+        <div class="ask said">Nothing on record yet — this is where the thread starts.</div></div>`;
+
+  $("#hudbody").innerHTML=`
+    ${recall}
+    <div class="hudq"><div class="k">today you're teaching</div>
+      <div class="chips">${HUDTOPICS.map(tp=>`<button class="chip sm${teaching==tp?" on":""}" data-htopic="${esc(tp)}">${esc(tp)}</button>`).join("")}</div>
+    </div>
+    ${b.win?`<div class="hudq"><div class="k">your story this week</div>
+      <div class="ask">${esc(b.win)}</div></div>`:""}
+    <div class="hudq"><div class="k">the ask</div>
+      ${b.asks.map(q=>`<div class="askline">${esc(q)}</div>`).join("")}
+      <div class="hudref">
+        <span>${hudRefs.length} referral${hudRefs.length==1?"":"s"} this huddle</span>
+        <button class="b" data-href="1">+ Log one</button>
+      </div>
+      ${hudRefs.length?`<div class="reflist">${hudRefs.map(esc).join(" · ")}</div>`:""}
+    </div>`;
+  $("#hudname").textContent=a.name;
+  $("#hudwrapup").innerHTML=`<button class="runbtn" data-act="hudwrap">Wrap up</button>`;
+}
+/* a referral is worth capturing the second it's said out loud, because the name is gone
+   ninety seconds later. It logs against the bank immediately — the debrief only decides
+   what happens next with it. */
+function huddleRefSheet(){
+  openSheet(`<h3>Referral</h3><div class="sub">Who did they just name?</div>
+    <label class="f">Name<input class="t" id="hrName" placeholder="Business or person" autocomplete="off"></label>
+    <label class="f">Anything about them <s class="hint">optional</s><input class="t" id="hrNote" placeholder="Opening a second shop in the spring" autocomplete="off"></label>
+    <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
+      <button class="b pri" data-act="hrsave">Log it</button></div>`);
+  setTimeout(()=>{const el=$("#hrName");if(el)el.focus()},80);
+}
+function saveHuddleRef(){
+  const a=acct(hudId);if(!a)return;
+  const nm=($("#hrName")||{}).value?$("#hrName").value.trim():"";
+  if(!nm){toast("Give it a name — even a partial one.");return}
+  const note=($("#hrNote")||{}).value?$("#hrNote").value.trim():"";
+  hudRefs.push(nm);
+  logEvent(a,"referral",nm+(note?" — "+note:""));
+  closeSheet();save();drawHuddle();toast("Logged.");
+}
+/* the debrief. Everything typed here lands somewhere the app already looks:
+   the lesson becomes next week's opener, a promise becomes a dated action, each referral
+   becomes a follow-up, and the next huddle becomes a meeting. Nothing is copied by hand
+   because nothing is stored twice. */
+function huddleWrapSheet(){
+  const a=acct(hudId);if(!a)return;
+  const h=hud(a);
+  const curTopic=chipVal.htopic||h.next||h.lesson||"";
+  const nx=plusBiz(today(),7);
+  const meet=openActions(a).filter(n=>n.kind=="meet").sort((x,y)=>x.date<y.date?-1:1)[0];
+  openSheet(`<h3>Wrap up</h3><div class="sub">${esc(a.name)} — this writes next week's opener</div>
+    <label class="f">What did you teach today?</label>
+    <div class="chips">${HUDTOPICS.map(tp=>`<button class="chip sm${curTopic==tp?" on":""}" data-wtopic="${esc(tp)}">${esc(tp)}</button>`).join("")}</div>
+    <label class="f">The one line they should remember
+      <textarea class="t" id="hwRecap" rows="2" placeholder="Their words if you can — this is what you read back next week">${esc(h.lesson==curTopic?h.recap:"")}</textarea></label>
+    <label class="f">Promise anything? <s class="hint">becomes an action in three days</s>
+      <input class="t" id="hwOwe" placeholder="Send Dana the Workers' Comp one-pager" autocomplete="off"></label>
+    <label class="f">Teaching next week <s class="hint">optional — it shows up in the brief</s>
+      <input class="t" id="hwNext" placeholder="Retirement" autocomplete="off"></label>
+    <label class="f">Next huddle</label>${dateField("hwWhen","next tuesday")}
+    ${hudRefs.length?`<p class="read" style="font-size:12.5px;margin-top:14px">${hudRefs.length} referral${hudRefs.length==1?"":"s"} logged — each gets a follow-up on your list.</p>`:""}
+    <div class="sa"><button class="b quiet" data-act="close">Back</button>
+      <button class="b pri" data-act="hudsave">Save the huddle</button></div>`);
+  wireDate("hwWhen");
+  /* the next one is pre-filled, including the standing hour — a huddle that loses its time
+     stops being an appointment and quietly becomes a wish */
+  seedDate("hwWhen",iso(nx),(meet&&meet.at)||"");
+  const w=$("#hwWhen");
+  if(w){w.value=nx.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+    const o=$("#hwWhen_out");if(o)o.textContent=nx.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}
+}
+async function saveHuddle(){
+  const a=acct(hudId);if(!a)return;
+  const before=snapshot(a);
+  const topic=chipVal.wtopic||chipVal.htopic||hud(a).lesson||"";
+  const recap=(($("#hwRecap")||{}).value||"").trim();
+  const owe=(($("#hwOwe")||{}).value||"").trim();
+  const plan=(($("#hwNext")||{}).value||"").trim();
+  const when=dateOf("hwWhen")||iso(plusBiz(today(),7));
+  const at=timeOf("hwWhen")||"";
+
+  a.huddle={lesson:topic,recap,on:activeISO(),next:plan};
+  logEvent(a,"met","huddle"+(topic?" — taught "+topic:""));
+  /* the meeting that brought us here is now done */
+  openActions(a).filter(n=>n.kind=="meet"&&n.date<=activeISO()).forEach(n=>n.done=true);
+  if(owe)a.next.push({id:uid(),date:isoBiz(today(),3),why:owe,kind:"follow",done:false,made:activeISO()});
+  hudRefs.forEach(nm=>a.next.push({id:uid(),date:isoBiz(today(),2),why:"Chase referral — "+nm,kind:"call",done:false,made:activeISO()}));
+  /* next week's huddle, booked before he leaves the lobby */
+  if(!openActions(a).some(n=>n.kind=="meet"&&n.date==when))
+    a.next.push({id:uid(),date:when,why:"Huddle"+(plan?" — "+plan:""),kind:"meet",at,done:false,made:activeISO()});
+  if(hudRefs.length&&a.rel!="trusted"&&a.rel!="referring")a.rel="referring";
+  else if(a.rel=="notmet")a.rel="intro";
+
+  closeSheet();exitHuddle();
+  const n=hudRefs.length;hudRefs=[];
+  commit(`Huddle saved${n?` — ${n} referral${n==1?"":"s"}`:""}. Next one ${fmt(parseD(when))}.`,()=>restoreAcct(before));
 }
 
 /* ---------- today ---------- */
@@ -2887,7 +3126,10 @@ function renderNow(rows,day){
       <button class="nq" data-nowlater="${a.id}|${n.id}">Later</button>
       <button class="nq" data-nowskip="${a.id}">Skip</button>
     </div>
-  </div>`;
+  </div>`
+  /* a bank meeting is a huddle, and the huddle has a brief. It sits under the now card
+     rather than replacing it, because he still needs the directions button above it. */
+  +((a.type=="bank"&&r.block=="meet")?huddleBriefHtml(a):"");
   return r;
 }
 /* a briefing opens the way a manager would — by name, at the right hour */
@@ -2930,11 +3172,16 @@ function renderList(rows,isNow,day){
     const mt=(at?`<span class="tagm at">${fmtTime(at)}</span>`:"")
       +(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
       +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
+    /* a branch has no employee count and no deal value — the right-hand column would be
+       two blanks. It gets the huddle instead, which is the only reason the row exists. */
+    const tail=(r.a.type=="bank"&&r.block=="meet")
+      ? `<button class="b rhud" data-huddle="${r.a.id}">Huddle &rsaquo;</button>`
+      : `<div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>`;
     return `<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
       <button class="rtick" data-rowdone="${r.a.id}|${r.lead.id}" aria-label="Mark done"></button>
       <div class="i"><div class="nm">${esc(r.a.name)}</div>
         <div class="rs">${mt}${extra}${r.over?"overdue · ":""}${esc(why)}</div></div>
-      <div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>
+      ${tail}
     </div>`;
   };
   const group=(title,list,tail)=>{
@@ -3209,6 +3456,10 @@ function renderAccount(){
     ${rec.major?`<div class="flag">${a.emps>=50?"50+ employees":"Growth crosses 50"} — Major Accounts handoff path. You still work the relationship.</div>`:""}
     ${(a.type=="client"&&a.emps>=10&&/enhanced/i.test((a.today||{}).bundle||""))?`<div class="flag">On Enhanced at ${a.emps} employees — upgrade candidate.</div>`:""}
   </div>`;
+
+  /* a branch opens on its thread. Everything below is still here — the record didn't go
+     anywhere — but the first thing on screen is the conversation, not the fields. */
+  if(a.type=="bank"&&isOpen(a))h+=huddleBriefHtml(a);
 
   /* the answer to "I'm standing outside — what do I need in my head right now?" */
   h+=`<div class="sect keyn"><div class="h"><b>Before you walk in</b><span>${a.notes?"pinned":"nothing yet"}</span></div>
@@ -4149,6 +4400,12 @@ tap("reopen",t=>{openQ=t.dataset.reopen;render()});
 tap("editnext",t=>editNextSheet(t.dataset.editnext));
 tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
+tap("huddle",t=>startHuddle(t.dataset.huddle));
+tap("hreveal",()=>{hudShown=true;drawHuddle()});
+tap("href",()=>huddleRefSheet());
+/* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
+tap("htopic",t=>{pickChip(t,"htopic")});
+tap("wtopic",t=>{pickChip(t,"wtopic")});
 
 /* chip groups — every one of these behaves identically */
 ["imptype","et","wb","ak","ek"].forEach(g=>tap(g,t=>pickChip(t,g)));
@@ -4710,6 +4967,9 @@ document.addEventListener("click",async e=>{
       /* an appointment can lose its time — clearing the control has to mean clearing it */
       n.at=timeOf("enWhen")||"";
       save();closeSheet();render();toast("Updated.");break}
+    case"hudwrap":huddleWrapSheet();break;
+    case"hudsave":await saveHuddle();break;
+    case"hrsave":saveHuddleRef();break;
     case"pace":paceOpen=!paceOpen;render();break;
     case"nearby":showNearby=!showNearby;render();break;
     case"laterpick":{
@@ -4901,6 +5161,9 @@ $("#veil").addEventListener("click",e=>{if(e.target.id=="veil")closeSheet()});
 $("#fab").addEventListener("click",openNewAccount);
 $("#aback").addEventListener("click",()=>go(backTo||"today"));
 $("#cexit").addEventListener("click",endRun);
+/* leaving without wrapping up is allowed — the referrals are already logged, and a huddle
+   that got cut short shouldn't cost him the names */
+$("#hudexit").addEventListener("click",exitHuddle);
 $("#cskip").addEventListener("click",()=>{if(qi<queue.length){advance()}});
 $("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);showAllRows=false;render()});
 $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
