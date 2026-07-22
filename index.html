@@ -527,6 +527,18 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .cstack>.cc{flex:0 0 86%;scroll-snap-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;
   background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:26px 20px}
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
+.topgrid{display:flex;gap:14px;align-items:flex-start}
+.topgrid>#clock{flex:1;min-width:0}
+.topgrid>.rhythm{flex:0 0 92px;margin-top:2px}
+.topgrid .dmseg{grid-template-columns:1fr;gap:1px}
+.topgrid .dmseg button{padding:9px 0;font-size:12px}
+.tiles{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:flex-start}
+.tiles>div{flex:1 1 0;min-width:0}
+.tiles>div:empty{display:none}
+.tiles>div.open{flex:1 1 100%}
+.tiles .warm,.tiles .hudpin{margin-top:0}
+.tiles .hph{width:100%}
+.tiles .hname{white-space:normal}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -845,12 +857,20 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
        once the first touch is logged so the stack rises to the top for the rest of it. -->
   <div id="setupsummary"></div>
   <div id="setupblock">
-    <div id="clock"></div>
+    <!-- the clock never filled its row, so the day-mode switch moves into the gap beside it
+         and runs top-down. Warm-up and huddle become tiles that open in place. All of it
+         exists to get the stack of businesses above the fold. -->
+    <div class="topgrid">
+      <div id="clock"></div>
+      <div class="rhythm" id="rhythm"></div>
+    </div>
+    <div id="rhythmnote"></div>
     <div class="shape" id="shape"></div>
     <div id="pace"></div>
-    <div class="rhythm" id="rhythm"></div>
-    <div id="warm"></div>
-    <div id="huddles"></div>
+    <div class="tiles">
+      <div id="warm"></div>
+      <div id="huddles"></div>
+    </div>
   </div>
   <div id="carry"></div>
   <div id="catchup"></div>
@@ -1065,7 +1085,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.11 call-cards";
+const BUILD="2026-07-22.12 compact-setup";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3135,8 +3155,9 @@ function warmState(){
 }
 function renderWarm(show){
   const el=$("#warm");
-  if(!show){el.innerHTML="";return}
+  if(!show){el.innerHTML="";el.className="";return}
   const w=warmState(),body=w.open;
+  el.className=body?"open":"";
   const item=k2=>WARM[k2][Math.min(w.pick[k2]||0,WARM[k2].length-1)];
   const rows=WARMORDER.map(([k2,label])=>{
     if(k2=="objection"){const [o,r]=item(k2);
@@ -3148,7 +3169,7 @@ function renderWarm(show){
   }).join("");
   el.innerHTML=`<div class="warm">
     <button class="whead${body?"":" done"}" data-act="warmtoggle" aria-expanded="${body}">
-      <span><b>${body?"Today's warm-up":"Today's warm-up complete"}</b><s>${body?"Takes about two minutes.":"Talk track ready. Go get it."}</s></span>
+      <span><b>${body?"Today's warm-up":"Warm-up ready"}</b><s>${body?"Takes about two minutes.":"Talk track set."}</s></span>
       <span class="chev${body?" up":""}">&#9662;</span></button>
     ${body?`<div class="wbody">${rows}
       <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div>`:""}
@@ -3527,8 +3548,9 @@ function renderHuddles(rows,isNow,day){
     if(a){if(seen.has(a.id))return;seen.add(a.id);cards.push({a,at:f.at,over:false,raw:f.what})}
     else cards.push({raw:f.what,v:parseVenue(f.what),at:f.at});
   });
-  if(!cards.length){el.innerHTML="";return}
+  if(!cards.length){el.innerHTML="";el.className="";return}
   cards.sort((x,y)=>(x.at||"")<(y.at||"")?-1:(x.at||"")>(y.at||"")?1:0);
+  el.className=cards.some(c=>c.a&&hudOpen[c.a.id])?"open":"";
   el.innerHTML=cards.map(c=>{
     /* the hour is a detail; the branch is the headline. An hour we don't have is simply
        absent — printing the word "huddle" where the time goes told him nothing he didn't
@@ -3551,8 +3573,8 @@ function renderHuddles(rows,isNow,day){
       ${(isNow&&c.raw&&strayBranches(a,c.raw).length)
         ? `<div class="hpstray">Also on file, empty: ${strayBranches(a,c.raw).map(x=>esc(x.name)).join(", ")}
            <button class="b" data-stray="${a.id}|${esc(c.raw)}">Clear ${strayBranches(a,c.raw).length==1?"it":"them"}</button></div>`:""}
-      ${isNow?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
-             :(c.over?`<div class="hpq">Missed — it's still open.</div>`:"")}
+      ${(isNow&&open)?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
+             :((!isNow&&c.over)?`<div class="hpq">Missed — it's still open.</div>`:"")}
     </div>`;
   }).join("");
 }
@@ -3823,7 +3845,26 @@ function rhythmHtml(d,isNow){
   const fx=rest.length
     ? `<div class="dmfix">${rest.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
     : "";
-  return seg+`<div class="dmnote">${note}</div>`+fx;
+  return seg;
+}
+/* the note and any other standing item stay full width under the rail — a 92px column is
+   no place for a sentence */
+function rhythmNoteHtml(d,isNow){
+  const wd=d.getDay();
+  if(wd==0||wd==6)return "";
+  const mode=dayMode(d),norm=weekMode(d),fixed=recurFor(d);
+  const dayName=d.toLocaleDateString(undefined,{weekday:"long"});
+  /* when the day is running as normal there's nothing to say — the switch already shows it */
+  const note=isNow
+    ? (modeOverridden(d)
+        ? `<span><b>${MODELABEL[mode]}</b> — just for today. ${dayName}s are normally ${MODELABEL[norm].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button>`
+        : "")
+    : `<span><b>${MODELABEL[mode]}</b></span>`;
+  const rest=fixed.filter(f=>!HUDRE.test(f.what||""));
+  const fx=rest.length
+    ? `<div class="dmfix">${rest.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
+    : "";
+  return (note?`<div class="dmnote">${note}</div>`:"")+fx;
 }
 function renderWeek(cur){
   if(!A().length){$("#week").innerHTML="";return}
@@ -3869,6 +3910,7 @@ function renderSetup(isNow,d){
    the record is the same one endDay() writes, marked so it reads honestly as automatic.
    Bounded to three weeks back so a long-dormant install doesn't seal a year of history,
    and nothing about the accounts is touched: open work still carries forward as it did. */
+function unhideCreed(){ if(D.cfg.hideCreed){delete D.cfg.hideCreed;save()} }
 function autoSealPast(){
   const now=today();
   let wrote=false;
@@ -3887,7 +3929,7 @@ function autoSealPast(){
 }
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
-  autoSealPast();
+  autoSealPast();unhideCreed();
   const rec=sealed(d);
   $("#datestr").textContent=fmtFull(d);
   $("#dnToday").style.display=isNow?"none":"";
@@ -3898,7 +3940,7 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#huddles","#carry","#catchup","#clock","#warm","#now","#pace","#setupsummary"].forEach(quiet);
+    ["#shape","#rhythm","#rhythmnote","#huddles","#carry","#catchup","#clock","#warm","#now","#pace","#setupsummary"].forEach(quiet);
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
@@ -3910,10 +3952,11 @@ function renderToday(){
     return;
   }
 
-  if(isNow&&!D.cfg.hideCreed){
+  /* the dismiss control is gone — it was one tap from deleting something he wanted */
+  if(isNow){
     const c=creedFor(today());
     const dl=$("#dailyline");
-    if(dl)dl.innerHTML=`${esc(c[0])} <button data-act="hidecreed" aria-label="Hide daily line" style="background:none;border:none;color:var(--ink3);font:inherit;font-style:normal;padding:0 0 0 6px;cursor:pointer">&times;</button>`;
+    if(dl)dl.textContent=c[0];
   }else{const dl=$("#dailyline");if(dl)dl.innerHTML=""}
   $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
@@ -3921,6 +3964,7 @@ function renderToday(){
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
   renderHuddles(rows,isNow,d);
   $("#rhythm").innerHTML=rhythmHtml(d,isNow);
+  $("#rhythmnote").innerHTML=rhythmNoteHtml(d,isNow);
   const cn=isNow?carryNote():null;
   $("#carry").innerHTML=cn
     ? `<div class="carry"><s>You wanted to remember &mdash; ${cn.d.toLocaleDateString(undefined,{weekday:"long"})}</s><p>${esc(cn.text)}</p></div>`
@@ -6066,7 +6110,7 @@ document.addEventListener("click",async e=>{
     case"pace":paceOpen=!paceOpen;render();break;
     case"nearby":showNearby=!showNearby;render();break;
     case"anchor":anchorSheet();break;
-    case"hidecreed":D.cfg.hideCreed=1;save();render();break;
+
     case"setupopen":setupManual=true;render();break;
     case"setupfold":setupManual=false;render();break;
     case"anchorsave":anchorSave();break;
