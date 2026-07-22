@@ -285,6 +285,9 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
   color:var(--ink2);animation:f .2s ease both}
 .hpb b{color:var(--ink);font-weight:500}
 .hpq{margin-top:11px;font-size:12.5px;color:var(--ink3)}
+.hpstray{margin-top:11px;font-size:12.5px;line-height:1.6;color:var(--ink3);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hpstray .b{font-size:12.5px;padding:6px 11px;flex:none}
 .hudpin.unlinked{border-style:dashed;border-color:var(--rule2);box-shadow:none}
 .hph.static{cursor:default}
 .hudpin .runbtn{margin-top:12px}
@@ -3166,14 +3169,45 @@ function parseVenue(what){
   const [nm,...rest]=after.split(",");
   return {name:(nm||"").trim(),addr:rest.join(",").trim()};
 }
-/* a short name like "BoA" would match every branch in the book, so both sides have to be
-   long enough for a containment match to mean anything */
+/* Branch names come in two dialects: the one he types into the week template — "BoA
+   Ashland" — and the one on the account — "Bank of America — Ashland". Flattening both to
+   one string and asking whether either contains the other fails on precisely the pair it
+   exists to handle, and a failed match doesn't degrade quietly: it offers to create the
+   branch, and he ends up with two.
+   What actually identifies a branch is the town. So strip the words every bank shares and
+   compare what's left. */
+const BANKWORDS=new Set(["bank","banks","of","the","and","america","boa","bofa","na",
+  "national","branch","savings","trust","credit","union","fsb","bancorp"]);
+const distinct=s=>String(s||"").toLowerCase().split(/[^a-z0-9]+/)
+  .filter(w=>w&&!BANKWORDS.has(w)&&!/^\d+$/.test(w));
 function matchBank(v){
   const t=norm(v.name);if(!t)return null;
-  return A().find(a=>a.type=="bank"&&isOpen(a)&&(()=>{
-    const n=norm(a.name);
-    return n==t||(t.length>=5&&n.length>=5&&(n.includes(t)||t.includes(n)));
-  })())||null;
+  const want=distinct(v.name),ad=v.addr?norm(v.addr):"";
+  const scored=A().filter(a=>a.type=="bank"&&isOpen(a)).map(a=>{
+    const n=norm(a.name),have=new Set(distinct(a.name).concat(distinct(a.city)));
+    return {a,
+      addr:(ad&&a.addr&&norm(a.addr)==ad)?1:0,
+      tok:want.filter(w=>have.has(w)).length,
+      exact:n==t?1:0,
+      near:(t.length>=5&&n.length>=5&&(n.includes(t)||t.includes(n)))?1:0,
+      h:(a.events||[]).length};
+  }).filter(x=>x.addr||x.tok||x.exact||x.near)
+  /* the street is unique, so it decides. Then the town. Then — and this is what rescues a
+     book that already has a duplicate in it — the branch he has actually worked beats an
+     empty record that merely happens to be spelled the way he typed the line. */
+    .sort((x,y)=>y.addr-x.addr||y.tok-x.tok||y.h-x.h||y.exact-x.exact||y.near-x.near);
+  if(!scored.length)return null;
+  const top=scored[0];
+  if(scored[1]&&["addr","tok","h","exact","near"].every(k=>scored[1][k]==top[k]))return null;
+  return top.a;
+}
+/* empty bank records that answer to the same standing line as a branch he's really using.
+   No history, nothing scheduled — nothing to lose by clearing them away. */
+function strayBranches(a,line){
+  const want=distinct(parseVenue(line).name),t=norm(parseVenue(line).name);
+  return A().filter(x=>x.type=="bank"&&x.id!=a.id&&isOpen(x)
+    &&!(x.events||[]).length&&!openActions(x).length
+    &&(norm(x.name)==t||distinct(x.name).some(w=>want.includes(w))));
 }
 /* the standing line named a branch we don't have a record for. Rather than silently
    showing nothing, say so and make it one tap to fix — the huddle can't remember
@@ -3196,6 +3230,11 @@ function standingAt(a){
 async function adoptBranch(raw){
   const v=parseVenue(raw);
   if(!v.name){toast("Couldn't read a branch name out of that line.");return}
+  /* last line of defence: if anything in the book already answers to this line, link to it
+     rather than making a second one. Creating duplicates is the one failure this button
+     must never produce. */
+  const have=matchBank(v);
+  if(have){hudOpen[have.id]=true;render();toast(`Linked to ${have.name}.`);return}
   const a=blankAcct({name:v.name,type:"bank",addr:v.addr,rel:"building"});
   D.accounts.push(a);hudOpen[a.id]=true;
   await save();render();
@@ -3208,7 +3247,7 @@ function renderHuddles(rows,isNow,day){
   /* and the standing line for this weekday */
   recurHuddles(d).forEach(f=>{
     const a=matchBank(parseVenue(f.what));
-    if(a){if(seen.has(a.id))return;seen.add(a.id);cards.push({a,at:f.at,over:false})}
+    if(a){if(seen.has(a.id))return;seen.add(a.id);cards.push({a,at:f.at,over:false,raw:f.what})}
     else cards.push({raw:f.what,v:parseVenue(f.what),at:f.at});
   });
   if(!cards.length){el.innerHTML="";return}
@@ -3233,6 +3272,9 @@ function renderHuddles(rows,isNow,day){
       </button>
       ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`
             :`<div class="hpg">${huddleGist(a)}</div>`}
+      ${(isNow&&c.raw&&strayBranches(a,c.raw).length)
+        ? `<div class="hpstray">Also on file, empty: ${strayBranches(a,c.raw).map(x=>esc(x.name)).join(", ")}
+           <button class="b" data-stray="${a.id}|${esc(c.raw)}">Clear ${strayBranches(a,c.raw).length==1?"it":"them"}</button></div>`:""}
       ${isNow?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
              :(c.over?`<div class="hpq">Missed — it's still open.</div>`:"")}
     </div>`;
@@ -4581,6 +4623,17 @@ tap("hreveal",()=>{hudShown=true;drawHuddle()});
    it lives in memory and resets with the app, like the pace and nearby toggles */
 tap("hudopen",t=>{const id=t.dataset.hudopen;hudOpen[id]=!hudOpen[id];renderToday()});
 tap("adopt",t=>adoptBranch(t.dataset.adopt));
+tap("stray",async t=>{
+  const [aid,...rest]=String(t.dataset.stray).split("|");
+  const a=acct(aid);if(!a)return;
+  const gone=strayBranches(a,rest.join("|")).map(x=>clone(x));
+  if(!gone.length)return;
+  const ids=new Set(gone.map(x=>x.id));
+  D.accounts=D.accounts.filter(x=>!ids.has(x.id));
+  await save();render();
+  toastUndo(`Cleared ${gone.map(x=>x.name).join(", ")}.`,()=>{
+    gone.forEach(x=>D.accounts.push(x));save();render()});
+});
 tap("href",()=>huddleRefSheet());
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
