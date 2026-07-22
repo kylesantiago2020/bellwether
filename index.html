@@ -3197,6 +3197,26 @@ const NEIGHBORS={
   "needham":["wellesley","dedham","westwood","dover","newton"],
   "wellesley":["natick","weston","needham","dover","newton"]
 };
+/* "3:00" typed into a wrap-by box means three in the afternoon. nlpTime is right to be
+   literal everywhere else, so the business-hours assumption lives here and only here. */
+function cutoffTime(str){
+  const raw=String(str||"").trim();
+  if(!raw)return "";
+  const explicit=/[ap]\.?m\.?/i.test(raw);
+  let t=nlpTime(raw);
+  if(!t){
+    const m=raw.match(/^(\d{1,2})$/);            /* a bare "3" */
+    if(!m)return "";
+    let h=+m[1];
+    if(h>=1&&h<=7)h+=12;
+    return h<24?hhmm(h,0):"";
+  }
+  if(!explicit){
+    const h=+t.slice(0,2),mi=+t.slice(3);
+    if(h>=1&&h<=7)t=hhmm(h+12,mi);
+  }
+  return t;
+}
 function anchorOn(){
   const an=D.cfg.anchor;
   return (an&&an.on===iso(today())&&an.town)?an:null;   /* expires by itself */
@@ -3223,7 +3243,7 @@ function anchorBar(){
   if(!an)return `<button class="anchbar" data-act="anchor"><span>Working the plan &mdash; tap if you&rsquo;re somewhere else today</span><s>set area</s></button>`;
   const near=A().filter(a=>isOpen(a)&&anchorTier(a)<=1).length;
   return `<button class="anchbar set" data-act="anchor"><span>Today only &mdash; working from <b>${esc(an.town)}</b>${an.by?`, wrapping by ${fmtTime(an.by)}`:""}</span><s>change</s></button>
-    <p class="anchnote">${near} open account${near==1?"":"s"} in and around ${esc(an.town)}. Anything further out has moved down the list, not off it.</p>`;
+    <p class="anchnote">${near} open account${near==1?"":"s"} in and around ${esc(an.town)}. Anything further out is folded away below, not deleted.</p>`;
 }
 function anchorSheet(){
   const an=anchorOn(),towns=anchorTowns();
@@ -3242,13 +3262,17 @@ function anchorSheet(){
 function anchorSave(){
   const town=chipVal.antown;
   if(!town){toast("Pick a town first.");return}
-  const by=nlpTime($("#anBy").value||"")||"";
+  const by=cutoffTime($("#anBy").value||"");
   D.cfg.anchor={on:iso(today()),town,by};
-  save();closeSheet();render();
+  /* he just told us he's somewhere else — the useful next move is filling the day,
+     so the nearby list opens once. He can still fold it away himself. */
+  showParked=false;showNearby=true;
+  save();closeSheet();render();toTop();
   const near=A().filter(a=>isOpen(a)&&anchorTier(a)<=1&&!openActions(a).length).length;
   toast(near?`Set. ${near} accounts near ${town} you're not yet working — tap "Top up here".`:`Set to ${town} for today.`);
 }
-function anchorOff(){delete D.cfg.anchor;save();closeSheet();render();toast("Back to the plan.")}
+function anchorOff(){delete D.cfg.anchor;showParked=false;save();closeSheet();render();toTop();toast("Back to the plan.")}
+function toTop(){try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}}
 
 /* the woke-up-late button: fill the day with doors that are actually near him */
 function topUpHere(n){
@@ -3263,10 +3287,11 @@ function topUpHere(n){
   if(!add.length){toast("Nothing left nearby that you're not already working.");return}
   add.forEach(a=>a.next.push({id:uid(),date:iso(today()),
     why:"Drop in — you're in "+an.town+" today",kind:"visit",done:false,made:iso(today())}));
-  save();render();
+  save();render();toTop();
   toast(`Added ${add.length} drop-in${add.length==1?"":"s"} near ${an.town}.`);
 }
 
+let showParked=false;
 function nearbyData(rows){
   const inPlay=new Set(rows.map(r=>r.a.id));
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
@@ -3546,20 +3571,28 @@ function renderList(rows,isNow,day){
   const pinned=new Set(huddleRows(rows).map(r=>r.a.id));
   /* with an area set for today, distance leads — but a meeting at a named hour is a
      commitment to a human being and still outranks everything, wherever it is */
-  const field=rest.filter(r=>!(pinned.has(r.a.id)&&r.block=="meet")).filter(r=>r.block=="meet"||r.block=="visit")
+  const fieldAll=rest.filter(r=>!(pinned.has(r.a.id)&&r.block=="meet")).filter(r=>r.block=="meet"||r.block=="visit")
     .sort((x,y)=>(x.block=="meet"||y.block=="meet"?0:anchorTier(x.a)-anchorTier(y.a))
       ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  /* Telling him a stop is "not near you today" and then leaving it on screen is just
+     making him scroll past his own decision. Fold it away — a commitment is never
+     deleted, but it stops competing for the top of the screen. */
+  const parkable=r=>!!anchorOn()&&r.block!="meet"&&(anchorTier(r.a)>1||pastCutoff(rowAt(r)));
+  const parked=fieldAll.filter(parkable);
+  const field=fieldAll.filter(r=>!parkable(r));
   const calls=rest.filter(r=>r.block=="call").sort(byTime);
   const desk=rest.filter(r=>r.block=="follow").sort(byTime);
   const row=r=>{
     const why=r.due.map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
     const extra=r.due.length>1?`<span class="tagm p">${r.due.length} things</span>`:"";
     const at=rowAt(r);
-    const far=anchorOn()&&r.block!="meet"&&anchorTier(r.a)>1;
+    /* a meeting is never folded away — somebody is expecting you — but it doesn't get to
+       sit under a "near you" heading pretending it's around the corner either */
+    const far=anchorOn()&&anchorTier(r.a)>1;
     const late=anchorOn()&&pastCutoff(at);
-    const mt=(at?`<span class="tagm at${late?" far":""}">${fmtTime(at)}${late?" · after your cutoff":""}</span>`:"")
+    const mt=(at?`<span class="tagm at${late?" far":""}">${fmtTime(at)}${late&&r.block=="meet"?" · past your cutoff":""}</span>`:"")
       +(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
-      +(far?`<span class="tagm far">${esc(r.a.city||"further out")} · not near you today</span>`:"")
+      +(far&&r.a.city?`<span class="tagm far">${esc(r.a.city)}</span>`:"")
       +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
     /* a branch has no employee count and no deal value — the right-hand column would be
        two blanks. Bank meetings are pinned at the top of the day, so what lands here is a
@@ -3609,7 +3642,17 @@ function renderList(rows,isNow,day){
     /* out of the office, the field leads because it's the part that can't be done later.
        Field and mixed days differ in what gets recommended next, not in the shape of the
        screen — see nowPick, where a mixed day stops auto-promoting the doors. */
-    if(field.length||nb)html+=group("In the field",field,nb);
+    const an=anchorOn();
+    const parkedHtml=parked.length?`<button class="nearby" data-act="parked">
+        <span>${parked.length} more ${parked.length==1?"stop":"stops"} you'd planned &mdash; ${[
+          parked.some(r=>anchorTier(r.a)>1)?"further out":"",
+          parked.some(r=>pastCutoff(rowAt(r)))?"or after your cutoff":""].filter(Boolean).join(" ")}</span>
+        <s>${showParked?"hide":"show"}</s></button>
+      ${showParked?parked.map(row).join(""):""}`:"";
+    const allNear=field.every(r=>anchorTier(r.a)<=1);
+    if(field.length||nb||parkedHtml)
+      html+=group(an?(allNear?`Near you in ${esc(an.town)}`:`In the field &mdash; ${esc(an.town)} first`):"In the field",
+        field,nb+parkedHtml);
     html+=callgroup();
     if(desk.length)html+=group(isNow?"From the desk":"Follow-ups",desk);
   }
@@ -5771,6 +5814,7 @@ document.addEventListener("click",async e=>{
     case"anchorsave":anchorSave();break;
     case"anchoroff":anchorOff();break;
     case"topup":topUpHere(5);break;
+    case"parked":showParked=!showParked;render();break;
     case"laterpick":{
       const [aid,nid]=(t.dataset.n||"").split("|"),ac=acct(aid);
       const n=ac&&(ac.next||[]).find(x=>x.id==nid);
