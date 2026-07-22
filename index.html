@@ -506,6 +506,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .nowdots i{width:6px;height:6px;border-radius:3px;background:var(--rule2);display:block;transition:background .18s ease,width .18s ease}
 .nowdots i.on{background:var(--ink3);width:17px}
 .nowhint{text-align:center;font-size:12px;color:var(--ink3);margin:9px 0 0}
+.nowcount{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink3);margin-top:11px}
+.nowcount b{color:var(--ink);font-weight:500}
 @media (prefers-reduced-motion:reduce){.nowstack{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
@@ -1039,7 +1041,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.5 swipeable-stack";
+const BUILD="2026-07-22.6 full-day-stack";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3378,11 +3380,27 @@ function nowOrder(rows){
   const vis=mode=="office"?3:mode=="mixed"?2:1;
   const pri=b=>b=="meet"?0:b=="visit"?vis:2;
   const skipped=r=>r.a.skip==iso(today())?1:0;
-  /* an appointment at a named hour beats anything loose — somebody is expecting you */
-  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||byTime(x,y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a));
+  /* A clock on a card doesn't make it the next thing to do. A 3:30 meeting isn't what you
+     do at ten in the morning — untimed work is available RIGHT NOW, so it sorts as though
+     it were scheduled for this minute and the appointment falls into its own slot. Anything
+     already past its hour sorts to the front, because that one is late. */
+  const d=new Date(), nowT=hhmm(d.getHours(),d.getMinutes());
+  /* a commitment surfaces before its hour, not after — a meeting needs drive time, a
+     drop-in less, and a card that only leads once it's already late is no use to anyone */
+  const LEAD={meet:45,visit:20,call:10,follow:10};
+  const when=r=>{
+    const t=rowAt(r);
+    if(!t)return nowT;
+    const mm=Math.max(0,(+t.slice(0,2))*60+(+t.slice(3,5))-(LEAD[r.block]||20));
+    return hhmm(Math.floor(mm/60),mm%60);
+  };
+  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)
+    ||(when(x)<when(y)?-1:when(x)>when(y)?1:0)
+    ||pri(x.block)-pri(y.block)||score(y.a)-score(x.a));
 }
 function nowPick(rows){return nowOrder(rows)[0]||null}
-const NOWMAX=8;
+/* the whole day, swipeable — capped only so the DOM stays sane on a long one */
+const NOWMAX=40;
 /* ---------- the pinned huddle ----------
    A huddle is not work you choose — it's a standing appointment at an hour somebody else
    is also holding. So it doesn't compete for the now card and it doesn't sit in the day
@@ -3560,8 +3578,11 @@ function renderNow(rows,day){
   const picks=nowOrder(rows).slice(0,NOWMAX);
   el.innerHTML=`<div class="nowstack" id="nowstack" role="group" aria-label="Today's queue, swipe for more">${
       picks.map((x,i)=>nowCardHtml(x,i,picks.length)).join("")}</div>`
-    +(picks.length>1?`<div class="nowdots" id="nowdots" aria-hidden="true">${
-      picks.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`:"")
+    +(picks.length>1
+       ? (picks.length<=8
+          ? `<div class="nowdots" id="nowdots" aria-hidden="true">${picks.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`
+          : `<div class="nowcount" id="nowcount" aria-hidden="true"><b>1</b> of ${picks.length}</div>`)
+       : "")
     +(picks.length>1&&!D.cfg.sawSwipe
       ? `<p class="nowhint">Swipe &mdash; ${picks.length-1} more behind this one.</p>`:"");
   wireNowStack();
@@ -3604,7 +3625,7 @@ function nowCardHtml(r,i,tot){
    a hand-rolled drag handler would be worse on all three and jank on a long list. */
 function wireNowStack(){
   const t=$("#nowstack");if(!t)return;
-  const dots=$("#nowdots");
+  const dots=$("#nowdots"),count=$("#nowcount");
   let queued=false;
   t.addEventListener("scroll",()=>{
     if(queued)return;
@@ -3613,6 +3634,7 @@ function wireNowStack(){
       queued=false;
       const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
       if(dots)[...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
+      if(count){const b=count.querySelector("b");if(b)b.textContent=i+1}
       if(i>0&&!D.cfg.sawSwipe){
         D.cfg.sawSwipe=1;save();
         const h=$(".nowhint");if(h)h.remove();
