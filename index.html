@@ -499,6 +499,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .creed p{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:17px;line-height:1.5;color:var(--ink2);margin:0}
 .creed s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ac);margin-top:9px}
 .daily{margin:2px 0 18px;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:15.5px;line-height:1.5;color:var(--ink3)}
+.nowstack{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-top:16px;overscroll-behavior-x:contain}
+.nowstack::-webkit-scrollbar{display:none}
+.nowstack>.now{flex:0 0 100%;scroll-snap-align:center;margin-top:0;animation:none}
+.nowdots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:11px}
+.nowdots i{width:6px;height:6px;border-radius:3px;background:var(--rule2);display:block;transition:background .18s ease,width .18s ease}
+.nowdots i.on{background:var(--ink3);width:17px}
+.nowhint{text-align:center;font-size:12px;color:var(--ink3);margin:9px 0 0}
+@media (prefers-reduced-motion:reduce){.nowstack{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -1031,7 +1039,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.4 anchored-now-card";
+const BUILD="2026-07-22.5 swipeable-stack";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3353,13 +3361,16 @@ function nearbyHtml(rows){
 function isParked(r){
   return !!anchorOn() && r.block!="meet" && (anchorTier(r.a)>1 || pastCutoff(rowAt(r)));
 }
-function nowPick(rows){
+/* One ranking, used twice: the first card is still the app's recommendation, and the rest
+   of the order is what you swipe through. Swiping browses — it never re-ranks the day, so
+   the thing the app told you to do first is in the same place when you swipe back. */
+function nowOrder(rows){
   /* a pinned huddle is already the first thing on the screen — letting it also win the now
      card meant the one commitment he never forgets pushed the one he might off the top */
   rows=rows.filter(r=>!(r.a.type=="bank"&&r.block=="meet"));
   /* no falling back to a far stop — he told us he isn't going there today */
   if(anchorOn())rows=rows.filter(r=>!isParked(r));
-  if(!rows.length)return null;
+  if(!rows.length)return [];
   const mode=dayMode(today());
   /* Meetings are commitments and always lead. After that the mode decides:
      out in the field a door beats a dial, at the desk it's the reverse, and on a mixed
@@ -3368,8 +3379,10 @@ function nowPick(rows){
   const pri=b=>b=="meet"?0:b=="visit"?vis:2;
   const skipped=r=>r.a.skip==iso(today())?1:0;
   /* an appointment at a named hour beats anything loose — somebody is expecting you */
-  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||byTime(x,y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
+  return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||byTime(x,y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a));
 }
+function nowPick(rows){return nowOrder(rows)[0]||null}
+const NOWMAX=8;
 /* ---------- the pinned huddle ----------
    A huddle is not work you choose — it's a standing appointment at an hour somebody else
    is also holding. So it doesn't compete for the now card and it doesn't sit in the day
@@ -3544,6 +3557,20 @@ function renderNow(rows,day){
       <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
     return null;
   }
+  const picks=nowOrder(rows).slice(0,NOWMAX);
+  el.innerHTML=`<div class="nowstack" id="nowstack" role="group" aria-label="Today's queue, swipe for more">${
+      picks.map((x,i)=>nowCardHtml(x,i,picks.length)).join("")}</div>`
+    +(picks.length>1?`<div class="nowdots" id="nowdots" aria-hidden="true">${
+      picks.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`:"")
+    +(picks.length>1&&!D.cfg.sawSwipe
+      ? `<p class="nowhint">Swipe &mdash; ${picks.length-1} more behind this one.</p>`:"");
+  wireNowStack();
+  return picks[0];
+}
+
+/* Every card is complete on its own — its own directions, its own Done/Later/Skip — so
+   starting the third one costs exactly what starting the first does. */
+function nowCardHtml(r,i,tot){
   const a=r.a,n=r.lead;
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
   const lt=lastTouch(a),val=dealValue(a);
@@ -3557,8 +3584,8 @@ function renderNow(rows,day){
   else if((r.block=="meet"||r.block=="visit")&&canMap(a))pri=`<a class="npri" href="${mapURL(a)}" target="_blank" rel="noopener">Directions &mdash; ${esc(a.city||"go")}</a>`;
   else if(r.block=="follow"&&em)pri=`<a class="npri" href="mailto:${esc(em)}">Email ${esc(who||a.name)}</a>`;
   else pri=`<button class="npri" data-open="${a.id}">Open the brief</button>`;
-  el.innerHTML=`<div class="now">
-    <div class="nh"><span class="eyebrow">now · ${kindLab}${r.over?" · overdue":""}</span><span class="nval">${val?k(val):""}</span></div>
+  return `<div class="now" role="group" aria-label="${i+1} of ${tot}: ${esc(a.name)}">
+    <div class="nh"><span class="eyebrow">${i?"next · "+(i+1)+" of "+tot:"now"} · ${kindLab}${r.over?" · overdue":""}</span><span class="nval">${val?k(val):""}</span></div>
     <div class="nbody" data-open="${a.id}">
       <div class="nname">${esc(a.name)}</div>
       <div class="nwhy">${esc(n.why||"Follow up")}</div>
@@ -3571,7 +3598,27 @@ function renderNow(rows,day){
       <button class="nq" data-nowskip="${a.id}">Skip</button>
     </div>
   </div>`;
-  return r;
+}
+
+/* Native scroll-snap does the gesture, the momentum and the accessibility for free —
+   a hand-rolled drag handler would be worse on all three and jank on a long list. */
+function wireNowStack(){
+  const t=$("#nowstack");if(!t)return;
+  const dots=$("#nowdots");
+  let queued=false;
+  t.addEventListener("scroll",()=>{
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;
+      const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
+      if(dots)[...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
+      if(i>0&&!D.cfg.sawSwipe){
+        D.cfg.sawSwipe=1;save();
+        const h=$(".nowhint");if(h)h.remove();
+      }
+    });
+  },{passive:true});
 }
 /* a briefing opens the way a manager would — by name, at the right hour */
 function greeting(){
