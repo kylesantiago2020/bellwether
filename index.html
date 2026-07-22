@@ -84,7 +84,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .read b{color:var(--ink);font-weight:500}
 
 /* header */
-.hdr{display:flex;align-items:center;gap:10px;padding-bottom:16px}
+.hdr{display:flex;align-items:center;gap:12px;padding-bottom:14px}
 .mark{width:32px;height:32px;border-radius:9px;flex:none;overflow:hidden;background:#12213A}
 .mark img{width:100%;height:100%;display:block}
 .wm b{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.3px}
@@ -527,13 +527,21 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .cstack>.cc{flex:0 0 86%;scroll-snap-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;
   background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:26px 20px}
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
-.topgrid{display:flex;gap:14px;align-items:flex-start}
-.topgrid>#clock{flex:1;min-width:0}
-.topgrid>.rhythm{flex:0 0 92px;margin-top:2px}
-.topgrid .dmseg{grid-template-columns:1fr;gap:1px}
-.topgrid .dmseg button{padding:9px 0;font-size:12px}
-.topgrid>#warmslot{flex:0 0 84px}
-.topgrid>#warmslot:empty{display:none}
+/* Two rows that were mostly air now carry the day's numbers: the mark sits beside the
+   mission clock, and the day-mode switch runs down the margin next to the greeting. */
+.hdr>#clock{flex:1;min-width:0}
+.hdr>#warmslot{flex:0 0 84px}
+.hdr>#warmslot:empty{display:none}
+.hdr .clk{margin-top:0;padding-top:0;border-top:none}
+.hdr .clk .cl{font-size:9.5px}
+.hdr .clk .ct{font-size:22px;line-height:1.15}
+.hdr .clk .cs{font-size:11px;margin-top:1px}
+.greetrow{display:flex;gap:14px;align-items:flex-start}
+.greetcol{flex:1;min-width:0}
+.greetrow>.rhythm{flex:0 0 92px;margin-top:6px}
+.greetrow>.rhythm:empty{display:none}
+.greetrow .dmseg{grid-template-columns:1fr;gap:1px}
+.greetrow .dmseg button{padding:9px 0;font-size:12px}
 .warmsq{width:100%;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:11px 6px;
   font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
 .warmsq i{font-style:normal;font-size:14px;color:var(--grn);line-height:1}
@@ -841,7 +849,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 <body>
 <div class="wrap">
 
-<header class="hdr"><div class="mark" role="img" aria-label="Bellwether"><svg class="sheep" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M26 36a8 8 0 0 1 16 0 8 8 0 0 1 16 0 8 8 0 0 1 16 0c10 1 14 10 12 20 -2 8 -8 14 -18 14H32c-10 0-14-6-14-16 0-9 4-17 8-18Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 50c-8-3-10 7-3 9 3 1 5-3 5-6" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 70v19M44 70v19M57 70v19M67 70v19" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><path d="M80 42c-8-5-14-1-11 5 3 5 9 2 11-2Z" fill="currentColor"/><path d="M77 45c6-9 20-9 25 1 3 7 0 14-5 19-3 3-7 5-10 3-5-3-9-11-10-18Z" fill="currentColor"/></svg></div></header>
+<header class="hdr"><div class="mark" role="img" aria-label="Bellwether"><svg class="sheep" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M26 36a8 8 0 0 1 16 0 8 8 0 0 1 16 0 8 8 0 0 1 16 0c10 1 14 10 12 20 -2 8 -8 14 -18 14H32c-10 0-14-6-14-16 0-9 4-17 8-18Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 50c-8-3-10 7-3 9 3 1 5-3 5-6" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 70v19M44 70v19M57 70v19M67 70v19" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><path d="M80 42c-8-5-14-1-11 5 3 5 9 2 11-2Z" fill="currentColor"/><path d="M77 45c6-9 20-9 25 1 3 7 0 14-5 19-3 3-7 5-10 3-5-3-9-11-10-18Z" fill="currentColor"/></svg></div><div id="clock"></div><div id="warmslot"></div></header>
 
 <!-- ===== TODAY ===== -->
 <section class="screen on" id="s-today">
@@ -850,8 +858,16 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <div class="dncenter"><div class="eyebrow" id="datestr"></div></div>
     <button class="dnbtn" id="dnNext" aria-label="Next day">&rsaquo;</button>
   </div>
-  <h1 id="hd">Loading&hellip;</h1>
-  <p class="daily" id="dailyline"></p>
+  <!-- the day-mode switch runs down the gap beside the greeting; nothing was using it -->
+  <div class="greetrow">
+    <div class="greetcol">
+      <h1 id="hd">Loading&hellip;</h1>
+      <p class="daily" id="dailyline"></p>
+    </div>
+    <div class="rhythm" id="rhythm"></div>
+  </div>
+  <div id="warmbody"></div>
+  <div id="rhythmnote"></div>
   <div id="anchorslot"></div>
   <div id="topbtn"></div>
   <!-- the morning cockpit: what the day weighs, then what shape it takes. Folds away
@@ -861,13 +877,6 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <!-- the clock never filled its row, so the day-mode switch moves into the gap beside it
          and runs top-down. Warm-up and huddle become tiles that open in place. All of it
          exists to get the stack of businesses above the fold. -->
-    <div class="topgrid">
-      <div id="clock"></div>
-      <div id="warmslot"></div>
-      <div class="rhythm" id="rhythm"></div>
-    </div>
-    <div id="warmbody"></div>
-    <div id="rhythmnote"></div>
     <div class="shape" id="shape"></div>
     <div id="pace"></div>
     <div id="huddles"></div>
@@ -1085,7 +1094,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.13 huddle-card";
+const BUILD="2026-07-22.14 header-rail";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2438,6 +2447,9 @@ function go(s,id,from){
 }
 function render(){
   applyTheme();
+  /* the mission clock and warm-up live in the app header now, which every screen shares —
+     so anything but Today hands that space back rather than leaving yesterday's numbers up */
+  if(screen!="today"){const c=$("#clock"),w=$("#warmslot");if(c)c.innerHTML="";if(w)w.innerHTML=""}
   if(screen=="today")renderToday();
   else if(screen=="acct")renderAccount();
   else if(screen=="terr")renderTerritory();
@@ -3913,7 +3925,7 @@ function setupFolded(){
   if(setupManual!==null)return !setupManual;
   return touchesOn(today())>0;
 }
-function renderSetup(isNow,d){
+function renderDaySetup(isNow,d){
   const block=$("#setupblock"),sum=$("#setupsummary");
   if(!block||!sum)return;
   if(!isNow){block.classList.remove("folded");sum.innerHTML="";return}
@@ -4005,7 +4017,7 @@ function renderToday(){
   renderClock(isNow&&A().length>0);
   renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
-  renderSetup(isNow,d);
+  renderDaySetup(isNow,d);
   renderList(rows,isNow,d);
   /* every business day has a beginning and an ending — one button, whichever applies */
   /* on a day you haven't started yet, the only thing you can do is start it — that button
