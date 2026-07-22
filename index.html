@@ -3346,10 +3346,17 @@ function nearbyHtml(rows){
   return h;
 }
 /* the one thing to do right now: meetings first, then field, then whatever scores highest */
+/* A stop folded out of the day must not be the one thing the app tells him to do next.
+   The now card and the list have to agree, so both read this. */
+function isParked(r){
+  return !!anchorOn() && r.block!="meet" && (anchorTier(r.a)>1 || pastCutoff(rowAt(r)));
+}
 function nowPick(rows){
   /* a pinned huddle is already the first thing on the screen — letting it also win the now
      card meant the one commitment he never forgets pushed the one he might off the top */
   rows=rows.filter(r=>!(r.a.type=="bank"&&r.block=="meet"));
+  /* no falling back to a far stop — he told us he isn't going there today */
+  if(anchorOn())rows=rows.filter(r=>!isParked(r));
   if(!rows.length)return null;
   const mode=dayMode(today());
   /* Meetings are commitments and always lead. After that the mode decides:
@@ -3518,6 +3525,15 @@ function renderNow(rows,day){
      holds nothing else there is no pick at all — without this the card reached into a null
      and took the whole Today screen down with it. */
   if(!r){
+    const an=anchorOn(),parkedN=rows.filter(isParked).length;
+    if(an&&parkedN){
+      el.innerHTML=`<div class="now clear">
+        <div class="eyebrow">now</div>
+        <div class="nname">Nothing left near ${esc(an.town)}.</div>
+        <div class="nwhy">${parkedN} stop${parkedN==1?"":"s"} still on today, but ${parkedN==1?"it's":"they're"} further out or past your cutoff. Add doors near you, or clear the area to work the rest.</div>
+        <button class="npri" data-act="topup" style="max-width:280px;margin:16px auto 0">Add 5 near me</button></div>`;
+      return null;
+    }
     const n=huddleRows(rows).length;
     el.innerHTML=`<div class="now clear">
       <div class="eyebrow">now</div>
@@ -3595,9 +3611,8 @@ function renderList(rows,isNow,day){
   /* Telling him a stop is "not near you today" and then leaving it on screen is just
      making him scroll past his own decision. Fold it away — a commitment is never
      deleted, but it stops competing for the top of the screen. */
-  const parkable=r=>!!anchorOn()&&r.block!="meet"&&(anchorTier(r.a)>1||pastCutoff(rowAt(r)));
-  const parked=fieldAll.filter(parkable);
-  const field=fieldAll.filter(r=>!parkable(r));
+  const parked=fieldAll.filter(isParked);
+  const field=fieldAll.filter(r=>!isParked(r));
   const calls=rest.filter(r=>r.block=="call").sort(byTime);
   const desk=rest.filter(r=>r.block=="follow").sort(byTime);
   const row=r=>{
