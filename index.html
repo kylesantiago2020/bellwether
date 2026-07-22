@@ -282,6 +282,8 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
   color:var(--ink2);animation:f .2s ease both}
 .hpb b{color:var(--ink);font-weight:500}
 .hpq{margin-top:11px;font-size:12.5px;color:var(--ink3)}
+.hudpin.unlinked{border-style:dashed;border-color:var(--rule2);box-shadow:none}
+.hph.static{cursor:default}
 .hudpin .runbtn{margin-top:12px}
 .hudref{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
 .hudref span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
@@ -2580,9 +2582,16 @@ function missionClock(){
     return {label:"Mission starts in",time:d>=60?span(d):d+(d==1?" minute":" minutes"),sub:""};
   }
   if(mins>=MEND){
-    const t=touchesOn(today());
-    return {label:"Mission complete",time:"Great work today.",done:true,
+    const t=touchesOn(today()),open=todayRows(today()).length,shut=!!sealed(today());
+    /* The clock running out is not the same as the day being finished. "Mission complete"
+       at 11pm, with eight things still open and the day never closed out, reads as the app
+       having decided on his behalf that he was done. It only says complete when he
+       actually ended the day. */
+    if(shut)return {label:"Mission complete",time:"Great work today.",done:true,
       sub:t?`${t} touch${t==1?"":"es"} logged.`:""};
+    return {label:"Selling day's over",done:!open,
+      time:open?`${open} still open.`:"Nothing left open.",
+      sub:(t?`${t} touch${t==1?"":"es"} logged. `:"")+"End your day to close it out."};
   }
   const left=MEND-mins,rows=todayRows(today()).length,done=touchesOn(today());
   let sub="";
@@ -3120,21 +3129,72 @@ function nowPick(rows){
    button that starts it always showing. Nothing to sift. */
 let hudOpen={};
 const huddleRows=rows=>rows.filter(r=>r.a.type=="bank"&&r.block=="meet").sort(byTime);
+/* A standing huddle doesn't arrive as an appointment on an account. It arrives as a line
+   in the week template — "every Wednesday at 8:30, Banker huddle — BoA Dedham" — because
+   that's the fastest true way to say a thing that happens every week forever. So the pin
+   reads both sources: meetings booked on a branch, and the standing lines. */
+const HUDRE=/huddle/i;
+const recurHuddles=d=>recurFor(d).filter(f=>HUDRE.test(f.what||""));
+/* "Banker huddle — BoA Dedham, 858 Washington St" → a branch and a street */
+function parseVenue(what){
+  const s=String(what||"");
+  const after=s.split(/\s+[—–-]\s+/).slice(1).join(" — ").trim()
+    || s.replace(/\b(banker|bank|weekly|morning)\b/gi,"").replace(/huddle/i,"").replace(/^[\s:·-]+/,"").trim();
+  const [nm,...rest]=after.split(",");
+  return {name:(nm||"").trim(),addr:rest.join(",").trim()};
+}
+/* a short name like "BoA" would match every branch in the book, so both sides have to be
+   long enough for a containment match to mean anything */
+function matchBank(v){
+  const t=norm(v.name);if(!t)return null;
+  return A().find(a=>a.type=="bank"&&isOpen(a)&&(()=>{
+    const n=norm(a.name);
+    return n==t||(t.length>=5&&n.length>=5&&(n.includes(t)||t.includes(n)));
+  })())||null;
+}
+/* the standing line named a branch we don't have a record for. Rather than silently
+   showing nothing, say so and make it one tap to fix — the huddle can't remember
+   anything until there's something to remember it on. */
+async function adoptBranch(raw){
+  const v=parseVenue(raw);
+  if(!v.name){toast("Couldn't read a branch name out of that line.");return}
+  const a=blankAcct({name:v.name,type:"bank",addr:v.addr,rel:"building"});
+  D.accounts.push(a);hudOpen[a.id]=true;
+  await save();render();
+  toast(`${v.name} added — its huddles will remember from here.`);
+}
 function renderHuddles(rows,isNow,day){
-  const el=$("#huddles"),hr=huddleRows(rows);
-  if(!hr.length){el.innerHTML="";return}
-  el.innerHTML=hr.map(r=>{
-    const a=r.a,at=rowAt(r),open=!!hudOpen[a.id];
+  const el=$("#huddles"),d=day||activeD(),cards=[],seen=new Set();
+  /* a meeting actually booked on a branch */
+  huddleRows(rows).forEach(r=>{cards.push({a:r.a,at:rowAt(r),over:r.over});seen.add(r.a.id)});
+  /* and the standing line for this weekday */
+  recurHuddles(d).forEach(f=>{
+    const a=matchBank(parseVenue(f.what));
+    if(a){if(seen.has(a.id))return;seen.add(a.id);cards.push({a,at:f.at,over:false})}
+    else cards.push({raw:f.what,v:parseVenue(f.what),at:f.at});
+  });
+  if(!cards.length){el.innerHTML="";return}
+  cards.sort((x,y)=>(x.at||"")<(y.at||"")?-1:(x.at||"")>(y.at||"")?1:0);
+  el.innerHTML=cards.map(c=>{
+    if(!c.a)return `<div class="hudpin unlinked">
+      <div class="hph static">
+        <span class="t">${c.at?fmtTime(c.at):"huddle"}</span>
+        <span class="n">${esc(c.v.name||"Banker huddle")}</span>
+      </div>
+      <div class="hpg">Standing huddle with no branch on file — nothing to remember it on yet.</div>
+      ${isNow?`<button class="runbtn" data-adopt="${esc(c.raw)}">Add this branch</button>`:""}
+    </div>`;
+    const a=c.a,open=!!hudOpen[a.id];
     return `<div class="hudpin${open?" open":""}">
       <button class="hph" data-hudopen="${a.id}" aria-expanded="${open?"true":"false"}">
-        <span class="t">${at?fmtTime(at):"huddle"}</span>
+        <span class="t">${c.at?fmtTime(c.at):"huddle"}</span>
         <span class="n">${esc(a.name)}</span>
         <span class="cv" aria-hidden="true">&rsaquo;</span>
       </button>
       <div class="hpg">${huddleGist(a)}</div>
       ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`:""}
       ${isNow?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
-             :`<div class="hpq">${r.over?"Missed — it's still open.":"Not today."}</div>`}
+             :`<div class="hpq">${c.over?"Missed — it's still open.":"Not today."}</div>`}
     </div>`;
   }).join("");
 }
@@ -3313,8 +3373,11 @@ function rhythmHtml(d,isNow){
         ? `<span><b>${MODELABEL[mode]}</b> — just for today. ${dayName}s are normally ${MODELABEL[norm].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button>`
         : `<span>${dayName} — normally a <b>${MODELABEL[norm].toLowerCase()}</b>.</span>`)
     : `<span><b>${MODELABEL[mode]}</b></span>`;
-  const fx=fixed.length
-    ? `<div class="dmfix">${fixed.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
+  /* a standing huddle is pinned at the top of the day as its own card — leaving it here too
+     means the same 8:30 appears twice on one screen */
+  const rest=fixed.filter(f=>!HUDRE.test(f.what||""));
+  const fx=rest.length
+    ? `<div class="dmfix">${rest.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
     : "";
   return seg+`<div class="dmnote">${note}</div>`+fx;
 }
@@ -4477,6 +4540,7 @@ tap("hreveal",()=>{hudShown=true;drawHuddle()});
 /* which pins are open is a fact about this glance at the screen, not about the account —
    it lives in memory and resets with the app, like the pace and nearby toggles */
 tap("hudopen",t=>{const id=t.dataset.hudopen;hudOpen[id]=!hudOpen[id];renderToday()});
+tap("adopt",t=>adoptBranch(t.dataset.adopt));
 tap("href",()=>huddleRefSheet());
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
