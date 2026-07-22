@@ -264,7 +264,25 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
 .reveal p{margin-top:5px;font-size:14px;line-height:1.55;color:var(--ink2)}
 .askline{font-size:15px;line-height:1.5;padding:9px 0;border-bottom:1px solid var(--rule);color:var(--ink)}
 .askline:last-of-type{border-bottom:none}
-.rhud{flex:none;align-self:center;font-size:12.5px;padding:7px 11px;white-space:nowrap}
+/* the pinned huddle: the first thing on the day, and the smallest thing that can still
+   be acted on without opening anything */
+.hudpin{margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:14px;
+  padding:13px 15px 14px;box-shadow:0 10px 26px -22px rgba(21,23,28,.5)}
+.hudpin+.hudpin{margin-top:9px}
+.hph{display:flex;align-items:baseline;gap:10px;width:100%;background:none;border:none;padding:0;
+  font-family:inherit;color:var(--ink);text-align:left}
+.hph .t{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);flex:none;letter-spacing:.02em}
+.hph .n{font-size:15px;font-weight:500;letter-spacing:-.2px;flex:1;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.hph .cv{flex:none;color:var(--ink3);font-size:19px;line-height:1;transform:rotate(90deg);transition:transform .18s ease}
+.hudpin.open .hph .cv{transform:rotate(-90deg)}
+.hpg{margin-top:6px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
+.hpg b{color:var(--ink2);font-weight:500}
+.hpb{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule);font-size:13px;line-height:1.75;
+  color:var(--ink2);animation:f .2s ease both}
+.hpb b{color:var(--ink);font-weight:500}
+.hpq{margin-top:11px;font-size:12.5px;color:var(--ink3)}
+.hudpin .runbtn{margin-top:12px}
 .hudref{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
 .hudref span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
 .reflist{margin-top:9px;font-size:12.5px;color:var(--ink3);line-height:1.7}
@@ -743,6 +761,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <h1 id="hd">Loading&hellip;</h1>
   <div id="clock"></div>
   <div class="shape" id="shape"></div>
+  <div id="huddles"></div>
   <div class="rhythm" id="rhythm"></div>
   <div id="carry"></div>
   <div id="catchup"></div>
@@ -2336,10 +2355,10 @@ function huddleBrief(a){
     plan:h.next||"",                       /* what he said last week he'd teach today */
     recall:!!(h.lesson&&h.recap)};
 }
-/* the sixty seconds before he walks in */
-function huddleBriefHtml(a){
-  const b=huddleBrief(a);
-  const lines=[];
+/* the sixty seconds before he walks in. One set of lines, three places they show up —
+   pinned on Today, on the account screen, and nowhere else. */
+function huddleLines(a){
+  const b=huddleBrief(a),lines=[];
   if(b.recall)lines.push(`Last huddle${b.lastHud!=null?` · ${b.lastHud}d ago`:""} you taught <b>${esc(b.h.lesson)}</b>. They get asked about it first.`);
   else lines.push(`First huddle on record. Whatever you teach today becomes next week's opener.`);
   if(b.plan)lines.push(`You planned to cover <b>${esc(b.plan)}</b> today.`);
@@ -2347,8 +2366,18 @@ function huddleBriefHtml(a){
     ? `<b>${b.r.last90}</b> referral${b.r.last90==1?"":"s"} in the last 90 days${b.r.prior90?` · ${b.r.prior90} in the 90 before that`:""}.`
     : `No referrals in 90 days. That's the number this huddle exists to move.`);
   if(b.owed.length)lines.push(`You owe them: ${b.owed.map(n=>esc(n.why)).join(" · ")}`);
+  return lines;
+}
+/* the one line that has to survive being collapsed */
+function huddleGist(a){
+  const b=huddleBrief(a);
+  if(b.plan)return `Teaching <b>${esc(b.plan)}</b> · ask them about <b>${esc(b.h.lesson||"last week")}</b> first`;
+  if(b.recall)return `Ask them about <b>${esc(b.h.lesson)}</b> before you teach anything`;
+  return `First huddle on record — today's lesson becomes next week's opener`;
+}
+function huddleBriefHtml(a){
   return `<div class="hudbrief"><div class="h"><b>Before you walk in</b><span>${esc(a.name)}</span></div>
-    <div class="hbody">${lines.join("<br>")}</div>
+    <div class="hbody">${huddleLines(a).join("<br>")}</div>
     <button class="runbtn" data-huddle="${a.id}">Start the huddle</button></div>`;
 }
 
@@ -3070,6 +3099,9 @@ function nearbyHtml(rows){
 }
 /* the one thing to do right now: meetings first, then field, then whatever scores highest */
 function nowPick(rows){
+  /* a pinned huddle is already the first thing on the screen — letting it also win the now
+     card meant the one commitment he never forgets pushed the one he might off the top */
+  rows=rows.filter(r=>!(r.a.type=="bank"&&r.block=="meet"));
   if(!rows.length)return null;
   const mode=dayMode(today());
   /* Meetings are commitments and always lead. After that the mode decides:
@@ -3081,6 +3113,32 @@ function nowPick(rows){
   /* an appointment at a named hour beats anything loose — somebody is expecting you */
   return rows.slice().sort((x,y)=>skipped(x)-skipped(y)||byTime(x,y)||pri(x.block)-pri(y.block)||score(y.a)-score(x.a))[0];
 }
+/* ---------- the pinned huddle ----------
+   A huddle is not work you choose — it's a standing appointment at an hour somebody else
+   is also holding. So it doesn't compete for the now card and it doesn't sit in the day
+   list waiting to be found. It's pinned above everything, collapsed to one line, with the
+   button that starts it always showing. Nothing to sift. */
+let hudOpen={};
+const huddleRows=rows=>rows.filter(r=>r.a.type=="bank"&&r.block=="meet").sort(byTime);
+function renderHuddles(rows,isNow,day){
+  const el=$("#huddles"),hr=huddleRows(rows);
+  if(!hr.length){el.innerHTML="";return}
+  el.innerHTML=hr.map(r=>{
+    const a=r.a,at=rowAt(r),open=!!hudOpen[a.id];
+    return `<div class="hudpin${open?" open":""}">
+      <button class="hph" data-hudopen="${a.id}" aria-expanded="${open?"true":"false"}">
+        <span class="t">${at?fmtTime(at):"huddle"}</span>
+        <span class="n">${esc(a.name)}</span>
+        <span class="cv" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <div class="hpg">${huddleGist(a)}</div>
+      ${open?`<div class="hpb">${huddleLines(a).join("<br>")}</div>`:""}
+      ${isNow?`<button class="runbtn" data-huddle="${a.id}">Start the huddle</button>`
+             :`<div class="hpq">${r.over?"Missed — it's still open.":"Not today."}</div>`}
+    </div>`;
+  }).join("");
+}
+
 function renderNow(rows,day){
   const el=$("#now"),got=touchesOn(day||activeD());
   if(!A().length){
@@ -3100,7 +3158,20 @@ function renderNow(rows,day){
       <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
     return null;
   }
-  const r=nowPick(rows),a=r.a,n=r.lead;
+  const r=nowPick(rows);
+  /* the huddle is pinned above and deliberately excluded from the pick. On a morning that
+     holds nothing else there is no pick at all — without this the card reached into a null
+     and took the whole Today screen down with it. */
+  if(!r){
+    const n=huddleRows(rows).length;
+    el.innerHTML=`<div class="now clear">
+      <div class="eyebrow">now</div>
+      <div class="nname">${n>1?"Just the huddles.":"Just the huddle."}</div>
+      <div class="nwhy">Nothing else is booked${got?` — ${got} touches logged so far`:""}. Walk out of the branch with names and the rest of the day builds itself.</div>
+      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
+    return null;
+  }
+  const a=r.a,n=r.lead;
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"",who=(a.contact||{}).name||"";
   const lt=lastTouch(a),val=dealValue(a);
   /* if somebody is expecting you at an hour, that hour is the most important word on the card */
@@ -3126,10 +3197,7 @@ function renderNow(rows,day){
       <button class="nq" data-nowlater="${a.id}|${n.id}">Later</button>
       <button class="nq" data-nowskip="${a.id}">Skip</button>
     </div>
-  </div>`
-  /* a bank meeting is a huddle, and the huddle has a brief. It sits under the now card
-     rather than replacing it, because he still needs the directions button above it. */
-  +((a.type=="bank"&&r.block=="meet")?huddleBriefHtml(a):"");
+  </div>`;
   return r;
 }
 /* a briefing opens the way a manager would — by name, at the right hour */
@@ -3162,7 +3230,9 @@ function renderList(rows,isNow,day){
   const nowR=isNow?nowPick(rows):null;
   const rest=rows.filter(r=>r!==nowR);
   const rank={meet:0,visit:1};
-  const field=rest.filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  /* pinned above, so not repeated here — the day's counts still include it */
+  const pinned=new Set(huddleRows(rows).map(r=>r.a.id));
+  const field=rest.filter(r=>!(pinned.has(r.a.id)&&r.block=="meet")).filter(r=>r.block=="meet"||r.block=="visit").sort((x,y)=>byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
   const calls=rest.filter(r=>r.block=="call").sort(byTime);
   const desk=rest.filter(r=>r.block=="follow").sort(byTime);
   const row=r=>{
@@ -3173,9 +3243,10 @@ function renderList(rows,isNow,day){
       +(r.block=="meet"?`<span class="tagm">meeting</span>`:"")
       +(TYPESHORT[r.a.type]?`<span class="tagm">${TYPESHORT[r.a.type]}</span>`:"");
     /* a branch has no employee count and no deal value — the right-hand column would be
-       two blanks. It gets the huddle instead, which is the only reason the row exists. */
-    const tail=(r.a.type=="bank"&&r.block=="meet")
-      ? `<button class="b rhud" data-huddle="${r.a.id}">Huddle &rsaquo;</button>`
+       two blanks. Bank meetings are pinned at the top of the day, so what lands here is a
+       drop-in or a follow-up, and those read better without an empty money column. */
+    const tail=r.a.type=="bank"
+      ? `<div class="rd"></div>`
       : `<div class="rd">${r.a.emps?r.a.emps+" ee":""}<em>${dealValue(r.a)?k(dealValue(r.a)):""}</em></div>`;
     return `<div class="qr${r.over?" od":""}" data-open="${r.a.id}">
       <button class="rtick" data-rowdone="${r.a.id}|${r.lead.id}" aria-label="Mark done"></button>
@@ -3271,7 +3342,7 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#rhythm","#carry","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
+    ["#shape","#rhythm","#huddles","#carry","#catchup","#clock","#warm","#now","#pace"].forEach(quiet);
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
     $("#endbtn").innerHTML=(isNow&&!sealed(nb)?`<button class="endbtn go" data-start="${iso(nb)}">Start ${fmt(nb)}</button>`:"")
@@ -3285,6 +3356,7 @@ function renderToday(){
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
   $("#shape").innerHTML=rows.length?dayShape(rows):"";
+  renderHuddles(rows,isNow,d);
   $("#rhythm").innerHTML=rhythmHtml(d,isNow);
   const cn=isNow?carryNote():null;
   $("#carry").innerHTML=cn
@@ -4402,6 +4474,9 @@ tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
 tap("huddle",t=>startHuddle(t.dataset.huddle));
 tap("hreveal",()=>{hudShown=true;drawHuddle()});
+/* which pins are open is a fact about this glance at the screen, not about the account —
+   it lives in memory and resets with the app, like the pace and nearby toggles */
+tap("hudopen",t=>{const id=t.dataset.hudopen;hudOpen[id]=!hudOpen[id];renderToday()});
 tap("href",()=>huddleRefSheet());
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
