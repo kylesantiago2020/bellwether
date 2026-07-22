@@ -517,6 +517,10 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .callorb svg{width:16px;height:16px;display:block}
 .callorb b{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:500;line-height:1;color:var(--ink2)}
 .now .nh{padding-right:52px}
+.cstack{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;width:100%}
+.cstack::-webkit-scrollbar{display:none}
+.cstack>.cc{flex:0 0 100%;scroll-snap-align:center;min-width:0}
+@media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -830,6 +834,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <h1 id="hd">Loading&hellip;</h1>
   <p class="daily" id="dailyline"></p>
   <div id="anchorslot"></div>
+  <div id="topbtn"></div>
   <!-- the morning cockpit: what the day weighs, then what shape it takes. Folds away
        once the first touch is logged so the stack rises to the top for the rest of it. -->
   <div id="setupsummary"></div>
@@ -1054,7 +1059,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.7 today-reorder";
+const BUILD="2026-07-22.8 call-stack";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2913,7 +2918,7 @@ function weekDays(ref){
 function doneCard(rec,d){
   return `<div class="doneday">
     <div class="dh"><i>&#10003;</i> Completed</div>
-    <div class="dw">${fmtFull(d)} &middot; mission ended ${esc(rec.ended)}</div>
+    <div class="dw">${fmtFull(d)}${rec.auto?" &middot; closed automatically":(rec.ended?" &middot; mission ended "+esc(rec.ended):"")}</div>
     ${rec.msg?`<div class="dmsg">${esc(rec.msg)}</div>`:""}
     ${rec.stats.rings?`<div class="dring">${ringsSvg(rec.stats.rings,false)}${ringLegend(rec.stats.rings)}</div>`:""}
     ${debriefLines(rec.stats)?`<ul>${debriefLines(rec.stats)}</ul>`
@@ -3750,14 +3755,9 @@ function renderList(rows,isNow,day){
   const mode=day?dayMode(day):"field",office=mode=="office";
   /* you can't drop in on anyone from the ADP office, so don't suggest it */
   const nb=(isNow&&!office)?nearbyHtml(rows):"";
-  const runcard=()=>{
-    if(!isNow||!calls.length)return "";
-    const names=calls.slice(0,3).map(r=>r.a.name).join(", ")+(calls.length>3?" +"+(calls.length-3)+" more":"");
-    return `<div class="runcard"><div class="rh"><b>Call run</b><span>${calls.length} due</span></div>
-        <p>${esc(names)}</p>
-        <button class="runbtn" data-act="run">Start calling</button></div>`;
-  };
-  const callgroup=()=>isNow?runcard():(calls.length?group("Calls",calls):"");
+  /* the run lives on the orb in the stack now — printing it again down here was a
+     second door to the same room */
+  const callgroup=()=>isNow?"":(calls.length?group("Calls",calls):"");
   if(office){
     /* office day: the phone is the plan and the desk is the place. Anything already booked
        in the field is honoured — you don't stand someone up because you changed the mode —
@@ -3857,8 +3857,34 @@ function renderSetup(isNow,d){
     <span>${esc(MODELABEL[dayMode(d)]||"Field day")} &middot; ${done} of ${target} done${
       hud&&hud.at?` &middot; huddle ${fmtTime(hud.at)}`:""}</span><s>show</s></button>`;
 }
+
+/* A day that's already gone isn't waiting on a decision. Rather than leaving "End my day"
+   sitting on a Tuesday that ended two weeks ago, past business days close themselves —
+   the record is the same one endDay() writes, marked so it reads honestly as automatic.
+   Bounded to three weeks back so a long-dormant install doesn't seal a year of history,
+   and nothing about the accounts is touched: open work still carries forward as it did. */
+function autoSealPast(){
+  const now=today();
+  let wrote=false;
+  for(let back=1;back<=21;back++){
+    const d=new Date(now); d.setDate(d.getDate()-back); d.setHours(0,0,0,0);
+    if(isWeekend(d))continue;
+    const s=iso(d);
+    if((D.days||{})[s])continue;
+    const stats=daySummary(d);
+    /* a day with nothing on it and nothing logged was never a working day — skip it */
+    const had=stats.logged>0||todayRows(d).length>0;
+    if(!had)continue;
+    const rec={ended:"",auto:true,stats};
+    rec.msg=missionMessage(ringsClosed({stats}));
+    (D.days=D.days||{})[s]=rec;
+    wrote=true;
+  }
+  if(wrote)save();
+}
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
+  autoSealPast();
   const rec=sealed(d);
   $("#datestr").textContent=fmtFull(d);
   $("#dnToday").style.display=isNow?"none":"";
@@ -3873,6 +3899,7 @@ function renderToday(){
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
+    $("#topbtn").innerHTML="";
     $("#endbtn").innerHTML=(isNow&&!sealed(nb)?`<button class="endbtn go" data-start="${iso(nb)}">Start ${fmt(nb)}</button>`:"")
       +`<button class="endbtn" data-act="reopenday">Reopen this day</button>`;
     renderWeek(d);
@@ -3908,9 +3935,14 @@ function renderToday(){
   renderSetup(isNow,d);
   renderList(rows,isNow,d);
   /* every business day has a beginning and an ending — one button, whichever applies */
+  /* on a day you haven't started yet, the only thing you can do is start it — that button
+     belongs at the top of the screen, not underneath a plan you can't act on */
+  const startable=(!isNow&&d>today()&&!isWeekend(d)&&A().length);
+  $("#topbtn").innerHTML=startable
+    ? `<button class="endbtn go" data-start="${iso(d)}" style="margin-top:14px">Start ${fmt(d)}</button>`:"";
   $("#endbtn").innerHTML=
-    (!isNow&&d>today()&&!isWeekend(d)&&A().length)
-      ? `<button class="endbtn go" data-start="${iso(d)}">Start ${fmt(d)}</button>`
+    (false)
+      ? ``
     /* This used to also require the clock to be past 8:30am. Opening the app early and
        finding the button gone reads as broken, not as clever — a control that comes and goes
        by the hour is the opposite of trustworthy. It is always here on the active day. */
@@ -3974,6 +4006,39 @@ function startRun(){
     toast(D.cfg.speakBriefs?"Briefs read aloud — tap Silent to mute.":"Tap “Brief aloud” to have each one read to you.")}
 }
 function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
+/* The queue was a slideshow you could only move forward through. Same cards, laid out
+   so you can thumb back and forth — the buttons always act on whichever one you're
+   looking at, and the debrief still takes the whole panel when it opens. */
+function cardFace(a,idx){
+  const ph=(a.contact||{}).phone||"";
+  const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
+  const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
+  return `<div class="cc" role="group" aria-label="${idx+1} of ${queue.length}: ${esc(a.name)}">
+    <div class="co">${esc(a.name)}</div>
+    <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
+    <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
+    ${lt?`<div class="last">Last touch ${days(parseD(lt),today())} days ago${le&&le.text?" — "+esc(le.text.slice(0,70)):""}</div>`:`<div class="last">Never touched. Attempt ${attemptsOn(a)+1}.</div>`}
+    ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
+    ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
+  </div>`;
+}
+function wireCallStack(){
+  const t=$("#cstack");if(!t)return;
+  t.scrollLeft=qi*t.clientWidth;
+  let queued=false;
+  t.addEventListener("scroll",()=>{
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;
+      const i=Math.max(0,Math.min(queue.length-1,Math.round(t.scrollLeft/Math.max(1,t.clientWidth))));
+      if(i!==qi){qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();speakBrief(queue[qi])}
+    });
+  },{passive:true});
+  $$("#cstack [data-dialid]").forEach(el=>el.addEventListener("click",()=>{
+    const a=queue.find(x=>x.id===el.dataset.dialid);if(a)armReturn(a);
+  }));
+}
 function drawCard(){
   if(qi>=queue.length){
     const bh=bestHourLine(),L=learnStore();
@@ -3984,19 +4049,10 @@ function drawCard(){
     $(".cbtns").style.display="none";return;
   }
   $(".cbtns").style.display="grid";
-  const a=queue[qi],ph=(a.contact||{}).phone||"";
-  const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
-  const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
+  const a=queue[qi];
   $("#cpg").textContent=`${qi+1} / ${queue.length}`;
-  $("#ccard").innerHTML=`
-    <div class="co">${esc(a.name)}</div>
-    <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
-    <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
-    ${lt?`<div class="last">Last touch ${days(parseD(lt),today())} days ago${le&&le.text?" — "+esc(le.text.slice(0,70)):""}</div>`:`<div class="last">Never touched. Attempt ${attemptsOn(a)+1}.</div>`}
-    ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
-    ${ph?`<a class="dial" id="cdial" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}`;
-  const dl=$("#cdial");
-  if(dl)dl.addEventListener("click",()=>armReturn(a));
+  $("#ccard").innerHTML=`<div class="cstack" id="cstack">${queue.map((x,i)=>cardFace(x,i)).join("")}</div>`;
+  wireCallStack();
   paintSpeakBtn();
   speakBrief(a);
 }
