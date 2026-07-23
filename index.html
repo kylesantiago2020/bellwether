@@ -496,6 +496,15 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .nowstack{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-top:16px;overscroll-behavior-x:contain}
 .nowstack::-webkit-scrollbar{display:none}
 .nowstack>.now{flex:0 0 100%;scroll-snap-align:center;margin-top:0;animation:none}
+/* Swiping a full-width card is a two-thumb gesture in a moving car. The arrows are the
+   same navigation for one thumb, and they land on the card rather than near it. */
+.stepnav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:11px}
+.stepnav .nowdots,.stepnav .nowcount{margin-top:0}
+.stepbtn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--rule2);
+  background:var(--card);color:var(--ink2);font-family:inherit;font-size:16px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+.stepbtn:disabled{opacity:.32}
+.stepbtn.sm{width:32px;height:32px;font-size:15px}
 .nowdots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:11px}
 .nowdots i{width:6px;height:6px;border-radius:3px;background:var(--rule2);display:block;transition:background .18s ease,width .18s ease}
 .nowdots i.on{background:var(--ink3);width:17px}
@@ -1077,7 +1086,9 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 <div class="callwrap" id="callwrap">
   <div class="ctopbar">
     <button class="b quiet" id="cexit">Done</button>
+    <button class="stepbtn sm" id="cprev" aria-label="Previous card">&#8249;</button>
     <span class="pg" id="cpg"></span>
+    <button class="stepbtn sm" id="cnext" aria-label="Next card">&#8250;</button>
     <button class="cospeak" id="cospeak" type="button">Brief aloud</button>
     <button class="b quiet" id="cskip">Skip &rsaquo;</button>
   </div>
@@ -1126,7 +1137,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.36 swipe-perf";
+const BUILD="2026-07-22.37 stepper";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3246,7 +3257,10 @@ const WARMORDER=[["prospect","Walking into a business"],["cpa","Walking into a C
 
 /* pick fresh content for a new business day, avoiding whatever it showed recently */
 function warmState(){
-  const w=D.cfg.warm=Object.assign({day:"",pick:{},recent:{},open:true},D.cfg.warm||{});
+  /* Closed by default. The Daily plan is a place you set the day up; a talk track that
+     unrolls itself every time you open it buries the decisions underneath it. You ask for
+     the warm-up when you want it. */
+  const w=D.cfg.warm=Object.assign({day:"",pick:{},recent:{},open:false,done:false},D.cfg.warm||{});
   /* The warm-up belongs to the mission day you're working, not to the calendar date.
      End Monday at 4pm, start Tuesday's mission the same evening, and Tuesday must get its
      own card — keying this to today() meant the card stayed "done" into the new day. */
@@ -3255,6 +3269,7 @@ function warmState(){
   /* weekends keep the last field day's card rather than burning a rotation on them —
      but a card that has never been rolled always gets content */
   if(!fresh&&(w.day==iso(t)||t.getDay()==0||t.getDay()==6))return w;
+  w.open=false;w.done=false;
   Object.keys(WARM).forEach(k2=>{
     const pool=WARM[k2],recent=(w.recent[k2]||[]).slice(0,Math.max(0,Math.min(pool.length-1,Math.ceil(pool.length/2))));
     let opts=pool.map((_,i)=>i).filter(i=>!recent.includes(i));
@@ -3426,7 +3441,9 @@ function warmPlanHtml(){
   return body
     ? `<div class="warm"><div class="wbody">${rows}
         <button class="wdone" data-act="warmdone">Warmed up &mdash; let's go</button></div></div>`
-    : `<button class="planwarm" data-act="warmtoggle"><span>Warm-up done &mdash; talk track set</span><s>reopen</s></button>`;
+    : w.done
+      ? `<button class="planwarm" data-act="warmtoggle"><span>Warm-up done &mdash; talk track set</span><s>reopen</s></button>`
+      : `<button class="planwarm" data-act="warmtoggle"><span>Warm up &mdash; two minutes before you start</span><s>open</s></button>`;
 }
 /* Everything you decide once a day, in one place: what kind of day it is, where you're
    working from, when you have to stop, and the talk track. The Today screen keeps none
@@ -3778,9 +3795,13 @@ function renderNow(rows,day){
       +(()=>{const due=callsDue();
           return picks.map((x,i)=>nowCardHtml(x,i+huds.length,tot,due)).join("")})()}</div>`
     +(tot>1
-       ? (tot<=8
-          ? `<div class="nowdots" id="nowdots" aria-hidden="true">${Array.from({length:tot},(_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`
-          : `<div class="nowcount" id="nowcount" aria-hidden="true"><b>1</b> of ${tot}</div>`)
+       ? `<div class="stepnav">
+            <button class="stepbtn" id="nowprev" aria-label="Previous card">&#8249;</button>
+            ${tot<=8
+              ? `<div class="nowdots" id="nowdots" aria-hidden="true">${Array.from({length:tot},(_,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div>`
+              : `<div class="nowcount" id="nowcount" aria-hidden="true"><b>1</b> of ${tot}</div>`}
+            <button class="stepbtn" id="nownext" aria-label="Next card">&#8250;</button>
+          </div>`
        : "")
     +(tot>1&&!D.cfg.sawSwipe
       ? `<p class="nowhint">Swipe &mdash; ${tot-1} more behind this one.</p>`:"");
@@ -3849,6 +3870,18 @@ function nowCardHtml(r,i,tot,due){
 function wireNowStack(){
   const t=$("#nowstack");if(!t)return;
   const dots=$("#nowdots"),count=$("#nowcount");
+  const n=t.children.length;
+  const at=()=>Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
+  const step=d=>{
+    const i=Math.max(0,Math.min(n-1,at()+d));
+    t.scrollTo({left:i*t.clientWidth,behavior:"smooth"});
+    paintStep(i);
+  };
+  const prev=$("#nowprev"),next=$("#nownext");
+  const paintStep=i=>{if(prev)prev.disabled=i<=0;if(next)next.disabled=i>=n-1};
+  if(prev)prev.addEventListener("click",()=>step(-1));
+  if(next)next.addEventListener("click",()=>step(1));
+  paintStep(0);
   let queued=false;
   t.addEventListener("scroll",()=>{
     if(queued)return;
@@ -3858,6 +3891,7 @@ function wireNowStack(){
       const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
       if(dots)[...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
       if(count){const b=count.querySelector("b");if(b)b.textContent=i+1}
+      paintStep(i);
       if(i>0&&!D.cfg.sawSwipe){
         D.cfg.sawSwipe=1;save();
         const h=$(".nowhint");if(h)h.remove();
@@ -4207,6 +4241,12 @@ function cardFace(a,idx){
 function wireCallStack(){
   const t=$("#cstack");if(!t)return;
   const cards=()=>[...t.querySelectorAll(".cc")];
+  const cp=$("#cprev"),cn=$("#cnext");
+  const paintArrows=()=>{
+    const n=cards().length;
+    if(cp)cp.disabled=qi<=0;
+    if(cn)cn.disabled=qi>=n-1;
+  };
   /* measure where the cards actually are rather than assuming a uniform step — snap
      clamps at both ends, so arithmetic would drift on the first and last card */
   const centreOn=k=>{
@@ -4222,6 +4262,20 @@ function wireCallStack(){
     });
     return idx;
   };
+  /* stepping lands ON a card rather than near one — the same snap the swipe gets */
+  const stepTo=d=>{
+    const n=cards().length;
+    const i=Math.max(0,Math.min(n-1,qi+d));
+    if(i===qi)return;
+    qi=i;centreOn(i);
+    $("#cpg").textContent=`${qi+1} / ${n}`;
+    paintArrows();paintSpeakBtn();
+    clearTimeout(speakT);
+    speakT=setTimeout(()=>{speakBrief(queue[qi]);ttsPrefetch(queue[qi+1])},260);
+  };
+  if(cp)cp.onclick=()=>stepTo(-1);
+  if(cn)cn.onclick=()=>stepTo(1);
+  paintArrows();
   /* one frame later, so the track has a measured width to scroll within */
   requestAnimationFrame(()=>centreOn(qi));
   let queued=false;
@@ -4232,7 +4286,7 @@ function wireCallStack(){
       queued=false;
       const i=nearest();
       if(i!==qi){
-        qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();
+        qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();paintArrows();
         /* thumbing through six cards should not fire six fetches and six voices — wait
            until he actually settles on one */
         clearTimeout(speakT);
@@ -6942,7 +6996,7 @@ document.addEventListener("click",async e=>{
         <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
     /* the talk track lives in the Daily plan sheet, so these redraw the sheet, not the page */
     case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();if(sheetOpen())anchorSheet();break}
-    case"warmdone":{const w=warmState();w.open=false;save();render();if(sheetOpen())anchorSheet();toast("Go get it.");break}
+    case"warmdone":{const w=warmState();w.open=false;w.done=true;save();render();if(sheetOpen())anchorSheet();toast("Go get it.");break}
     case"endday":endDay();break;
     case"edclose":{
       /* the numbers are a record; these two lines are the story. Written once, at the close. */
