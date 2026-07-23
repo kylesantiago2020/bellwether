@@ -649,6 +649,22 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .lst s{display:block;text-decoration:none;font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.45}
 .lst em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink2);flex:none}
 .lwhy{margin-top:4px;font-size:11.5px;color:var(--amb);font-family:'IBM Plex Mono',monospace}
+.bfg{border-color:var(--ac)}
+.bfgo{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ac);background:none;border:0;padding:0}
+.bflead{font-size:15.5px;margin:2px 0 8px}
+.bftalk{font-size:14px;line-height:1.62;margin:0 0 10px;color:var(--ink)}
+.bfwhy,.bfq{margin:0 0 10px;padding-left:18px}
+.bfwhy li,.bfq li{font-size:13px;line-height:1.55;color:var(--ink2);margin-bottom:3px}
+.bfsub{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink3);margin:12px 0 5px}
+.bfobj{font-size:13.5px;line-height:1.55;color:var(--ink)}
+.bfobj em{display:block;font-style:normal;color:var(--ink2);margin-top:4px}
+.bfobj s{display:block;text-decoration:none;font-size:12px;color:var(--amb);margin-top:6px}
+.bflead.bfopen{font-size:14.5px;line-height:1.55;color:var(--ink)}
+.bfnote{font-size:12px;line-height:1.55;color:var(--ink3);margin:-4px 0 10px}
+.bfplay{width:100%;margin-top:14px}
+.bfflags .flag{margin-top:6px}
 
 /* discovery */
 .langbar{margin-top:12px}
@@ -1146,7 +1162,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-23.40 audit";
+const BUILD="2026-07-23.01 briefing";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1461,6 +1477,7 @@ function repairAccount(a){
   if(!DQK.includes(a.dataQuality))a.dataQuality="good";
   a.medEmps=+a.medEmps||0;a.planAssets=+a.planAssets||0;a.sixMoPays=+a.sixMoPays||0;
   a.lists=Array.isArray(a.lists)?a.lists.filter(x=>typeof x=="string"&&x.trim()):[];
+  if(a.coach&&typeof a.coach!="object")delete a.coach;
   a.handedOff=!!a.handedOff;
   a.stage=a.stage||"callback";
   return w;
@@ -1803,8 +1820,8 @@ function currentAnnual(a){
 }
 /* recomputing a quote for every comparison in a sort is what makes big lists feel slow */
 let calcRev=0;
-const _memo={v:-1,d:{},s:{},r:{},src:null,lr:{},lists:null};
-function memoReady(){if(_memo.v!==calcRev){_memo.v=calcRev;_memo.d={};_memo.s={};_memo.r={};_memo.src=null;_memo.lr={};_memo.lists=null}}
+const _memo={v:-1,d:{},s:{}};
+function memoReady(){if(_memo.v!==calcRev){_memo.v=calcRev;_memo.d={};_memo.s={}}}
 function dealValue(a,over){
   if(over)return dealValueRaw(a,over);
   memoReady();
@@ -1825,16 +1842,9 @@ function dealValueRaw(a,over){
   return q;
 }
 function learnedRate(stage){
-  /* Memoized per data revision: odds() calls this twice per account, and Review's weighted
-     pipeline calls odds() for every open deal — unmemoized that was four full passes over
-     the book per account, most of renderReview's measured 70ms+ at 2,744 accounts. */
-  memoReady();
-  if(_memo.lr[stage]===undefined){
-    const w=D.accounts.filter(a=>isWon(a)&&(a.wonStage||a.stage||"callback")==stage).length;
-    const l=D.accounts.filter(a=>a.outcome=="lost"&&(a.stage||"callback")==stage).length;
-    _memo.lr[stage]=(w+l)>=10?w/(w+l):null;
-  }
-  return _memo.lr[stage];
+  const w=D.accounts.filter(a=>isWon(a)&&(a.wonStage||a.stage||"callback")==stage).length;
+  const l=D.accounts.filter(a=>a.outcome=="lost"&&(a.stage||"callback")==stage).length;
+  return (w+l)>=10?w/(w+l):null;
 }
 function odds(a){
   const st=a.stage||"callback";
@@ -1892,25 +1902,14 @@ function setDayMode(d,m){
 }
 /* what has this relationship actually produced? counted, never guessed */
 function refStats(a){
-  /* Memoized, and the sourced-by lookup is a prebuilt index. This used to rescan the whole
-     book per call — and it sits inside score(), the Territory row paint and the
-     "Highest opportunity" sort comparator, which made that sort O(n²): measured 1.2s at
-     2,744 accounts. With the index it's ~20ms. */
-  memoReady();
-  if(_memo.r[a.id]!==undefined)return _memo.r[a.id];
   const refs=(a.events||[]).filter(e=>e.kind=="referral");
   const cut90=iso(addDays(today(),-90)),cut180=iso(addDays(today(),-180));
   const last90=refs.filter(e=>e.when>=cut90).length;
   const prior90=refs.filter(e=>e.when>=cut180&&e.when<cut90).length;
-  if(!_memo.src){
-    const m={};
-    A().forEach(p=>{if(p.source){const k2=norm(p.source);(m[k2]=m[k2]||[]).push(p)}});
-    _memo.src=m;
-  }
-  const sourced=_memo.src[norm(a.name)]||[];
+  const sourced=A().filter(p=>p.source&&norm(p.source)==norm(a.name));
   const openV=sourced.filter(isWorking).reduce((s,p)=>s+dealValue(p),0);
   const wonV=sourced.filter(isWon).reduce((s,p)=>s+(+((p.won||{}).value)||0),0);
-  return _memo.r[a.id]={total:refs.length,last90,prior90,sourced:sourced.length,openV,wonV};
+  return {total:refs.length,last90,prior90,sourced:sourced.length,openV,wonV};
 }
 function cadenceDays(attempt){
   const arr=String(D.cfg.cadence||"3,4,7,14,21").split(/[,\s]+/).map(Number).filter(x=>x>0);
@@ -3510,10 +3509,7 @@ function anchorSheet(){
 function anchorSave(){
   const town=chipVal.antown;
   if(!town){toast("Pick a town first.");return}
-  /* on an office day the sheet renders no cutoff field — reading .value off the missing
-     element threw and left Save plan dead when an anchor town was already set */
-  const byEl=$("#anBy");
-  const by=cutoffTime(byEl?byEl.value:"");
+  const by=cutoffTime($("#anBy").value||"");
   D.cfg.anchor={on:iso(today()),town,by};
   /* he just told us he's somewhere else — the useful next move is filling the day,
      so the nearby list opens once. He can still fold it away himself. */
@@ -3901,19 +3897,10 @@ function wireNowStack(){
   const t=$("#nowstack");if(!t)return;
   const dots=$("#nowdots"),count=$("#nowcount");
   const n=t.children.length;
-  /* Cards sit at clientWidth PLUS the 12px flex gap, so index arithmetic on clientWidth
-     alone drifts by 12px per card — from card 15 on an iPhone-width track the computed
-     index is a full card off: wrong dot, wrong count, arrows landing between cards.
-     Measure where the cards actually are, the same way the call stack already does. */
-  const at=()=>{
-    const x=t.scrollLeft;let best=Infinity,idx=0;
-    for(let k2=0;k2<n;k2++){const d2=Math.abs(t.children[k2].offsetLeft-x);if(d2<best){best=d2;idx=k2}}
-    return idx;
-  };
+  const at=()=>Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
   const step=d=>{
     const i=Math.max(0,Math.min(n-1,at()+d));
-    const c=t.children[i];
-    t.scrollTo({left:c?c.offsetLeft:i*t.clientWidth,behavior:"smooth"});
+    t.scrollTo({left:i*t.clientWidth,behavior:"smooth"});
     paintStep(i);
   };
   const prev=$("#nowprev"),next=$("#nownext");
@@ -3927,7 +3914,7 @@ function wireNowStack(){
     queued=true;
     requestAnimationFrame(()=>{
       queued=false;
-      const i=at();
+      const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));
       if(dots)[...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
       if(count){const b=count.querySelector("b");if(b)b.textContent=i+1}
       paintStep(i);
@@ -4854,9 +4841,7 @@ function parseDebrief(text,a){
 
   /* --- forward momentum --- */
   if(/\b(send|email me|shoot me|proposal|quote|pricing|information|one.?pager|paperwork)\b/.test(low))p.flags.push("Send something");
-  /* the timed-clause pass above may already have flagged the meeting — one utterance,
-     one flag, or the proposal card reads "Meeting wanted, Meeting wanted" */
-  if(p.flags.indexOf("Meeting wanted")<0&&/\b(meet|meeting|appointment|stop by|come by|sit down|demo)\b/.test(low))p.flags.push("Meeting wanted");
+  if(/\b(meet|meeting|appointment|stop by|come by|sit down|demo)\b/.test(low))p.flags.push("Meeting wanted");
   if(/\b(referral|referred|introduce|introduction)\b/.test(low))p.flags.push("Referral mentioned");
 
   /* rules first; his own corrections fill the gaps they leave */
@@ -4929,6 +4914,126 @@ function learnObjection(a,label){
   const L=learnStore(),prov=providerOf(a)||"unknown";
   const k=label+"|"+prov;
   L.obj[k]=(L.obj[k]||0)+1;
+}
+/* ============================================================
+   THE BRIEFING — what to say before you walk in.
+   Everything here is DERIVED, not invented: the product comes from
+   recommend(), the reasons cite what was actually said in discovery,
+   the questions are the ones still unanswered, and the objection is
+   either one this territory has actually voiced or one tied to the
+   provider on file. AI never chooses any of it — see briefCoach().
+   ============================================================ */
+/* the objection you should expect, by who they are currently with */
+const OBJPRED=[
+  {m:/paychex/i,o:"We're happy with Paychex.",
+   r:"Most people are, until they price the whole thing. What are you paying all in, including year-end and the tax filings?"},
+  {m:/quickbooks|intuit/i,o:"QuickBooks already does our payroll.",
+   r:"It does the arithmetic. The question is who answers when a notice shows up — and who pays the penalty if it's wrong."},
+  {m:/gusto/i,o:"Gusto is cheaper.",
+   r:"On the sticker, usually. Ask what happens the first time you need a live person on a tax notice."},
+  {m:/cpa|accountant/i,o:"Our accountant handles it.",
+   r:"Good — and they usually like this, because it takes the data entry off their desk and keeps them on the advisory work you actually pay them for."},
+  {m:/./,o:"We're not looking to change anything right now.",
+   r:"Fair enough. Most people aren't until something breaks — I'd just want you to know what it costs you today so you can decide on your own timing."}
+];
+function objectionFor(a){
+  const learned=objectionMemo(a);
+  const prov=providerOf(a)||"";
+  const hit=OBJPRED.find(x=>x.m.test(prov))||OBJPRED[OBJPRED.length-1];
+  return {learned,o:hit.o,r:hit.r};
+}
+/* the questions that would actually move the recommendation — the ones not yet answered */
+function openQs(a){
+  const ans=(a.discovery&&a.discovery.answers)||{};
+  const lang=(D.cfg&&D.cfg.lang)||"en";
+  return QCORE.filter(q=>q.k=="opt"&&!ans[q.id])
+              .map(q=>(q.t&&(q.t[lang]||q.t.en))||"")
+              .filter(Boolean).slice(0,5);
+}
+/* B — the phrasing layer. The facts above are settled before this runs; Claude is asked
+   only to say them like a person would. Cached on the account and keyed to the inputs, so
+   it is fetched once and then works in a dead zone like everything else. */
+function coachSig(a){
+  const ans=(a.discovery&&a.discovery.answers)||{};
+  return [a.type,a.emps||0,(a.today||{}).bundle||"",providerOf(a)||"",a.industry||"",
+    a.medEmps||0,a.planAssets||0,Object.keys(ans).sort().map(k2=>k2+":"+ans[k2]).join(",")].join("|");
+}
+async function briefCoach(a,force){
+  if(!voiceOn())return null;
+  const sig=coachSig(a);
+  if(!force&&a.coach&&a.coach.sig===sig)return a.coach.text;
+  const f=briefingFacts(a);
+  const facts={name:a.name,type:a.type,employees:+a.emps||0,city:a.city||"",
+    industry:f.industry,currentProvider:f.prov||"",currentBundle:(a.today||{}).bundle||"",
+    recommendedProduct:f.lead||"",reasons:f.why,alsoFlag:f.extras,
+    unansweredQuestions:f.qs,expectedObjection:f.obj.o,lastHeard:a.brief||""};
+  try{
+    const r=await fetch(D.cfg.voiceUrl+"/coach",{method:"POST",
+      headers:{"content-type":"application/json","x-app-secret":D.cfg.voiceKey},
+      body:JSON.stringify({facts})});
+    const j=await r.json();
+    if(!r.ok||!j.text)return null;
+    a.coach={sig,text:String(j.text).slice(0,700),at:new Date().toISOString()};
+    save();
+    return a.coach.text;
+  }catch(e){return null}
+}
+/* C — the whole thing as one spoken paragraph */
+function briefingSpeech(a){
+  const f=briefingFacts(a);
+  const out=[`${a.name}.`];
+  if(a.emps)out.push(`${a.emps} employees${a.city?" in "+a.city:""}.`);
+  if(f.industry)out.push(f.industry+".");
+  if(f.prov)out.push(`Currently with ${f.prov}.`);
+  if(a.coach&&a.coach.text)out.push(a.coach.text);
+  else if(f.confident){
+    if(f.lead)out.push(`Lead with ${f.lead}.`);
+    f.why.forEach(w=>out.push(w+"."));
+  }else{
+    f.angle.slice(0,2).forEach(x=>out.push(x+"."));
+    out.push("No discovery yet, so no product call.");
+  }
+  f.extras.forEach(x=>out.push(x+"."));
+  if(f.qs.length)out.push("Questions worth asking. "+f.qs.slice(0,3).join(" "));
+  out.push(`Expect: ${f.obj.o} Your answer: ${f.obj.r}`);
+  if(f.obj.learned)out.push(f.obj.learned.replace(/<[^>]+>/g,""));
+  return out.join(" ");
+}
+function briefingFacts(a){
+  const rec=recommend(a);
+  const prov=providerOf(a);
+  /* recommend() always returns a bundle, because the pricing screen needs one to draw.
+     A briefing is a different promise: naming a product you have no evidence for is a
+     confident lie you would repeat out loud to an owner. So the product only appears once
+     discovery has actually said something. Until then the card leads with the angle the
+     hard facts support and the questions that would settle it. */
+  const confident=!!(rec.rd&&rec.rd.because&&rec.rd.because.length);
+  const cur=(a.today||{}).bundle||"";
+  const lead=!confident?"":(a.type=="client"?(rec.bundle&&rec.bundle!=cur?rec.bundle:""):rec.bundle);
+  /* what is true regardless of discovery — the reason to be standing there at all */
+  const angle=[];
+  if(a.type=="client"&&+a.emps>=10&&/essential|enhanced/i.test(cur))
+    angle.push(`${a.emps} employees still on ${cur} — the bundle stopped fitting a while ago`);
+  if(prov)angle.push(`With ${prov} today — find out what they actually pay all in`);
+  if(+a.emps>=10&&a.medEmps>0&&a.medEmps/+a.emps>0.5)
+    angle.push(`${a.emps} employees, ${Math.round(a.medEmps/a.emps*100)}% on medical — the PEO conversation`);
+  else if(+a.emps>=10&&!a.medEmps)
+    angle.push(`${a.emps} employees and no medical visible — worth one question either way`);
+  if(a.planAssets>0)angle.push(`${k(a.planAssets)} sitting in a plan — retirement is an open door`);
+  if(!angle.length&&a.emps)angle.push(`${a.emps} employees${a.city?" in "+a.city:""} — nothing logged yet, so this is a first conversation`);
+  if(!angle.length)angle.push("Nothing on file yet — headcount is the first thing to establish");
+  const extras=[];
+  if(rec.peo)extras.push("TotalSource — size and benefits point at a PEO conversation");
+  if(a.planAssets>0)extras.push(`Retirement — ${k(a.planAssets)} already in plan assets`);
+  if(a.type=="client"&&+a.emps>=10&&/essential|enhanced/i.test((a.today||{}).bundle||""))
+    extras.push(`Upgrade — ${a.emps} employees on ${(a.today||{}).bundle}`);
+  if(rec.major)extras.push(a.emps>=50?"50+ employees — Major Accounts partner, you keep the relationship"
+                                     :"Growth crosses 50 — line up your Major Accounts partner");
+  return {rec,lead,extras,prov,confident,angle,
+    why:confident?(rec.why||[]).slice(0,3):[],
+    qs:openQs(a),
+    obj:objectionFor(a),
+    industry:a.industry||""};
 }
 function objectionMemo(a){
   const L=learnStore(),prov=providerOf(a);
@@ -5077,6 +5182,23 @@ function renderAccount(){
     <button class="b" id="saybtn" data-say="${a.id}">Listen</button>
     ${(!ph&&!em)?`<button class="b pri" data-act="editacct">Add contact info</button>`:`<button class="b quiet" data-act="editacct">Edit</button>`}
   </div>`;
+
+  {const f=briefingFacts(a);
+   const coached=a.coach&&a.coach.sig===coachSig(a)?a.coach.text:"";
+   h+=`<div class="sect bfg"><div class="h"><b>Before you walk in</b>
+        <span>${voiceOn()?`<button class="bfgo" data-coach="${a.id}">${coached?"redo":"coach me"}</button>`:""}</span></div>
+     ${f.lead?`<div class="bflead">Lead with <b>${esc(f.lead)}</b></div>`
+             :`<div class="bflead bfopen">${esc(f.angle[0])}</div>`}
+     ${coached?`<div class="bftalk">${esc(coached)}</div>`:""}
+     ${(f.confident?f.why:f.angle.slice(1)).length
+        ? `<ul class="bfwhy">${(f.confident?f.why:f.angle.slice(1)).map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`:""}
+     ${f.confident?"":`<div class="bfnote">No discovery logged, so no product call yet — these are the questions that would make one.</div>`}
+     ${f.extras.length?`<div class="bfflags">${f.extras.map(x=>`<div class="flag">${esc(x)}</div>`).join("")}</div>`:""}
+     ${f.qs.length?`<div class="bfsub">Ask</div><ul class="bfq">${f.qs.map(q=>`<li>${esc(q)}</li>`).join("")}</ul>`:""}
+     <div class="bfsub">Expect</div>
+     <div class="bfobj">&ldquo;${esc(f.obj.o)}&rdquo;<em>${esc(f.obj.r)}</em>${f.obj.learned?`<s>${f.obj.learned}</s>`:""}</div>
+     <button class="b bfplay" data-brief="${a.id}">Play briefing</button>
+   </div>`;}
 
   h+=`<div class="brief">
     <div class="said">${esc(a.brief|| (le&&le.text) || "No conversation logged yet.")}</div>
@@ -5246,11 +5368,7 @@ const LISTS=[
 /* every tag an import has ever applied becomes a list of its own, no code required */
 const tagLists=()=>{const seen={};A().forEach(a=>(a.lists||[]).forEach(t=>seen[t]=(seen[t]||0)+1));
   return Object.keys(seen).sort().map(t=>({id:"tag:"+t,label:t,tag:t}))};
-/* Memoized per data revision. terrMatch consults the active list PER ACCOUNT, so an
-   unmemoized allLists() — which itself walks every account's tags — made filtering with a
-   list active O(n²): renderTerritory measured 1.1s per paint at 2,744 accounts, every
-   keystroke and every tap. Tags only change when the data changes, so cache on calcRev. */
-const allLists=()=>{memoReady();if(!_memo.lists)_memo.lists=LISTS.concat(tagLists());return _memo.lists};
+const allLists=()=>LISTS.concat(tagLists());
 const listById=id=>allLists().find(L=>L.id==id)||null;
 const inList=(a,L)=>L?(L.tag?(a.lists||[]).indexOf(L.tag)>=0:!!L.rule(a)):false;
 const listCount=L=>A().filter(a=>isOpen(a)&&dqOK(a)&&inList(a,L)).length;
@@ -5414,12 +5532,8 @@ function parseRows(txt){
      to the first header name and stop that column being recognised. */
   const t=String(txt==null?"":txt).replace(/^\uFEFF/,"");
   if(!t.trim())return null;
-  /* Sniff the delimiter across the first thirty lines, not line one. A Salesforce CSV
-     opens with a title line that often contains neither commas nor tabs — sniffing that
-     one line picked tab (0>=0), every comma row collapsed into a single column, and the
-     header scorer then had nothing to find: the whole paste imported as one-cell garbage. */
-  const sniff=t.split(/\r?\n/).slice(0,30).join("\n");
-  const delim=(sniff.match(/\t/g)||[]).length>=(sniff.match(/,/g)||[]).length?"\t":",";
+  const first=t.split(/\r?\n/)[0]||"";
+  const delim=(first.match(/\t/g)||[]).length>=(first.match(/,/g)||[]).length?"\t":",";
   let raw=splitDelimited(t,delim).filter(r=>r.some(c=>String(c).trim()));
   if(raw.length<2)return null;
   /* A Salesforce report is not a bare table: it opens with a title, a timestamp and a
@@ -6308,6 +6422,21 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+tap("coach",async t=>{
+  const a=acct(t.dataset.coach);if(!a)return;
+  toast("Asking\u2026");
+  const txt=await briefCoach(a,true);
+  render();
+  toast(txt?"Coached.":"Couldn't reach the coach \u2014 the facts are still there.");
+});
+tap("brief",t=>{
+  ttsUnlock();
+  const a=acct(t.dataset.brief);if(!a)return;
+  if(sayingId==a.id){stopSay();return}
+  sayingId=a.id;
+  sayText(briefingSpeech(a),()=>{if(sayingId==a.id){sayingId="";paintSay()}});
+  paintSay();
+});
 tap("say",t=>{
   ttsUnlock();
   const a=acct(t.dataset.say);if(!a)return;
@@ -6315,11 +6444,7 @@ tap("say",t=>{
 });
 tap("nv",t=>{D.cfg.naturalVoice=+t.dataset.nv;save();paintNV();
   toast(+t.dataset.nv?"Natural voice — costs a fraction of a cent a brief.":"Device voice.")});
-tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";
-  /* the state resets but the search box is a static element — clear it too, or it shows a
-     query the list below is no longer honouring */
-  const qe=$("#q");if(qe)qe.value="";
-  closeSheet();render()});
+tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";closeSheet();render()});
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
 tap("wtopic",t=>{pickChip(t,"wtopic")});
@@ -7089,9 +7214,7 @@ document.addEventListener("input",e=>{
   if(t.id=="disc"&&curId){const a=acct(curId);
     a.quote=Object.assign({bundle:recommend(a).bundle,freq:(a.today&&a.today.freq)||"Bi-weekly",addons:[]},a.quote||{},{disc:+t.value});
     save();
-    /* the % lives in the <b>; writing into the label's text node left the old value showing
-       beside the new one for the length of the drag */
-    const lab=t.closest("label");if(lab){const bb=lab.querySelector("b");if(bb)bb.textContent=t.value+"%"}}
+    const lab=t.closest("label");if(lab)lab.firstChild.nodeValue="Discount — "+t.value+"% ";}
   if(t.id=="q"){terrQ=t.value;terrPage=1;renderTerritory()}
   if(screen=="set"&&t.closest&&t.closest("#s-set")&&t.id!="q"){clearTimeout(setupT);setupT=setTimeout(()=>{saveSetup(true)},700)}
 });
@@ -7534,7 +7657,6 @@ async function gateSignIn(){
 function enterApp(){
   viewDate=null;showAllRows=false;setupManual=null;showParked=false;
   terrList_=null;terrQ="";terrPage=1;terrFilter="open";
-  {const qe=$("#q");if(qe)qe.value=""}
   curId=null;backTo="";
   stopSay();
   go("today");
