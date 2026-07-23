@@ -1125,7 +1125,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.32 natural-voice";
+const BUILD="2026-07-22.33 audio-unlock";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4175,6 +4175,7 @@ function buildQueue(){
   return due.concat(pool.slice(0,Math.max(10,need)));
 }
 function startRun(){
+  ttsUnlock();
   queue=buildQueue();qi=0;
   if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
   $("#callwrap").classList.add("on");syncScrollLock();drawCard();
@@ -4401,6 +4402,20 @@ function ttsPlayer(){
   if(!ttsEl){ttsEl=new Audio();ttsEl.preload="auto";ttsEl.setAttribute("playsinline","")}
   return ttsEl;
 }
+/* iOS refuses playback on an element that has never been started inside a real gesture, and
+   ours always starts after an await on the fetch — so the gesture is long spent by then.
+   Playing a moment of silence on the tap itself is what buys every later swipe its voice. */
+const TTSILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=";
+function ttsUnlock(){
+  try{
+    const el=ttsPlayer();
+    if(el._unlocked)return;
+    el._unlocked=1;
+    el.src=TTSILENT;
+    const pr=el.play();
+    if(pr&&pr.catch)pr.catch(()=>{});
+  }catch(e){}
+}
 async function ttsUrl(text){
   if(ttsCache.has(text))return ttsCache.get(text);
   const r=await fetch(D.cfg.voiceUrl+"/speak",{method:"POST",
@@ -4432,8 +4447,11 @@ function speakBrief(a){
   if(!D.cfg.speakBriefs)return;
   const text=briefLine(a);
   if(naturalOn()){
-    const my=++ttsSeq;
+    /* hushBrief() increments ttsSeq. Taking the number before calling it meant every
+       arriving clip compared stale against a counter that had moved on by one, so both the
+       play and the fallback were silently dropped. Stop first, then take a number. */
     hushBrief();
+    const my=++ttsSeq;
     ttsUrl(text).then(u=>{
       if(my!==ttsSeq)return;            /* he swiped on — that clip is stale */
       const el=ttsPlayer();
@@ -7426,6 +7444,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&sbUser&&o
   await syncBoot();
   paintSpeakBtn();
   $("#cospeak").addEventListener("click",()=>{
+    ttsUnlock();
     D.cfg.speakBriefs=!D.cfg.speakBriefs;
     if(!D.cfg.speakBriefs)hushBrief(); else if(queue[qi])speakBrief(queue[qi]);
     paintSpeakBtn();save();
