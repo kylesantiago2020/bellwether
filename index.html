@@ -905,7 +905,9 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <div id="terrlist" style="margin-top:4px"></div>
   <div class="imp">
     <div style="font-size:13px;font-weight:500">Import from Salesforce</div>
-    <p class="note">Export a list view and paste the rows, or pick the file. First row must be headers. Include <b>contact name, phone and email</b> columns &mdash; the call block needs them.</p>
+    <p class="note">Export a list view and paste the whole thing, or pick the file &mdash; the report title, filter block and copyright footer are skipped for you. Include <b>contact name, phone and email</b> columns; the call block needs them.</p>
+    <label class="f">Tag these as a list <s class="hint">optional &mdash; e.g. Paychex 5500, LAR accounts</s>
+      <input class="t" id="implist" autocomplete="off" placeholder="leave blank for none"></label>
     <div id="batches"></div>
   <div id="dupereport"></div>
     <div class="chips" id="ityp"><button class="chip on" data-imptype="client">Clients</button><button class="chip" data-imptype="prospect">Competitor accts</button><button class="chip" data-imptype="cpa">CPAs</button><button class="chip" data-imptype="bank">Banks</button><button class="chip" data-imptype="partner">Partners</button></div>
@@ -1092,8 +1094,13 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.21 import-hardening";
-const SCHEMA=10;                      /* bump this and add a step to MIGRATIONS */
+/* Five FULL snapshots was fine at a hundred accounts and fills Safari's ~5 MB at a
+   thousand. A flat lower number would waste space on a small book, so trim on total bytes
+   instead: a small territory still keeps five, a large one keeps two. Never drops the last
+   one — a single recent backup is the whole point. */
+const BAKBUDGET=2.2*1024*1024;
+const BUILD="2026-07-22.24 report-mapping";
+const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -1362,6 +1369,8 @@ async function makeBackup(reason,snapshot){
   if(!ok)return null;
   ix.unshift({id,on:new Date().toISOString(),reason,accounts:(snapshot||D).accounts?(snapshot||D).accounts.length:0,size:body.length,v:(snapshot||D).v||SCHEMA});
   while(ix.length>MAXBAK){const g=ix.pop();await rawDel(BAKPREFIX+g.id)}
+  while(ix.length>1&&ix.reduce((n,b)=>n+(+b.size||0),0)>BAKBUDGET){
+    const g=ix.pop();await rawDel(BAKPREFIX+g.id)}
   await setBakIndex(ix);
   return id;
 }
@@ -1403,6 +1412,8 @@ function repairAccount(a){
   ["lesson","recap","on","next"].forEach(f=>a.huddle[f]=String(a.huddle[f]||""));
   if(!["open","won","lost","dormant"].includes(a.outcome))a.outcome="open";
   if(!DQK.includes(a.dataQuality))a.dataQuality="good";
+  a.medEmps=+a.medEmps||0;a.planAssets=+a.planAssets||0;a.sixMoPays=+a.sixMoPays||0;
+  a.lists=Array.isArray(a.lists)?a.lists.filter(x=>typeof x=="string"&&x.trim()):[];
   a.handedOff=!!a.handedOff;
   a.stage=a.stage||"callback";
   return w;
@@ -1477,6 +1488,17 @@ const MIGRATIONS={
     d.cfg.week=wk;d.cfg.recur=rc;
     delete d.cfg.rhythm;delete d.cfg.officeDays;
     d.modes=d.modes&&typeof d.modes=="object"?d.modes:{};
+    return d;
+  }
+  ,
+  10:function(d){
+    /* v10 → v11: three figures the client and prospect exports already carry, plus the
+       list tags an import can apply. Nothing existing is touched — every account simply
+       gains zeroes and an empty tag list. */
+    d.accounts.forEach(a=>{
+      a.medEmps=+a.medEmps||0;a.planAssets=+a.planAssets||0;a.sixMoPays=+a.sixMoPays||0;
+      if(!Array.isArray(a.lists))a.lists=[];
+    });
     return d;
   }
   ,
@@ -1563,6 +1585,9 @@ function blankAcct(o){
     today:{bundle:"",freq:"",addons:[],spend:0},
     next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",addr:"",notes:"",
     dataQuality:"good",
+    /* facts the Salesforce exports carry that the app had nowhere to put. Raw counts, not
+       percentages — headcount changes and a stored percentage would quietly go stale. */
+    medEmps:0,planAssets:0,sixMoPays:0,lists:[],
     discovery:{answers:{},updated:""},quote:null,events:[],batch:"",
     huddle:{lesson:"",recap:"",on:"",next:""}},o||{});
 }
@@ -4914,6 +4939,10 @@ function splitDelimited(txt,delim){
   if(cur!==""||row.length)endRow();
   return rows;
 }
+/* the column words we know how to use — also how the header row is found */
+const HDRWORDS=["accountname","company","account","name","contact","phone","mobile","email",
+  "employee","headcount","product","bundle","frequency","payfreq","city","town","street",
+  "address","industry","sic","planassets","medical","pays","state","zip"];
 function parseRows(txt){
   /* Excel writes a byte-order mark at the head of a CSV, which would otherwise glue itself
      to the first header name and stop that column being recognised. */
@@ -4921,29 +4950,105 @@ function parseRows(txt){
   if(!t.trim())return null;
   const first=t.split(/\r?\n/)[0]||"";
   const delim=(first.match(/\t/g)||[]).length>=(first.match(/,/g)||[]).length?"\t":",";
-  const raw=splitDelimited(t,delim).filter(r=>r.some(c=>String(c).trim()));
+  let raw=splitDelimited(t,delim).filter(r=>r.some(c=>String(c).trim()));
+  if(raw.length<2)return null;
+  /* A Salesforce report is not a bare table: it opens with a title, a timestamp and a
+     "Filtered By" block, and closes with a copyright line. Assuming row one is the header
+     turned all of that into columns and the footer into an account. Score the first rows
+     for known column words and start from the best one. */
+  let at=0,best=-1;
+  for(let i=0;i<Math.min(raw.length,30);i++){
+    const cells=raw[i].map(c=>norm(c)).filter(Boolean);
+    if(cells.length<3)continue;
+    const hits=cells.filter(c=>HDRWORDS.some(w=>c.includes(w))).length;
+    if(hits>best){best=hits;at=i}
+  }
+  if(best<2)at=0;
+  raw=raw.slice(at);
   if(raw.length<2)return null;
   const head=raw[0].map(h=>norm(h));
-  const find=(...keys)=>head.findIndex(h=>keys.some(kk=>h.includes(kk)));
-  const ix={name:find("accountname","company","account","name"),contact:find("contact","primary"),
+  /* Priority-ordered: try the most specific key across EVERY header before falling back to
+     a looser one. The old first-header-wins scan meant "Account Owner", sitting left of
+     "Account Name" in half these reports, matched "account" — so every row's name became
+     the ADP rep who owns it and 639 clients collapsed into 39 accounts named after
+     salespeople. skip guards the flag/rating columns that contain a key word without being
+     the thing itself ("Main Contact" is a boolean, "Industry Fit" is a rating,
+     "Named Account Manager" is a person at ADP). */
+  const find=(...keys)=>findBut(keys,[]);
+  const findBut=(keys,skip)=>{
+    skip=(skip||[]).concat(["owner","manager"]);
+    for(const kk of keys){
+      const i=head.findIndex(h=>h.includes(kk)&&!skip.some(sk=>h.includes(sk)));
+      if(i>=0)return i;
+    }
+    return -1;
+  };
+  /* "plan" used to be a bundle key, which matched Plan Assets and wrote a dollar figure
+     into today.bundle — that alone breaks every quote, because bk() then finds no rate
+     card. The bundle now comes from what ADP says they actually run. */
+  const ix={name:find("accountname","company","account","name"),
+    contact:findBut(["contact","primary","fullname"],["maincontact"]),
+    first:find("firstname"),last:find("lastname"),
     phone:find("phone","mobile"),email:find("email"),emps:find("employee","ee","headcount"),
-    bundle:find("product","bundle","plan"),freq:find("frequency","payfreq"),city:find("city","town"),
-    addr:find("street","address","billingstreet"),ind:find("industry","sic")};
+    bundle:find("product","bundle"),freq:find("frequency","payfreq"),city:find("city","town"),
+    addr:find("street","address","billingstreet"),
+    /* "Industry Fit" holds a rating ("PEO Strongest Fit"), not an industry — matching it
+       would have stamped that phrase as the industry on a thousand accounts */
+    ind:findBut(["industry","sic","naics"],["industryfit","fit"]),
+    termR:find("termedreason","termreason"),
+    /* "employeeswithmedical" and not "medicaldeduction": the latter also matches the
+       Pre-Tax Medical Deduction true/false column, which sits earlier and would win */
+    medEmps:find("employeeswithmedical"),assets:find("planassets"),
+    pays:find("6monthpays","sixmonthpays","averagepays","monthpays"),
+    feat:find("featuresinuse","adpclientof","featuresinus"),
+    main:find("maincontact")};
   return raw.slice(1).map(cells=>{
     const c=cells.map(x=>String(x).trim());
     const g=i=>i>=0?(c[i]||""):"";
-    return {name:g(ix.name)||c[0]||"",contactName:g(ix.contact),phone:g(ix.phone),email:g(ix.email),
-      emps:parseInt(g(ix.emps).replace(/[^0-9]/g,""))||0,bundle:g(ix.bundle),freq:g(ix.freq),
-      city:g(ix.city),addr:g(ix.addr),industry:g(ix.ind)};
-  }).filter(r=>r.name);
+    /* Salesforce renders whole numbers as "17.0". Stripping non-digits turned that into
+       170 — a tenfold headcount error that would have mis-priced every quote and thrown
+       off every size screen. Parse the number, then round it. */
+    const numOf=i=>{const v=g(i).replace(/[^0-9.]/g,"");return v?Math.round(parseFloat(v))||0:0};
+    const feat=g(ix.feat);
+    const who=g(ix.contact)||[g(ix.first),g(ix.last)].filter(Boolean).join(" ").trim();
+    /* Paychex carries one "Billing Address" string and no city column. "120 Cedar St,
+       Wellesley, MA" — the second segment is the town, and the town is what the anchor,
+       nearby and drop-in logic all key on. Only applies when there is no city column. */
+    let addr=g(ix.addr),city=g(ix.city);
+    if(!city&&addr.indexOf(",")>0){
+      const seg=addr.split(",").map(x=>x.trim()).filter(Boolean);
+      if(seg.length>=2){addr=seg[0];city=seg[1]}
+    }
+    return {name:g(ix.name)||c[0]||"",contactName:who,phone:g(ix.phone),email:g(ix.email),
+      emps:numOf(ix.emps),bundle:g(ix.bundle)||bundleFrom(feat),
+      freq:g(ix.freq),city,addr,industry:g(ix.ind),
+      medEmps:numOf(ix.medEmps),planAssets:numOf(ix.assets),sixMoPays:numOf(ix.pays),
+      termReason:g(ix.termR),
+      main:/^(true|yes|1|x)$/i.test(g(ix.main))};
+  }).filter(r=>r.name&&!/^copyright|^generated|^report generated/i.test(r.name));
 }
-function doImport(txt,type){
+/* ADP tells you what they own in plain text — "RUN Essential", "ADP HR Pro". Reading the
+   bundle off that is what makes an upgrade list possible: scoreRaw already rewards a client
+   sitting on essential or enhanced at ten-plus employees. Essential is deliberately kept
+   even though it is not in the rate card — an Essential client IS the upgrade case. */
+function bundleFrom(txt){
+  const t=String(txt||"").toLowerCase();
+  if(!t)return "";
+  if(/hr\s*pro/.test(t))return "HR Pro";
+  if(/complete/.test(t))return "Complete & HR Plus";
+  if(/enhanced/.test(t))return "Enhanced";
+  if(/essential/.test(t))return "Essential";
+  return "";
+}
+function doImport(txt,type,listName){
   const rows=parseRows(txt);
   if(!rows||!rows.length){toast("Couldn't read that — first row must be headers.");return}
   const by={};A().forEach(a=>{if(a.name)by[mergeKey(a.name)]=a});
   /* built once, appended as we go — so a row still matches an earlier row from this same
      paste, exactly as it did when every row rescanned the whole book */
   const dix=dupeIndex();
+  const tag=String(listName||"").trim();
+  const locked={};
   let add=0,upd=0,noPhone=0;const fresh=[],maybe=[];
   rows.forEach(r=>{
     let a=by[mergeKey(r.name)];
@@ -4955,6 +5060,21 @@ function doImport(txt,type){
       a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
       D.accounts.push(a);by[mergeKey(r.name)]=a;add++;fresh.push(a);dix.push(dupeKey(a))}else upd++;
     if(r.emps)a.emps=r.emps;
+    /* The LAR export says WHY a client left, and 273 of them say the business no longer
+       exists. That is exactly what the Confirmed-closed flag means, so it is applied here —
+       a closed business must not be scheduled for a first call. Any other reason (price,
+       no-start) is a live LAR prospect and imports normally with the reason logged. */
+    if(r.termReason){
+      if(/out of business|catastrophe|deceased|bankrupt/i.test(r.termReason)){
+        if(dq(a)=="good"){a.dataQuality="closed";logEvent(a,"note","Termed: "+r.termReason)}
+      }else if(!(a.events||[]).some(e=>e.text&&e.text.indexOf("Termed: ")===0)){
+        logEvent(a,"note","Termed: "+r.termReason);
+      }
+    }
+    if(r.medEmps)a.medEmps=r.medEmps;
+    if(r.planAssets)a.planAssets=r.planAssets;
+    if(r.sixMoPays)a.sixMoPays=r.sixMoPays;
+    if(tag&&a.lists.indexOf(tag)<0)a.lists.push(tag);
     if(r.city)a.city=r.city;
     /* the street was being parsed and used for duplicate detection, then dropped on the
        floor — so every imported account had a blank address, which silently disqualified
@@ -4962,10 +5082,22 @@ function doImport(txt,type){
        resolving to just the business name and town. */
     if(r.addr)a.addr=r.addr;
     if(r.industry)a.industry=r.industry;
+    /* The report is one row PER CONTACT, so an account with nine rows used to keep whichever
+       landed last — which on a real record meant ADP's own WorkersComp service line replacing
+       the owner. A row flagged Main Contact always wins and locks; otherwise the first row
+       with a name fills the gap and later rows leave it alone. */
     a.contact=a.contact||{name:"",email:"",phone:""};
-    if(r.contactName)a.contact.name=r.contactName;
-    if(r.phone)a.contact.phone=r.phone;else if(!a.contact.phone)noPhone++;
-    if(r.email)a.contact.email=r.email;
+    const takeContact=r.main||!locked[a.id]&&!a.contact.name;
+    if(takeContact){
+      if(r.contactName)a.contact.name=r.contactName;
+      if(r.phone)a.contact.phone=r.phone;
+      if(r.email)a.contact.email=r.email;
+      if(r.main)locked[a.id]=1;
+    }else{
+      if(!a.contact.phone&&r.phone)a.contact.phone=r.phone;
+      if(!a.contact.email&&r.email)a.contact.email=r.email;
+    }
+    if(!a.contact.phone)noPhone++;
     if(type=="client"){a.today=a.today||{};if(r.bundle)a.today.bundle=r.bundle;if(r.freq)a.today.freq=r.freq}
   });
   /* an imported name with no next step isn't in your territory, it's a list.
@@ -6484,9 +6616,14 @@ $("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1
 $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
 $("#dnToday").addEventListener("click",()=>{viewDate=activeD();showAllRows=false;render()});
 $("#save").addEventListener("click",saveSetup);
-$("#doimp").addEventListener("click",()=>{
+$("#doimp").addEventListener("click",async()=>{
   const type=chipVal.imptype||"client";
-  doImport($("#pastebox").value,type);
+  const el=$("#implist");
+  /* Pasting the wrong file, or the right file under the wrong type, used to be permanent —
+     doImport has no undo and a thousand new accounts cannot be unpicked by hand. One
+     restore point before the paste makes the whole import reversible from Diagnostics. */
+  if(A().length)await makeBackup("before import");
+  doImport($("#pastebox").value,type,el?el.value:"");
 });
 $("#pickfile").addEventListener("click",()=>{
   const i=document.createElement("input");i.type="file";i.accept=".csv,.tsv,.txt";
