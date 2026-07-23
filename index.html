@@ -1108,7 +1108,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.26 safe-replace";
+const BUILD="2026-07-22.27 spoken-time";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4410,7 +4410,7 @@ function parseDebrief(text,a){
   const t=(text||"").trim();
   const low=t.toLowerCase();
   const p={heard:t,outcome:"talked",date:"",why:"",email:"",phone:"",contact:"",title:"",
-           provider:"",objection:"",dnc:false,stage:"",flags:[],dataQuality:"good"};
+           provider:"",objection:"",dnc:false,stage:"",flags:[],dataQuality:"good",at:""};
   if(!t)return p;
 
   /* --- outcome, most decisive signal first --- */
@@ -4438,6 +4438,17 @@ function parseDebrief(text,a){
   if(!dm)dm=t.match(/\b(?:until|after|before|around|in|on|by|next|end of)\b[^.!?]{0,45}/i);
   if(dm){const r=nlp(dm[0]);if(r&&r.date)p.date=r.date;}
   if(!p.date){const r=nlp(t);if(r&&r.date)p.date=r.date;}
+  /* "Tuesday at 10:30" was losing the 10:30. Actions have carried a time since the field
+     pass — the debrief was the one door into them that dropped it on the floor. Read the
+     time from the same clause the date came from, so a stray "open till 5" somewhere else
+     in the sentence can't become the appointment. */
+  if(p.date){
+    const clause=dm?dm[0]:t;
+    p.at=nlpTime(clause)||"";
+    /* a time you agreed to is a commitment, not a dial when you get a minute */
+    if(p.at&&p.flags.indexOf("Meeting wanted")<0&&/\b(meet|meeting|come by|stop by|swing by|appointment|sit down|visit)\b/.test(clause))
+      p.flags.push("Meeting wanted");
+  }
 
   /* --- contact details --- */
   let m=t.match(/[\w.+-]+@[\w-]+\.[\w.]{2,}/);
@@ -4602,7 +4613,8 @@ function proposalView(a,p){
   if(p.dataQuality!="good")rows+=row("Record",dqLabel(p.dataQuality)+" — stage and history keep");
   if(p.flags.length)rows+=row("Noted",p.flags.join(", "));
   if(p.outcome!="notint"&&p.outcome!="bad")
-    rows+=row("Follow-up",p.date?fmt(parseD(p.date)):fmt(parseD(fallback))+" (your cadence)",!p.date);
+    rows+=row("Follow-up",(p.date?fmt(parseD(p.date)):fmt(parseD(fallback))+" (your cadence)")
+      +(p.at?" at "+fmtTime(p.at):""),!p.date);
 
   const chips=[["talked","Spoke"],["message","Message"],["noanswer","No answer"],
                ["notint","Not interested"],["bad","Bad number"]]
@@ -4673,6 +4685,7 @@ function commitProposal(a,p){
     a.next.push({id:uid(),date:when,
       why:(p.flags.indexOf("Send something")>=0?"Send what you promised — ":"")+(p.why||"Follow up"),
       kind:(p.flags.indexOf("Meeting wanted")>=0?"meet":(p.flags.indexOf("Send something")>=0?"follow":"call")),
+      at:(typed?timeOf("cpdate"):"")||p.at||"",
       done:false,made:iso(today())});
   } else {
     reschedule(a,p.why||"Try again");
