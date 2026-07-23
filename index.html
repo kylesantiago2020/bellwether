@@ -1108,7 +1108,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.25 lists";
+const BUILD="2026-07-22.26 safe-replace";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -6758,7 +6758,19 @@ function importFile(){
 async function applyImport(mode){
   if(!pendingImport)return;
   await makeBackup("before import");
-  if(mode=="replace"){D=pendingImport}
+  if(mode=="replace"){
+    /* Replace swaps the whole store, which also threw away everything that was never the
+       file's to touch: your week rhythm and standing huddles, your pricing book, your
+       targets, your name on the emails, and every day you have already closed out. A file
+       exported for its ACCOUNTS carries no settings, and an empty settings block is not an
+       instruction to erase yours — so anything the incoming file does not actually specify
+       is kept. */
+    const keepCfg=D.cfg,keepDays=D.days,keepBatch=D.batches;
+    D=pendingImport;
+    if(!D.cfg||!Object.keys(D.cfg).length)D.cfg=keepCfg||{};
+    if(!D.days||!Object.keys(D.days).length)D.days=keepDays||{};
+    if(!Array.isArray(D.batches)||!D.batches.length)D.batches=keepBatch||[];
+  }
   else{
     const by={};A().forEach(a=>{if(a.name)by[mergeKey(a.name)]=a});
     let add=0,merged=0;
