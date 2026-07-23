@@ -610,6 +610,12 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .bak{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
 .bak s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);display:block}
 .tagm.w{background:var(--grnsoft);color:var(--grn)}
+/* a flagged record reads as a caution, never as a category */
+.tagm.dq{background:var(--ambsoft);color:var(--amb)}
+.dqbtn{display:block;margin:12px auto 0;max-width:280px;padding:10px;border-radius:10px;
+  border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13px;color:var(--ink2)}
+.dqbtn.on{border-color:var(--amb);color:var(--amb)}
+.dqnote{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
 
 /* discovery */
 .langbar{margin-top:12px}
@@ -1086,8 +1092,8 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.19 audit";
-const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
+const BUILD="2026-07-22.20 data-quality";
+const SCHEMA=10;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
 /* every relationship type has its own definition of success — these name the arc */
@@ -1099,6 +1105,19 @@ const RELNUDGE={notmet:"Walk in and introduce yourself. That's the whole first m
   trusted:"Protect the rhythm. Trusted partners are lost through silence, not mistakes."};
 const TYPELABEL={prospect:"prospect",client:"ADP client",cpa:"CPA firm",bank:"bank branch",partner:"referral partner"};
 const TYPESHORT={cpa:"CPA",bank:"bank",partner:"partner"};
+/* ---------- data quality ----------
+   A phone that rings dead and a business that has closed are facts about the RECORD, not
+   sales outcomes. They used to be funnelled through markLost(), which put "wrong number"
+   in the same bucket as "happy with incumbent" and left no pile to go back to. This is a
+   separate axis: stage, outcome and pipeline position are untouched, so clearing a flag
+   restores the account exactly, with no restore logic. */
+const DQ=[["good","Good"],["wrong_info","Wrong info"],["closed","Confirmed closed"]];
+const DQK=DQ.map(x=>x[0]);
+const DQICON={good:"\u2713",wrong_info:"\u26A0",closed:"\u2715"};
+const dq=a=>{const v=a&&a.dataQuality;return DQK.includes(v)?v:"good"};
+/* workable: the only thing the flag actually gates */
+const dqOK=a=>dq(a)=="good";
+const dqLabel=v=>(DQ.find(([k])=>k==v)||[])[1]||"Good";
 const isRel=a=>a&&a.type!="prospect";
 const ACCTTYPES=["prospect","client","cpa","bank","partner"];
 /* same rule as isRel, but for a type on its own — used before an account exists */
@@ -1383,6 +1402,7 @@ function repairAccount(a){
   a.huddle=(a.huddle&&typeof a.huddle=="object")?a.huddle:{lesson:"",recap:"",on:"",next:""};
   ["lesson","recap","on","next"].forEach(f=>a.huddle[f]=String(a.huddle[f]||""));
   if(!["open","won","lost","dormant"].includes(a.outcome))a.outcome="open";
+  if(!DQK.includes(a.dataQuality))a.dataQuality="good";
   a.handedOff=!!a.handedOff;
   a.stage=a.stage||"callback";
   return w;
@@ -1460,6 +1480,14 @@ const MIGRATIONS={
     return d;
   }
   ,
+  9:function(d){
+    /* v9 → v10: data quality becomes its own axis. Nothing about stage, outcome or the
+       pipeline moves — every existing account is simply declared good, which is what it
+       was implicitly before the flag existed. */
+    d.accounts.forEach(a=>{if(!DQK.includes(a.dataQuality))a.dataQuality="good"});
+    return d;
+  }
+  ,
   8:function(d){
     /* v8 → v9: a bank branch stops being a contact record and starts keeping a thread.
        One object, four strings — what I taught, the line I want them to remember, when,
@@ -1534,6 +1562,7 @@ function blankAcct(o){
     contact:{name:"",email:"",phone:""},
     today:{bundle:"",freq:"",addons:[],spend:0},
     next:[],outcome:"open",handedOff:false,stage:"callback",source:"",rel:"",addr:"",notes:"",
+    dataQuality:"good",
     discovery:{answers:{},updated:""},quote:null,events:[],batch:"",
     huddle:{lesson:"",recap:"",on:"",next:""}},o||{});
 }
@@ -2523,6 +2552,21 @@ function huddleGist(a){
   if(b.recall)return `Ask them about <b>${esc(b.h.lesson)}</b> before you teach anything`;
   return `First huddle on record — today's lesson becomes next week's opener`;
 }
+/* One control, two places: the account screen and the flag sheet the call card opens.
+   Both write through the same tap handler, so they can never disagree. */
+function dqChips(a){
+  return `<div class="chips">${DQ.map(([v,l])=>
+    `<button class="chip${dq(a)==v?" on":""}" data-dq="${a.id}|${v}">${DQICON[v]} ${esc(l)}</button>`).join("")}</div>`;
+}
+function dqSheet(id){
+  const a=acct(id);if(!a)return;
+  openSheet(`<h3>Flag this record</h3><div class="sub">${esc(a.name)}</div>
+    ${dqChips(a)}
+    <p class="dqnote">This is about the record, not the sale — the stage and everything you've
+      logged stay exactly as they are. Flagged records stop taking up your day until you clear
+      the flag, and then they come straight back.</p>
+    <div class="sa"><button class="b quiet" data-act="close">Done</button></div>`);
+}
 function huddleBriefHtml(a){
   return `<div class="hudbrief"><div class="h"><b>Before you walk in</b><span>${esc(a.name)}</span></div>
     <div class="hbody">${huddleLines(a).join("<br>")}</div>
@@ -2679,6 +2723,9 @@ function todayRows(d){
   const isNow=isActive(d),rows=[];
   A().forEach(a=>{
     if(!isOpen(a))return;
+    /* flagged records stop generating work until the data is fixed — nothing is moved or
+       deleted, so clearing the flag brings the whole day back exactly as it was */
+    if(!dqOK(a))return;
     const due=openActions(a).filter(n=>isNow?n.date<=iso(d):n.date==iso(d));
     if(!due.length)return;
     due.sort((x,y)=>x.date<y.date?-1:1);
@@ -3374,7 +3421,7 @@ function topUpHere(n){
   const have=new Set();
   A().forEach(a=>{if(openActions(a).some(x=>x.date==iso(today())))have.add(a.id)});
   /* branches are worked through the standing huddle, not topped up as cold drop-ins */
-  const pool=A().filter(a=>isOpen(a)&&!have.has(a.id)&&a.type!="bank"&&anchorTier(a)<=1&&a.addr
+  const pool=A().filter(a=>isOpen(a)&&dqOK(a)&&!have.has(a.id)&&a.type!="bank"&&anchorTier(a)<=1&&a.addr
       &&a.skip!=iso(today())&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>anchorTier(x)-anchorTier(y)||score(y)-score(x));
   const add=pool.slice(0,n);
@@ -3391,7 +3438,7 @@ function nearbyData(rows){
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
   const byTown={};
   /* "in play" for a trip means open, not un-won — a client you closed is the best stop on the street */
-  A().forEach(a=>{if(!isOpen(a)||!a.city||inPlay.has(a.id))return;
+  A().forEach(a=>{if(!isOpen(a)||!dqOK(a)||!a.city||inPlay.has(a.id))return;
     (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
   const forced=anchorOn();
   let town=forced?forced.town:(anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null);
@@ -4060,7 +4107,7 @@ function buildQueue(){
      a call is actually due. Top-ups are prospecting, which is a volume game. */
   /* lastTouch is a real calendar date, so it stays compared against the real today —
      "did I physically dial them already" is a wall-clock question, not a mission-day one. */
-  const pool=A().filter(a=>isWorking(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
+  const pool=A().filter(a=>isWorking(a)&&dqOK(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>score(y)-score(x));
   const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(activeD()));
   return due.concat(pool.slice(0,Math.max(10,need)));
@@ -4087,6 +4134,7 @@ function cardFace(a,idx){
     ${lt?`<div class="last">Last touch ${days(parseD(lt),today())} days ago${le&&le.text?" — "+esc(le.text.slice(0,70)):""}</div>`:`<div class="last">Never touched. Attempt ${attemptsOn(a)+1}.</div>`}
     ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
     ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
+    <button class="dqbtn${dqOK(a)?"":" on"}" data-dqopen="${a.id}">${dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
   </div>`;
 }
 function wireCallStack(){
@@ -4174,9 +4222,21 @@ function callOutcome(c){
   }
   if(c=="dbback"){ debriefView(a); return }
   if(c=="dbsave"){ if(_prop)commitProposal(a,_prop); return }
+  if(c&&c.indexOf("dqfix:")===0){
+    if(_prop){
+      const v=c.slice(6);
+      if(DQK.includes(v))_prop.dataQuality=v;
+      proposalView(a,_prop);
+    }
+    return;
+  }
   if(c&&c.indexOf("fix:")===0){
     if(_prop){
       const want=c.slice(4);
+      /* the proposed flag only belongs to a bad-number outcome — keep the two coherent
+         so he can never save a flag he can no longer see */
+      if(want!="bad")_prop.dataQuality="good";
+      else if(_prop.dataQuality=="good")_prop.dataQuality="wrong_info";
       if(want!==_prop.outcome){
         learnCorrection(_prop.heard,_prop.guessed||_prop.outcome,want);
         _prop.guessed=_prop.guessed||_prop.outcome;
@@ -4305,14 +4365,18 @@ function parseDebrief(text,a){
   const t=(text||"").trim();
   const low=t.toLowerCase();
   const p={heard:t,outcome:"talked",date:"",why:"",email:"",phone:"",contact:"",title:"",
-           provider:"",objection:"",dnc:false,stage:"",flags:[]};
+           provider:"",objection:"",dnc:false,stage:"",flags:[],dataQuality:"good"};
   if(!t)return p;
 
   /* --- outcome, most decisive signal first --- */
   if(/\b(take me off|do not call|don'?t call( me)? again|stop calling|remove me|lose my number)\b/.test(low)){
     p.outcome="notint";p.dnc=true;p.objection="Rude / do not call";
-  } else if(/\b(wrong number|disconnected|not in service|no longer (in business|there)|out of business|closed down)\b/.test(low)){
-    p.outcome="bad";
+  } else if(/\b(out of business|closed down|closed up|permanently closed|shut down|no longer (in business|operating)|went under)\b/.test(low)){
+    /* the business is gone — a fact about the world */
+    p.outcome="bad";p.dataQuality="closed";
+  } else if(/\b(wrong number|disconnected|not in service|bad (phone|number)|number.{0,12}(dead|no good)|no longer there)\b/.test(low)){
+    /* the number is wrong — a fact about the record, and fixable */
+    p.outcome="bad";p.dataQuality="wrong_info";
   } else if(/\bleft\b[^.]{0,20}\b(message|voicemail|vm|mail)\b|\bvoicemail\b[^.]{0,12}\bleft\b/.test(low)){
     p.outcome="message";
   } else if(/\b(not interested|no interest|not looking|all set|we'?re good|we'?re fine|no thanks|hung up( on me)?|shut me down)\b/.test(low)){
@@ -4490,6 +4554,7 @@ function proposalView(a,p){
   if(p.objection)rows+=row("Objection",p.objection);
   if(p.stage)rows+=row("Stage","Callback → Interested");
   if(p.dnc)rows+=row("Flag","Do not call — will be honoured");
+  if(p.dataQuality!="good")rows+=row("Record",dqLabel(p.dataQuality)+" — stage and history keep");
   if(p.flags.length)rows+=row("Noted",p.flags.join(", "));
   if(p.outcome!="notint"&&p.outcome!="bad")
     rows+=row("Follow-up",p.date?fmt(parseD(p.date)):fmt(parseD(fallback))+" (your cadence)",!p.date);
@@ -4497,6 +4562,12 @@ function proposalView(a,p){
   const chips=[["talked","Spoke"],["message","Message"],["noanswer","No answer"],
                ["notint","Not interested"],["bad","Bad number"]]
     .map(([k,l])=>`<button class="chip${p.outcome==k?" on":""}" data-fix="${k}">${l}</button>`).join("");
+  /* nothing here is committed until Save — the extractor proposes, he confirms */
+  const dqrow=p.outcome=="bad"
+    ? `<div class="bdlab" style="margin:14px 0 6px">How should the record be flagged?</div>
+       <div class="chips" style="justify-content:center">${DQ.map(([v,l])=>
+         `<button class="chip${p.dataQuality==v?" on":""}" data-dqfix="${v}">${DQICON[v]} ${esc(l)}</button>`).join("")}</div>`
+    : "";
   $(".cbtns").style.display="none";
   $("#ccard").classList.remove("stacked");
   $("#ccard").innerHTML=`
@@ -4504,6 +4575,7 @@ function proposalView(a,p){
     <div class="why">Here&rsquo;s what I got${p.learned?" — from how you've phrased this before":""}. Change anything before it&rsquo;s saved.</div>
     <div class="prop">${rows}</div>
     <div class="chips" style="justify-content:center;margin-top:10px">${chips}</div>
+    ${dqrow}
     <p class="pheard">&ldquo;${esc(p.heard.slice(0,220))}${p.heard.length>220?"…":""}&rdquo;</p>
     <label class="f" style="text-align:left;margin-top:12px">Follow-up date
       <s class="hint">blank keeps ${fmt(parseD(p.date||fallback))}</s></label>${dateField("cpdate","september, next tuesday, the 3rd")}
@@ -4530,8 +4602,17 @@ function commitProposal(a,p){
   if(p.title){const tn="Role: "+p.title;if((a.notes||"").indexOf(tn)<0)a.notes=(a.notes?a.notes+" ":"")+tn+"."}
   if(p.provider){const pn="Confirmed on "+p.provider;if((a.notes||"").indexOf(pn)<0)a.notes=(a.notes?a.notes+" ":"")+pn+"."}
 
-  if(p.outcome=="notint"||p.outcome=="bad"){
-    markLost(a,p.objection||(p.outcome=="bad"?"Bad number":"Not interested"));
+  /* A dead number is a fact about the record, not a lost sale, so it no longer goes
+     through markLost: the flag takes it out of the day while stage, outcome and history
+     stay exactly as they were. Clearing the flag is the whole undo. */
+  if(p.outcome=="bad"){
+    a.dataQuality=DQK.includes(p.dataQuality)&&p.dataQuality!="good"?p.dataQuality:"wrong_info";
+    logEvent(a,"note","flagged "+dqLabel(a.dataQuality).toLowerCase());
+    openActions(a).filter(n=>actionBlock(n)=="call").forEach(n=>n.done=true);
+    save();advance();return;
+  }
+  if(p.outcome=="notint"){
+    markLost(a,p.objection||"Not interested");
     /* a.dnc is written and never read anywhere. The promise the card makes is still kept,
        but by a different mechanism: markLost above drops the account out of isWorking, so
        buildQueue can never surface it again. Left in place deliberately — it is the right
@@ -4633,6 +4714,10 @@ function renderAccount(){
       <div class="sa left"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
     $("#acctbody").innerHTML=h;return;
   }
+  h+=`<div class="sect"><div class="h"><b>Record</b><span>${dqOK(a)?"good":esc(dqLabel(dq(a)))}</span></div>
+    ${dqChips(a)}
+    ${dqOK(a)?"":`<div class="dqnote">Flagged records don't generate work. Set this back to Good and it returns to your day exactly where it was.</div>`}</div>`;
+
   h+=`<div class="sect"><div class="h"><b>Walking out</b><span></span></div>
     <div class="sa left">
       <button class="b" data-log="met">Met</button>
@@ -4703,7 +4788,21 @@ function setAnswer(a,id,v){
 }
 
 /* ---------- territory ---------- */
-const TFILTERS=[["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["dormant","Dormant / lost"]];
+const TFILTERS=[["all","All"],["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["wrong","Wrong info"],["closed","Confirmed closed"],["dormant","Dormant / lost"]];
+/* the two data-quality piles depend on the flag and nothing else — not on outcome, not on
+   type — so an account is always findable under exactly the filter you flagged it into */
+const terrMatch=(a,f)=>{
+  if(f=="wrong")return dq(a)=="wrong_info";
+  if(f=="closed")return dq(a)=="closed";
+  if(f=="all")return true;
+  if(f=="dormant")return !isOpen(a);
+  if(!isOpen(a))return false;
+  /* Working is what you can actually act on, so a flagged record steps out of it until
+     the flag is cleared. Nothing moved: clearing puts it straight back. */
+  if(f=="open")return dqOK(a);
+  if(f=="never")return !lastMet(a);
+  return a.type==f;
+};
 /* everything you might half-remember about an account, in one string */
 function haystack(a){
   const c=a.contact||{};
@@ -4734,26 +4833,13 @@ function sortList(list){
 }
 /* how many accounts each filter would show — counted once per render, not per chip tap */
 function filterCount(f){
-  return A().filter(a=>{
-    if(f=="dormant")return !isOpen(a);
-    if(!isOpen(a))return false;
-    if(f=="open")return true;
-    if(f=="never")return !lastMet(a);
-    return a.type==f;
-  }).length;
+  return A().filter(a=>terrMatch(a,f)).length;
 }
 function terrList(){
   const q=norm(terrQ),qd=digits(terrQ);
   /* searching is a hunt for one account — a filter chip must never hide the thing you typed */
   if(q||qd.length>=3)return sortList(A().filter(a=>matches(a,q,qd)));
-  return sortList(A().filter(a=>{
-    if(terrFilter=="dormant")return !isOpen(a);
-    if(!isOpen(a))return false;
-    /* the app says a won client is still yours to work — so the working list has to show it */
-    if(terrFilter=="open")return true;
-    if(terrFilter=="never")return !lastMet(a);
-    return a.type==terrFilter;
-  }));
+  return sortList(A().filter(a=>terrMatch(a,terrFilter)));
 }
 function renderTerritory(){
   const searching=!!(norm(terrQ)||digits(terrQ).length>=3);
@@ -4783,11 +4869,14 @@ function renderTerritory(){
     bank:["No bank branches yet.","One account per branch — referrals come from bankers, not banks, and every branch has its own pulse. Add your huddle branches with +."],
     partner:["No strategic partners yet.","Partners like a POS brokerage send you warm introductions. Add them with + and log every referral — the impact adds up in their file."],
     never:["Everyone's been met.","There's no one in the book you haven't shaken hands with. That's the job, done well."],
+    all:["Nothing in the book yet.","Every account you have, whatever its state. Import your book below, or tap + to add the first one."],
+    wrong:["Nothing flagged.","When a number rings dead or the details are wrong, flag it from the call card. It waits here until you fix it, then goes straight back to work."],
+    closed:["Nothing marked closed.","Businesses you've confirmed are gone. They stop taking up your day but keep their history."],
     dormant:["Nothing parked, nothing lost.","A clean book. When something goes quiet, park it here — nothing is ever deleted."]};
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
     return `<div class="bk" data-open="${a.id}">
-      <div><div class="nm">${esc(a.name)}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
+      <div><div class="nm">${esc(a.name)}${dqOK(a)?"":` <span class="tagm dq">${DQICON[dq(a)]} ${esc(dqLabel(dq(a)))}</span>`}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
       <div class="s">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div></div>
       <div class="rd">${worth(a)}</div></div>`}).join("")
     +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
@@ -5535,6 +5624,7 @@ tap("editnext",t=>editNextSheet(t.dataset.editnext));
 tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
 tap("fix",t=>callOutcome("fix:"+t.dataset.fix));
+tap("dqfix",t=>callOutcome("dqfix:"+t.dataset.dqfix));
 tap("antown",t=>{chipVal.antown=t.dataset.antown;$$("[data-antown]").forEach(b=>b.classList.toggle("on",b.dataset.antown==t.dataset.antown))});
 tap("huddle",t=>startHuddle(t.dataset.huddle));
 tap("hreveal",()=>{hudShown=true;drawHuddle()});
@@ -5554,6 +5644,20 @@ tap("stray",async t=>{
     gone.forEach(x=>D.accounts.push(x));save();render()});
 });
 tap("href",()=>huddleRefSheet());
+/* the only place the flag is written. Nothing else about the account is touched, which is
+   what makes clearing it a true undo rather than a restore. */
+tap("dq",t=>{
+  const [aid,v]=String(t.dataset.dq).split("|");
+  const a=acct(aid);if(!a||!DQK.includes(v))return;
+  const was=dq(a);
+  if(was==v)return;
+  a.dataQuality=v;
+  logEvent(a,"note",v=="good"?"data quality cleared":"flagged "+dqLabel(v).toLowerCase());
+  if(sheetOpen())dqSheet(aid);
+  commit(v=="good"?"Back in the working list.":dqLabel(v)+" — out of your day until you clear it.",
+    ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
+});
+tap("dqopen",t=>dqSheet(t.dataset.dqopen));
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
 tap("wtopic",t=>{pickChip(t,"wtopic")});
