@@ -1040,6 +1040,10 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <p class="note">Speak after a call instead of typing. Bellwether never holds the API keys &mdash; it talks to your own Cloudflare Worker, which holds them. Leave blank to keep using the keyboard mic.</p>
   <label class="f">Worker URL<input class="t mono" id="voiceUrl" autocomplete="off" placeholder="https://bellwether-voice.you.workers.dev"></label>
   <label class="f">Shared secret<input class="t mono" id="voiceKey" autocomplete="off" placeholder="the APP_SECRET you set on the Worker"></label>
+  <p class="note" style="margin-top:14px">How briefs are read aloud. Natural uses your Worker and needs signal; it falls back to the device voice on its own.</p>
+  <div class="dmseg" id="nvseg" role="group" aria-label="Brief voice">
+    <button data-nv="1">Natural</button><button data-nv="0">Device</button>
+  </div>
 
   <h2 style="margin-top:26px">Sync</h2>
   <p class="read" id="syncstat" style="font-size:12.5px">Checking…</p>
@@ -1121,7 +1125,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.31 voice-pick";
+const BUILD="2026-07-22.32 natural-voice";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4222,7 +4226,8 @@ function wireCallStack(){
     requestAnimationFrame(()=>{
       queued=false;
       const i=nearest();
-      if(i!==qi){qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();speakBrief(queue[qi])}
+      if(i!==qi){qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();
+        speakBrief(queue[qi]);ttsPrefetch(queue[qi+1])}
     });
   },{passive:true});
   $$("#cstack [data-dialid]").forEach(el=>el.addEventListener("click",()=>{
@@ -4384,7 +4389,62 @@ try{
   if(window.speechSynthesis&&speechSynthesis.addEventListener)
     speechSynthesis.addEventListener("voiceschanged",()=>{_voice=pickVoice()});
 }catch(e){}
+/* ---------- natural voice ----------
+   One <audio> element for the life of the app, because iOS only unlocks playback on an
+   element that has been played inside a real gesture — a fresh Audio() per card would be
+   blocked on every swipe but the first. Clips are cached by their text, so the same brief
+   never costs twice and a card you swipe back to is instant. */
+const ttsCache=new Map();
+let ttsEl=null,ttsSeq=0;
+const naturalOn=()=>voiceOn()&&D.cfg.naturalVoice!==0;
+function ttsPlayer(){
+  if(!ttsEl){ttsEl=new Audio();ttsEl.preload="auto";ttsEl.setAttribute("playsinline","")}
+  return ttsEl;
+}
+async function ttsUrl(text){
+  if(ttsCache.has(text))return ttsCache.get(text);
+  const r=await fetch(D.cfg.voiceUrl+"/speak",{method:"POST",
+    headers:{"content-type":"application/json","x-app-secret":D.cfg.voiceKey},
+    body:JSON.stringify({text})});
+  if(!r.ok)throw new Error("speak "+r.status);
+  const b=await r.blob();
+  if(!b||!b.size)throw new Error("empty audio");
+  const u=URL.createObjectURL(b);
+  /* a long run would otherwise hold every clip it ever made */
+  if(ttsCache.size>40){const k=ttsCache.keys().next().value;try{URL.revokeObjectURL(ttsCache.get(k))}catch(e){}ttsCache.delete(k)}
+  ttsCache.set(text,u);
+  return u;
+}
+/* fetched quietly while he is still reading the current card, so the next swipe is silent-free */
+function ttsPrefetch(a){ if(a&&naturalOn())ttsUrl(briefLine(a)).catch(()=>{}) }
+function deviceSpeak(text){
+  if(!window.speechSynthesis)return;
+  try{
+    speechSynthesis.cancel();
+    if(!_voice)_voice=pickVoice();
+    const u=new SpeechSynthesisUtterance(text);
+    if(_voice)u.voice=_voice;
+    u.rate=1;u.pitch=1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
 function speakBrief(a){
+  if(!D.cfg.speakBriefs)return;
+  const text=briefLine(a);
+  if(naturalOn()){
+    const my=++ttsSeq;
+    hushBrief();
+    ttsUrl(text).then(u=>{
+      if(my!==ttsSeq)return;            /* he swiped on — that clip is stale */
+      const el=ttsPlayer();
+      el.src=u;
+      return el.play();
+    }).catch(()=>{ if(my===ttsSeq)deviceSpeak(text) });   /* no signal, no worker, no problem */
+    return;
+  }
+  deviceSpeak(text);
+}
+function speakBriefLegacy(a){
   if(!D.cfg.speakBriefs||!window.speechSynthesis)return;
   try{
     speechSynthesis.cancel();
@@ -4397,7 +4457,19 @@ function speakBrief(a){
     speechSynthesis.speak(u);
   }catch(e){}
 }
-function hushBrief(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
+function hushBrief(){
+  ttsSeq++;
+  try{if(ttsEl){ttsEl.pause();ttsEl.currentTime=0}}catch(e){}
+  try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}
+}
+function paintNV(){
+  const w=$("#nvseg");if(!w)return;
+  const on=D.cfg.naturalVoice!==0?"1":"0";
+  [...w.querySelectorAll("[data-nv]")].forEach(b=>{
+    const is=b.dataset.nv===on;
+    b.classList.toggle("on",is);b.setAttribute("aria-pressed",is?"true":"false");
+  });
+}
 function paintSpeakBtn(){
   const b=$("#cospeak");if(!b)return;
   b.classList.toggle("on",!!D.cfg.speakBriefs);
@@ -5454,6 +5526,7 @@ function renderSetup(){
     <input type="number" step="0.01" data-ad="${i}|b" value="${a.b}">
     <input type="number" step="0.01" data-ad="${i}|p" value="${a.p}"></div>`).join("");
   ["voiceUrl","voiceKey"].forEach(id=>{const e=$("#"+id);if(e)e.value=c[id]||""});
+  paintNV();
   const l1=learnedRate("quoted"),l3=learnedRate("callback");
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderSyncLine();
@@ -6075,6 +6148,8 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+tap("nv",t=>{D.cfg.naturalVoice=+t.dataset.nv;save();paintNV();
+  toast(+t.dataset.nv?"Natural voice — costs a fraction of a cent a brief.":"Device voice.")});
 tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";closeSheet();render()});
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
