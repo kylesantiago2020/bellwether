@@ -616,6 +616,14 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13px;color:var(--ink2)}
 .dqbtn.on{border-color:var(--amb);color:var(--amb)}
 .dqnote{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
+.vrow{display:flex;align-items:center;gap:12px;margin-top:10px}
+.vrec{font-family:inherit;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:999px;
+  border:1px solid var(--rule2);background:var(--card);color:var(--ink)}
+.vrec.on{background:#C0392B;border-color:#C0392B;color:#fff}
+.vstat{font-size:12.5px;color:var(--ink3);flex:1;min-width:0}
+.vbusy{opacity:.75}
+.aitag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--amb);margin-left:8px}
 .lsts{margin-top:4px}
 .lst{display:flex;width:100%;align-items:center;gap:12px;text-align:left;padding:13px 14px;margin-top:8px;
   border:1px solid var(--rule2);border-radius:12px;background:var(--card);font-family:inherit;color:var(--ink)}
@@ -1028,6 +1036,11 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
   <p class="read" style="font-size:12px" id="storyline">Everything lives in this browser. Export before you clear it or switch phones.</p>
 
+  <h2 style="margin-top:26px">Voice debriefs</h2>
+  <p class="note">Speak after a call instead of typing. Bellwether never holds the API keys &mdash; it talks to your own Cloudflare Worker, which holds them. Leave blank to keep using the keyboard mic.</p>
+  <label class="f">Worker URL<input class="t mono" id="voiceUrl" autocomplete="off" placeholder="https://bellwether-voice.you.workers.dev"></label>
+  <label class="f">Shared secret<input class="t mono" id="voiceKey" autocomplete="off" placeholder="the APP_SECRET you set on the Worker"></label>
+
   <h2 style="margin-top:26px">Sync</h2>
   <p class="read" id="syncstat" style="font-size:12.5px">Checking…</p>
   <div class="sa" style="justify-content:flex-start;margin-top:12px">
@@ -1108,7 +1121,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.27 spoken-time";
+const BUILD="2026-07-22.28 voice";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4260,6 +4273,15 @@ function callOutcome(c){
     save();advance();return;
   }
   if(c=="talked"){ debriefView(a); return }
+  if(c=="dbparse"&&voiceOn()){
+    const said=($("#dbtext")||{}).value||"";
+    if(!said.trim()){toast("Say something first.");return}
+    voiceStop();
+    voiceStatus("Reading it\u2026",1);
+    const base=parseDebrief(said,a);
+    voiceExtract(a,said,base).then(pp=>{_prop=pp;proposalView(a,pp)});
+    return;
+  }
   if(c=="dbparse"){
     const txt=($("#dbtext").value||"").trim();
     if(!txt){toast("Say what happened first.");return}
@@ -4387,13 +4409,101 @@ function debriefView(a){
     <div class="co" style="font-size:20px">${esc(a.name)}</div>
     <div class="why" style="margin-bottom:12px">How did it go?</div>
     <textarea class="dbf" id="dbtext" rows="4" placeholder="Just say what happened."></textarea>
-    <p class="dbhint">Tap the mic on your keyboard and talk normally &mdash; &ldquo;spoke with the owner,
-      they&rsquo;re locked into Paychex until October, call back in September.&rdquo;</p>
+    ${voiceOn()?`<div class="vrow"><button class="vrec" id="vrec" type="button">Record</button>
+      <span class="vstat" id="vstat"></span></div>`:""}
+    <p class="dbhint">${voiceOn()
+      ? "Talk normally &mdash; &ldquo;spoke with the owner, they&rsquo;re locked into Paychex until October, call back in September at ten thirty.&rdquo; You&rsquo;ll see every field before anything saves."
+      : "Tap the mic on your keyboard and talk normally &mdash; &ldquo;spoke with the owner, they&rsquo;re locked into Paychex until October, call back in September.&rdquo;"}</p>
     <div class="sa" style="margin-top:14px">
       <button class="b quiet" data-c="cancel">Back</button>
       <button class="b pri" data-c="dbparse">Log it</button>
     </div>`;
-  setTimeout(()=>{const t=$("#dbtext");if(t)t.focus()},120);
+  const rb=$("#vrec");
+  if(rb)rb.addEventListener("click",()=>{
+    if(recRec&&recRec.state=="recording")voiceStop(); else voiceStart();
+  });
+  /* on a voice debrief a keyboard covering the screen is the wrong first move */
+  if(!voiceOn())setTimeout(()=>{const t=$("#dbtext");if(t)t.focus()},120);
+}
+
+/* ================= voice debriefs ==============================================
+   Record → Deepgram writes it down → Claude turns it into fields → you confirm.
+   Every step degrades: no Worker configured and the keyboard mic still works; the
+   transcript fails and you can type; the extraction fails and the old rules-based
+   parser still runs. Nothing is ever saved without you seeing it first.
+   ------------------------------------------------------------------------------ */
+const voiceOn=()=>!!(D.cfg&&D.cfg.voiceUrl&&D.cfg.voiceKey);
+let recRec=null,recChunks=[],recStream=null;
+const recMime=()=>{
+  if(typeof MediaRecorder=="undefined")return "";
+  for(const m of ["audio/mp4","audio/webm;codecs=opus","audio/webm"])
+    if(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))return m;
+  return "";
+};
+function voiceStatus(msg,busy){
+  const el=$("#vstat");if(!el)return;
+  el.innerHTML=msg?`<span class="${busy?"vbusy":""}">${esc(msg)}</span>`:"";
+}
+async function voiceStart(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast("This browser can't record.");return}
+  try{recStream=await navigator.mediaDevices.getUserMedia({audio:true})}
+  catch(e){toast("Microphone blocked — allow it in Safari settings.");return}
+  const mime=recMime();
+  try{recRec=mime?new MediaRecorder(recStream,{mimeType:mime}):new MediaRecorder(recStream)}
+  catch(e){toast("Recording isn't supported here.");stopTracks();return}
+  recChunks=[];
+  recRec.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
+  recRec.onstop=()=>voiceSend(new Blob(recChunks,{type:recRec.mimeType||"audio/mp4"}));
+  recRec.start();
+  paintRec(true);voiceStatus("Listening — tap again when you're done.");
+}
+function stopTracks(){if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null}}
+function voiceStop(){
+  if(recRec&&recRec.state!="inactive"){try{recRec.stop()}catch(e){}}
+  stopTracks();paintRec(false);
+}
+function paintRec(on){
+  const b=$("#vrec");if(!b)return;
+  b.classList.toggle("on",!!on);
+  b.textContent=on?"Stop":"Record";
+}
+async function voiceSend(blob){
+  if(!blob||!blob.size){voiceStatus("Nothing recorded.");return}
+  voiceStatus("Writing it down\u2026",1);
+  try{
+    const r=await fetch(D.cfg.voiceUrl+"/transcribe",{method:"POST",
+      headers:{"content-type":blob.type||"audio/mp4","x-app-secret":D.cfg.voiceKey},body:blob});
+    const j=await r.json();
+    if(!r.ok||j.error){voiceStatus("Couldn't transcribe: "+(j.error||r.status));return}
+    const t=$("#dbtext");
+    if(t){t.value=(t.value?t.value.trim()+" ":"")+(j.text||"");t.focus()}
+    voiceStatus(j.text?"":"Didn't catch anything — try again.");
+  }catch(e){voiceStatus("No connection — type it instead.")}
+}
+/* the rules parser is the floor, not the ceiling: Claude fills what it is sure of and
+   anything it leaves out keeps whatever the local rules already worked out */
+async function voiceExtract(a,text,base){
+  try{
+    const d=today();
+    const r=await fetch(D.cfg.voiceUrl+"/extract",{method:"POST",
+      headers:{"content-type":"application/json","x-app-secret":D.cfg.voiceKey},
+      body:JSON.stringify({text,today:iso(d),
+        weekday:d.toLocaleDateString(undefined,{weekday:"long"}),account:a.name})});
+    const j=await r.json();
+    if(!r.ok||!j.fields)return base;
+    const f=j.fields,p=Object.assign({},base);
+    if(["talked","message","noanswer","notint","bad"].includes(f.outcome))p.outcome=f.outcome;
+    if(DQK.includes(f.dataQuality))p.dataQuality=f.dataQuality;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(f.date||""))p.date=f.date;
+    if(/^([01]\d|2[0-3]):[0-5]\d$/.test(f.at||""))p.at=f.at;
+    ["why","contact","title","phone","email","provider","objection"].forEach(k2=>{
+      if(f[k2]&&typeof f[k2]=="string")p[k2]=f[k2].slice(0,80)});
+    if(f.stage)p.stage=true;
+    if(Array.isArray(f.flags))f.flags.forEach(x=>{if(typeof x=="string"&&p.flags.indexOf(x)<0)p.flags.push(x)});
+    if(f.summary&&typeof f.summary=="string")p.heard=f.summary.slice(0,300)+" \u2014 "+p.heard;
+    p.ai=true;
+    return p;
+  }catch(e){return base}
 }
 
 /* ---------- extraction ----------
@@ -4629,7 +4739,7 @@ function proposalView(a,p){
   $("#ccard").classList.remove("stacked");
   $("#ccard").innerHTML=`
     <div class="co" style="font-size:20px">${esc(a.name)}</div>
-    <div class="why">Here&rsquo;s what I got${p.learned?" — from how you've phrased this before":""}. Change anything before it&rsquo;s saved.</div>
+    <div class="why">Here&rsquo;s what I got${p.ai?`<span class="aitag">read by Claude</span>`:(p.learned?" — from how you've phrased this before":"")}. Change anything before it&rsquo;s saved.</div>
     <div class="prop">${rows}</div>
     <div class="chips" style="justify-content:center;margin-top:10px">${chips}</div>
     ${dqrow}
@@ -5310,6 +5420,7 @@ function renderSetup(){
     <input data-ad="${i}|n" value="${esc(a.n)}">
     <input type="number" step="0.01" data-ad="${i}|b" value="${a.b}">
     <input type="number" step="0.01" data-ad="${i}|p" value="${a.p}"></div>`).join("");
+  ["voiceUrl","voiceKey"].forEach(id=>{const e=$("#"+id);if(e)e.value=c[id]||""});
   const l1=learnedRate("quoted"),l3=learnedRate("callback");
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderSyncLine();
@@ -5348,6 +5459,7 @@ function saveSetup(quiet){
     fy:g("fy"),qEnd:g("qEnd"),goal:+g("goal")||0,rgoal:+g("rgoal")||0,
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
     me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
+    voiceUrl:g("voiceUrl").trim().replace(/\/+$/,""),voiceKey:g("voiceKey").trim(),
     mission:{visits:+g("mVisits")||0,clients:+g("mClients")||0,partners:+g("mPartners")||0,calls:+g("mCalls")||0,follow:+g("mFollow")||0},
     recur:(()=>{const out={};WDAYS.forEach(([k2])=>{
       const el=$("#wr_"+k2);
