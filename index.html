@@ -1121,7 +1121,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.28 voice";
+const BUILD="2026-07-22.30 sync-pager";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -7091,16 +7091,31 @@ async function syncPush(){
 
 async function syncPull(){
   if(!sbUser||!online())return {down:0};
+  /* A push stamps every row in a chunk with the millisecond it ran, so a hundred accounts
+     routinely share one updated_at. Paging with a strict `greater than` on that value meant
+     that whenever a page boundary landed inside such a group, every remaining row sharing
+     the timestamp was stepped over and never came back — silently, and only on the device
+     that happened to be pulling. That is how one phone ended up 25 accounts short.
+     The cursor is now inclusive, ordered by id as a tiebreak, and rows already applied in
+     this pass are skipped by id rather than by timestamp. */
+  if(D.cfg.syncPageFix!==2){D.cfg.syncPulledAt="";D.cfg.syncPageFix=2}
   let cursor=(D.cfg&&D.cfg.syncPulledAt)||"1970-01-01T00:00:00Z";
   let down=0,changed=false;
+  const seen=new Set();
   try{
-    for(let guard=0;guard<40;guard++){
+    for(let guard=0;guard<80;guard++){
       const {data,error}=await sb.from("bw_accounts")
         .select("id,data,deleted,updated_at")
-        .gt("updated_at",cursor).order("updated_at",{ascending:true}).limit(SYNCPAGE);
+        .gte("updated_at",cursor)
+        .order("updated_at",{ascending:true}).order("id",{ascending:true}).limit(SYNCPAGE);
       if(error)throw error;
       if(!data||!data.length)break;
+      let fresh=0;
       data.forEach(r=>{
+        /* an inclusive cursor re-reads the tail of the previous page on purpose; those are
+           filtered here by id, which is what makes the boundary safe */
+        if(seen.has(r.id))return;
+        seen.add(r.id);fresh++;
         /* anything still queued here was changed on this phone since the last push —
            this device wins, and the push that follows carries it up */
         if(pend.has(r.id))return;
@@ -7114,6 +7129,9 @@ async function syncPull(){
       });
       cursor=data[data.length-1].updated_at;
       if(data.length<SYNCPAGE)break;
+      /* a full page containing nothing new means one timestamp group is larger than a
+         page — stop rather than loop on it forever */
+      if(!fresh)break;
     }
     D.cfg.syncPulledAt=cursor;
     if(changed){await rawSet(KEY,JSON.stringify(D));await saveSyncState();calcRev++}
@@ -7146,6 +7164,12 @@ async function syncAll(loud){
   const dn=await syncPull();
   const upr=await syncPush();
   await syncBackup();
+  /* syncedAt was written only at the end of a successful PUSH, and push returns early when
+     there is nothing to send. So a device that pulled everything correctly but had no
+     changes of its own — the normal state of a second device — kept showing the time of its
+     last local edit and looked stranded next to the machine doing the work. A completed
+     round trip is a sync, whether or not anything went up. */
+  if(!syncNote){D.cfg.syncedAt=new Date().toISOString();await rawSet(KEY,JSON.stringify(D))}
   if(dn.changed)render();
   if(screen=="set")renderSyncLine();
   if(loud){
