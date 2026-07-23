@@ -1121,7 +1121,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.30 sync-pager";
+const BUILD="2026-07-22.31 voice-pick";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4355,12 +4355,45 @@ function briefLine(a){
   else bits.push("No name on file — get one");
   return bits.join(". ")+".";
 }
+/* The utterance never named a voice, so iOS handed it the compact system default — the
+   flat robotic one. The good voices are already on the device (or one Settings download
+   away) and simply have to be asked for. Siri's own voice is not available to web apps at
+   all, so the ceiling here is Apple's enhanced set, which is a large step up regardless. */
+let _voice=null;
+function pickVoice(){
+  try{
+    if(!window.speechSynthesis||!speechSynthesis.getVoices)return null;
+    const vs=speechSynthesis.getVoices()||[];
+    if(!vs.length)return null;
+    const en=vs.filter(v=>/^en\b|^en[-_]/i.test(v.lang||""));
+    const pool=en.length?en:vs;
+    const score=v=>{
+      const n=(v.name||"").toLowerCase();let s=0;
+      if(/premium|enhanced/.test(n))s+=100;        /* the downloadable high-quality set */
+      if(/\b(ava|allison|samantha|evan|zoe|joelle|nicky|tom)\b/.test(n))s+=20;
+      if(/compact/.test(n))s-=60;                  /* explicitly the tinny one */
+      if(/^en-us/i.test(v.lang||""))s+=10;
+      if(v.localService)s+=5;                      /* no network hitch mid-swipe */
+      return s;
+    };
+    return pool.slice().sort((x,y)=>score(y)-score(x))[0]||null;
+  }catch(e){return null}
+}
+/* the list is populated asynchronously on iOS — first call often returns nothing */
+try{
+  if(window.speechSynthesis&&speechSynthesis.addEventListener)
+    speechSynthesis.addEventListener("voiceschanged",()=>{_voice=pickVoice()});
+}catch(e){}
 function speakBrief(a){
   if(!D.cfg.speakBriefs||!window.speechSynthesis)return;
   try{
     speechSynthesis.cancel();
+    if(!_voice)_voice=pickVoice();
     const u=new SpeechSynthesisUtterance(briefLine(a));
-    u.rate=1.05;u.pitch=1;
+    if(_voice)u.voice=_voice;
+    /* 1.05 read as hurried over a car speaker; natural pace lands better on a brief you
+       are half-listening to while parking */
+    u.rate=1;u.pitch=1;
     speechSynthesis.speak(u);
   }catch(e){}
 }
