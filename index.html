@@ -1126,7 +1126,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.34 listen";
+const BUILD="2026-07-22.35 fresh-entry";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -7392,7 +7392,7 @@ async function gateSignIn(){
     $("#gpass").value="";
     gateHide();
     await syncAll(false);
-    render();
+    enterApp();
     toast("Signed in.");
   }catch(e){
     $("#gmsg").className="msg bad";
@@ -7400,9 +7400,21 @@ async function gateSignIn(){
   }finally{$("#gbtn").disabled=false}
 }
 
+/* Signing out is done from Setup, so signing back in used to drop you exactly there —
+   halfway down a settings page, on whatever day and filter you had been poking at. Coming
+   back into the app should look like starting the day: Today, the real today, at the top. */
+function enterApp(){
+  viewDate=null;showAllRows=false;setupManual=null;showParked=false;
+  terrList_=null;terrQ="";terrPage=1;terrFilter="open";
+  curId=null;backTo="";
+  stopSay();
+  go("today");
+  window.scrollTo(0,0);
+}
 async function gateOffline(){
   await rawSet(OFFKEY,"1");
   gateHide();
+  enterApp();
   toast("Working offline. Nothing will sync until you sign in.");
 }
 
@@ -7465,7 +7477,9 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&sbUser&&o
 (async function init(){
   probeStorage();
   const rep2=await load();
-  viewDate=today();
+  /* left alone, Safari puts a reopened app back at the scroll offset it was killed at */
+try{if("scrollRestoration" in history)history.scrollRestoration="manual"}catch(e){}
+viewDate=today();
   document.body.dataset.s="today";
   applyTheme();
   render();
