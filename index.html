@@ -305,6 +305,8 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
 .hudbrief>.h span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hudbrief .hbody{margin-top:9px;font-size:13px;line-height:1.75;color:var(--ink2)}
 .hudbrief .hbody b{color:var(--ink);font-weight:500}
+.cnav{display:flex;justify-content:center;align-items:center;gap:18px;margin:2px 0 12px}
+.cnav:empty,.ccard:not(.stacked)+.cnav{display:none}
 .cbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cb{padding:15px 10px;border-radius:11px;border:1px solid var(--rule2);background:var(--card);color:var(--ink);font-size:14px;font-weight:500}
 .cb:active{transform:scale(.97)}
@@ -503,12 +505,16 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .stepbtn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--rule2);
   background:var(--card);color:var(--ink2);font-family:inherit;font-size:16px;line-height:1;
   display:flex;align-items:center;justify-content:center;cursor:pointer}
-.stepbtn:disabled{opacity:.32}
+.stepbtn{transition:opacity .2s ease,border-color .2s ease}
+.stepbtn:disabled{opacity:.3}
+.stepbtn:active:not(:disabled){transform:scale(.94)}
 .stepbtn.sm{width:32px;height:32px;font-size:15px}
 .nowdots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:11px}
 .nowdots i{width:6px;height:6px;border-radius:3px;background:var(--rule2);display:block;transition:background .18s ease,width .18s ease}
 .nowdots i.on{background:var(--ink3);width:17px}
-.nowhint{text-align:center;font-size:12px;color:var(--ink3);margin:9px 0 0}
+.nowhint{text-align:center;font-size:12px;color:var(--ink3);margin:9px 0 0;overflow:hidden;
+  transition:opacity .2s ease,margin .22s ease,max-height .22s ease;max-height:40px}
+.nowhint.gone{opacity:0;max-height:0;margin:0}
 .nowcount{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink3);margin-top:11px}
 .nowcount b{color:var(--ink);font-weight:500}
 @media (prefers-reduced-motion:reduce){.nowstack{scroll-behavior:auto}}
@@ -525,7 +531,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
    Cards sit at 86% so the next one peeks: that edge is the whole affordance, it's what
    tells your thumb there's more without a caption saying so. */
 .ccard.stacked{display:block;padding:0;position:relative;overflow:hidden;min-height:0}
-.cstack{position:absolute;inset:0;display:flex;gap:12px;padding:4px 14px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
+.cstack{position:absolute;inset:10% 0;display:flex;gap:12px;padding:4px 14px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
 .cstack::-webkit-scrollbar{display:none}
 .cstack>.cc{flex:0 0 86%;scroll-snap-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;
   background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:26px 20px}
@@ -1086,13 +1092,16 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 <div class="callwrap" id="callwrap">
   <div class="ctopbar">
     <button class="b quiet" id="cexit">Done</button>
-    <button class="stepbtn sm" id="cprev" aria-label="Previous card">&#8249;</button>
     <span class="pg" id="cpg"></span>
-    <button class="stepbtn sm" id="cnext" aria-label="Next card">&#8250;</button>
     <button class="cospeak" id="cospeak" type="button">Brief aloud</button>
     <button class="b quiet" id="cskip">Skip &rsaquo;</button>
   </div>
   <div class="ccard" id="ccard"></div>
+  <!-- stepping sits under the card, next to the thumb, not up in the chrome -->
+  <div class="cnav" id="cnav">
+    <button class="stepbtn" id="cprev" aria-label="Previous card">&#8249;</button>
+    <button class="stepbtn" id="cnext" aria-label="Next card">&#8250;</button>
+  </div>
   <div class="cbtns">
     <button class="cb no" data-c="noanswer">No answer</button>
     <button class="cb no" data-c="message">Left message</button>
@@ -1137,7 +1146,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.37 stepper";
+const BUILD="2026-07-22.39 no-flash";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3893,8 +3902,15 @@ function wireNowStack(){
       if(count){const b=count.querySelector("b");if(b)b.textContent=i+1}
       paintStep(i);
       if(i>0&&!D.cfg.sawSwipe){
-        D.cfg.sawSwipe=1;save();
-        const h=$(".nowhint");if(h)h.remove();
+        D.cfg.sawSwipe=1;
+        /* Pulling the hint out of the DOM mid-animation dropped everything below it by a
+           line, and save() — a 1.9 MB stringify over the whole book — blocked the main
+           thread in the same frame. Together that read as a flash. Fade the hint to nothing
+           first, and let the flag persist once the movement is over; it is a cosmetic
+           marker, so a few hundred milliseconds late costs nothing. */
+        const h=$(".nowhint");
+        if(h){h.classList.add("gone");setTimeout(()=>{if(h.parentNode)h.remove()},260)}
+        setTimeout(save,700);
       }
     });
   },{passive:true});
