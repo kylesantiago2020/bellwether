@@ -616,6 +616,15 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
   border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13px;color:var(--ink2)}
 .dqbtn.on{border-color:var(--amb);color:var(--amb)}
 .dqnote{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
+.lsts{margin-top:4px}
+.lst{display:flex;width:100%;align-items:center;gap:12px;text-align:left;padding:13px 14px;margin-top:8px;
+  border:1px solid var(--rule2);border-radius:12px;background:var(--card);font-family:inherit;color:var(--ink)}
+.lst.on{border-color:var(--ac)}
+.lst span{flex:1;min-width:0}
+.lst b{display:block;font-size:14px;font-weight:500}
+.lst s{display:block;text-decoration:none;font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.45}
+.lst em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink2);flex:none}
+.lwhy{margin-top:4px;font-size:11.5px;color:var(--amb);font-family:'IBM Plex Mono',monospace}
 
 /* discovery */
 .langbar{margin-top:12px}
@@ -1099,7 +1108,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.24 report-mapping";
+const BUILD="2026-07-22.25 lists";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2582,6 +2591,17 @@ function huddleGist(a){
 function dqChips(a){
   return `<div class="chips">${DQ.map(([v,l])=>
     `<button class="chip${dq(a)==v?" on":""}" data-dq="${a.id}|${v}">${DQICON[v]} ${esc(l)}</button>`).join("")}</div>`;
+}
+/* live counts, so the sheet itself tells you where the work is tonight */
+function listSheet(){
+  const rows=allLists().map(L=>{const n=listCount(L);
+    return {L,n}}).filter(x=>x.n>0);
+  if(!rows.length){toast("No lists yet — tag an import to make one.");return}
+  openSheet(`<h3>Lists</h3><div class="sub">A way to work one slice of the territory. Nothing here changes your pipeline.</div>
+    <div class="lsts">${rows.map(({L,n})=>
+      `<button class="lst${terrList_==L.id?" on":""}" data-list="${esc(L.id)}">
+        <span><b>${esc(L.label)}</b>${L.blurb?`<s>${esc(L.blurb)}</s>`:""}</span><em>${n}</em></button>`).join("")}</div>
+    ${terrList_?`<div class="sa"><button class="b quiet" data-act="listclear">Leave the list</button></div>`:""}`);
 }
 function dqSheet(id){
   const a=acct(id);if(!a)return;
@@ -4813,10 +4833,51 @@ function setAnswer(a,id,v){
 }
 
 /* ---------- territory ---------- */
+/* ================= smart lists =================================================
+   Two species behind one surface. A RULE list is computed from the data every time it is
+   opened, so it can never go stale and needs no tagging. A TAG list is provenance — "this
+   row came from the 5500 file" — and is applied at import. Adding a list later is one entry
+   here: an id, a label, how it matches, and the facts its rows should show.
+   ------------------------------------------------------------------------------ */
+const emps=a=>+a.emps||0;
+const medPct=a=>emps(a)>0&&a.medEmps>0?a.medEmps/emps(a):0;
+/* Kyle's criteria: 10+ employees (15+ preferred), >50% medical participation, and a
+   size that supports it. Where participation is unknown we say so instead of guessing —
+   a blank is a question to ask, not a disqualification. */
+const tsFit=a=>{
+  if(emps(a)<10)return null;
+  const p=medPct(a);
+  if(p>0.5)return {band:emps(a)>=15?"strong":"good",why:`${emps(a)} ee · ${Math.round(p*100)}% enrolled`};
+  if(a.medEmps>0)return null;
+  return {band:"ask",why:`${emps(a)} ee · participation unknown — ask`};
+};
+const LISTS=[
+  {id:"ts",label:"TotalSource fits",rule:a=>!!tsFit(a)&&tsFit(a).band!="ask",
+   note:a=>tsFit(a).why,blurb:"10+ employees with more than half enrolled in medical. The PEO conversation starts here."},
+  {id:"tsask",label:"PEO — worth asking",rule:a=>!!tsFit(a)&&tsFit(a).band=="ask",
+   note:a=>tsFit(a).why,blurb:"Big enough to qualify, but ADP can't see their medical. One question tells you which pile they belong in."},
+  {id:"k401",label:"401(k) assets",rule:a=>a.planAssets>0,
+   note:a=>k(a.planAssets)+" in plan assets",sort:(x,y)=>y.planAssets-x.planAssets,
+   blurb:"Retirement conversations, largest plan first."},
+  {id:"upg",label:"Upgrade candidates",rule:a=>a.type=="client"&&emps(a)>=10&&/essential|enhanced/i.test((a.today||{}).bundle||""),
+   note:a=>`${emps(a)} ee on ${(a.today||{}).bundle}`,
+   blurb:"Clients who have outgrown the bundle they're on."},
+];
+/* every tag an import has ever applied becomes a list of its own, no code required */
+const tagLists=()=>{const seen={};A().forEach(a=>(a.lists||[]).forEach(t=>seen[t]=(seen[t]||0)+1));
+  return Object.keys(seen).sort().map(t=>({id:"tag:"+t,label:t,tag:t}))};
+const allLists=()=>LISTS.concat(tagLists());
+const listById=id=>allLists().find(L=>L.id==id)||null;
+const inList=(a,L)=>L?(L.tag?(a.lists||[]).indexOf(L.tag)>=0:!!L.rule(a)):false;
+const listCount=L=>A().filter(a=>isOpen(a)&&dqOK(a)&&inList(a,L)).length;
+let terrList_=null;   /* the list currently being worked, or null */
 const TFILTERS=[["all","All"],["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["wrong","Wrong info"],["closed","Confirmed closed"],["dormant","Dormant / lost"]];
 /* the two data-quality piles depend on the flag and nothing else — not on outcome, not on
    type — so an account is always findable under exactly the filter you flagged it into */
 const terrMatch=(a,f)=>{
+  /* a list replaces the filter entirely — you are working that list, nothing else */
+  if(terrList_){const L=listById(terrList_);
+    return !!L&&isOpen(a)&&dqOK(a)&&inList(a,L)}
   if(f=="wrong")return dq(a)=="wrong_info";
   if(f=="closed")return dq(a)=="closed";
   if(f=="all")return true;
@@ -4864,7 +4925,9 @@ function terrList(){
   const q=norm(terrQ),qd=digits(terrQ);
   /* searching is a hunt for one account — a filter chip must never hide the thing you typed */
   if(q||qd.length>=3)return sortList(A().filter(a=>matches(a,q,qd)));
-  return sortList(A().filter(a=>terrMatch(a,terrFilter)));
+  const out=sortList(A().filter(a=>terrMatch(a,terrFilter)));
+  if(terrList_){const L=listById(terrList_);if(L&&L.sort)return out.sort(L.sort)}
+  return out;
 }
 function renderTerritory(){
   const searching=!!(norm(terrQ)||digits(terrQ).length>=3);
@@ -4879,11 +4942,23 @@ function renderTerritory(){
   $("#tcount").innerHTML=!list.length ? ""
     : searching ? `<b>${list.length}</b> found <s style="opacity:.7">&middot; every account</s>`
                 : `<b>${list.length}</b> ${list.length==1?"account":"accounts"}`;
-  $("#tsort").innerHTML=list.length
-    ? `<button class="sortbtn" data-act="sortmenu">${sl}<span>&#9662;</span></button>`
+  const L=terrList_?listById(terrList_):null;
+  $("#tsort").innerHTML=list.length||L
+    ? (L?`<button class="sortbtn" data-act="listmenu">Lists<span>&#9662;</span></button>`
+        :`<button class="sortbtn" data-act="sortmenu">${sl}<span>&#9662;</span></button>`)
     : "";
+  /* in list mode the chip rail becomes one chip that gets you out again */
+  if(L)$("#tfilters").innerHTML=`<button class="chip on" data-act="listclear">${esc(L.label)} &times;</button>`
+    +`<button class="chip" data-act="listmenu">Other lists</button>`;
+  else if(!searching)$("#tfilters").innerHTML=$("#tfilters").innerHTML
+    +`<button class="chip" data-act="listmenu">Lists &#9662;</button>`;
+  if(L)$("#tcount").innerHTML=`<b>${list.length}</b> in ${esc(L.label)}`;
   /* the right column answers "what has this been worth?" — dollars for deals, referrals for relationships */
-  const worth=a=>{const v=dealValue(a);if(v)return k(v);
+  /* in a list the right column answers the question that list is about — plan assets on the
+     retirement list, headcount and enrolment on the PEO one — instead of a generic dollar */
+  const worth=a=>{
+    if(L&&L.sort)return k(a.planAssets);
+    const v=dealValue(a);if(v)return k(v);
     if(isRel(a)){const n=refStats(a).total;if(n)return n+" ref"+(n==1?"":"s")}
     return "—"};
   const EMPTIES={
@@ -4900,15 +4975,22 @@ function renderTerritory(){
     dormant:["Nothing parked, nothing lost.","A clean book. When something goes quiet, park it here — nothing is ever deleted."]};
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
+    /* the reason this account is on this list, in its own words — "18 ee · 62% enrolled"
+       beats a badge, because it is the line he will actually say out loud */
+    const why=L&&L.note?`<div class="lwhy">${esc(L.note(a))}</div>`:"";
     return `<div class="bk" data-open="${a.id}">
       <div><div class="nm">${esc(a.name)}${dqOK(a)?"":` <span class="tagm dq">${DQICON[dq(a)]} ${esc(dqLabel(dq(a)))}</span>`}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
-      <div class="s">${[a.emps?a.emps+" ee":"",a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div></div>
+      <div class="s">${[a.emps?a.emps+" ee":"",a.industry,a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div>${why}</div>
       <div class="rd">${worth(a)}</div></div>`}).join("")
     +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
     :(terrQ.trim()
       ? `<div class="empty" style="margin-top:18px"><div class="said">No match for &ldquo;${esc(terrQ.trim())}&rdquo;</div>
          <p>If you're standing in front of it, add it now — you won't remember tonight.</p>
          <button class="runbtn" data-act="newfromsearch">Add ${esc(terrQ.trim())}</button></div>`
+      : L
+      ? `<div class="empty" style="margin-top:18px"><div class="said">Nothing in ${esc(L.label)} yet.</div>
+         <p>${esc(L.blurb||"Accounts land here as the data arrives.")}</p>
+         <button class="runbtn" data-act="listclear">Back to the territory</button></div>`
       : (()=>{const [t2,p2]=EMPTIES[terrFilter]||EMPTIES.open;
          return `<div class="empty" style="margin-top:18px"><div class="said">${t2}</div><p>${p2}</p></div>`})());
   const b=D.batches||[];
@@ -4989,7 +5071,7 @@ function parseRows(txt){
   const ix={name:find("accountname","company","account","name"),
     contact:findBut(["contact","primary","fullname"],["maincontact"]),
     first:find("firstname"),last:find("lastname"),
-    phone:find("phone","mobile"),email:find("email"),emps:find("employee","ee","headcount"),
+    phone:find("phone","mobile"),email:find("email"),emps:find("employees","employee","headcount","staffsize"),
     bundle:find("product","bundle"),freq:find("frequency","payfreq"),city:find("city","town"),
     addr:find("street","address","billingstreet"),
     /* "Industry Fit" holds a rating ("PEO Strongest Fit"), not an industry — matching it
@@ -5009,6 +5091,10 @@ function parseRows(txt){
        170 — a tenfold headcount error that would have mis-priced every quote and thrown
        off every size screen. Parse the number, then round it. */
     const numOf=i=>{const v=g(i).replace(/[^0-9.]/g,"");return v?Math.round(parseFloat(v))||0:0};
+    /* a small business has a headcount, not a postcode. Anything absurd is a mis-mapped
+       column, and a silent zero is far safer than a number that poisons pricing and
+       every size screen downstream. */
+    const empOf=()=>{const n=numOf(ix.emps);return n>0&&n<100000?n:0};
     const feat=g(ix.feat);
     const who=g(ix.contact)||[g(ix.first),g(ix.last)].filter(Boolean).join(" ").trim();
     /* Paychex carries one "Billing Address" string and no city column. "120 Cedar St,
@@ -5020,12 +5106,16 @@ function parseRows(txt){
       if(seg.length>=2){addr=seg[0];city=seg[1]}
     }
     return {name:g(ix.name)||c[0]||"",contactName:who,phone:g(ix.phone),email:g(ix.email),
-      emps:numOf(ix.emps),bundle:g(ix.bundle)||bundleFrom(feat),
+      emps:empOf(),bundle:g(ix.bundle)||bundleFrom(feat),
       freq:g(ix.freq),city,addr,industry:g(ix.ind),
       medEmps:numOf(ix.medEmps),planAssets:numOf(ix.assets),sixMoPays:numOf(ix.pays),
       termReason:g(ix.termR),
       main:/^(true|yes|1|x)$/i.test(g(ix.main))};
-  }).filter(r=>r.name&&!/^copyright|^generated|^report generated/i.test(r.name));
+  }).filter(r=>r.name
+    /* the footer of a Salesforce report: a copyright line and a grand-total row, both of
+       which used to import as businesses — one of them holding the sum of every plan */
+    &&!/^copyright|^generated|^report generated/i.test(r.name)
+    &&!/^(grand\s+)?(total|totals|subtotal|sum)s?$/i.test(r.name.trim()));
 }
 /* ADP tells you what they own in plain text — "RUN Essential", "ADP HR Pro". Reading the
    bundle off that is what makes an upgrade list possible: scoreRaw already rewards a client
@@ -5827,6 +5917,7 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";closeSheet();render()});
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
 tap("wtopic",t=>{pickChip(t,"wtopic")});
@@ -6542,6 +6633,8 @@ document.addEventListener("click",async e=>{
       if(!Array.isArray(D.cfg.addons))D.cfg.addons=[];
       D.cfg.addons.push({n:"",b:0,p:0});
       await save();renderSetup();break}
+    case"listmenu":listSheet();break;
+    case"listclear":{terrList_=null;terrPage=1;closeSheet();render();break}
     case"diag":await diagnostics();break;
     case"editnotes":{
       if(!a)break;
