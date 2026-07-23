@@ -85,8 +85,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
 /* header */
 .hdr{display:flex;align-items:center;gap:12px;padding-bottom:14px}
-.mark{width:32px;height:32px;border-radius:9px;flex:none;overflow:hidden;background:#12213A}
-.mark img{width:100%;height:100%;display:block}
 .wm b{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.3px}
 
 /* day nav + shape */
@@ -168,7 +166,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 /* pace — touches bar collapsed, mission behind it */
 .pace{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
 .phead{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;background:none;border:none;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
-.plab{font-size:12.5px;color:var(--ink2);flex:none}
+/* The pace-card label. This was `.plab`, which collided with the proposal-row label of the
+   same name defined later — so "Today's mission" silently rendered uppercase, in the wrong
+   colour and size, inside a fixed 88px column. Scoped name, collision gone at the source. */
+.pcl{font-size:12.5px;color:var(--ink2);flex:none}
 .ptrack{flex:1;height:5px;background:var(--sunk);border-radius:3px;overflow:hidden}
 .pfill{display:block;height:100%;background:var(--fill);border-radius:3px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
 .pfill.ok{background:var(--grn)}
@@ -191,12 +192,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .wd.on{border-color:var(--ac);background:var(--acs)}
 
 /* call run card */
-.runcard{margin-top:26px;background:var(--card);border:1px solid var(--rule);border-radius:13px;padding:15px 17px}
-.runcard .rh{display:flex;justify-content:space-between;align-items:baseline}
-.runcard .rh b{font-size:13.5px;font-weight:500}
-.runcard .rh span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3)}
-.runcard p{margin-top:5px;font-size:12.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.runcard .runbtn{margin-top:12px}
 .runbtn.ghost{background:var(--sunk);color:var(--ink2)}
 
 /* nearby — cluster folded behind one line */
@@ -473,12 +468,12 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .syncline{font-size:12px;color:var(--ink2);margin-top:4px}
 .syncdot{display:inline-block;width:7px;height:7px;border-radius:4px;background:var(--ink3);margin-right:6px;vertical-align:middle}
 .syncdot.ok{background:#3E8E5A}.syncdot.wait{background:#C08A2E}.syncdot.off{background:var(--ink3)}
-.cospeak{font:600 12px/1 ui-sans-serif,system-ui;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink2)}
+.cospeak{font:600 12px/1 ui-sans-serif,system-ui;padding:7px 10px;border-radius:8px;border:1px solid var(--rule);background:transparent;color:var(--ink2)}
 .cospeak.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.dbf{width:100%;min-height:110px;font:400 16px/1.5 ui-sans-serif,system-ui;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+.dbf{width:100%;min-height:110px;font:400 16px/1.5 ui-sans-serif,system-ui;padding:12px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
 .dbhint{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.45}
-.prop{text-align:left;margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.prow{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
+.prop{text-align:left;margin-top:14px;border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.prow{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--rule);font-size:13.5px;align-items:baseline}
 .prow:last-child{border-bottom:0}
 .plab{flex:0 0 88px;color:var(--ink3);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
 .pval{flex:1;font-weight:600}
@@ -488,7 +483,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .anchbar s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
 .anchbar.set{background:var(--ink);color:var(--paper)}
 .anchbar.set s{color:var(--paper);opacity:.75}
-.tagm.far{background:transparent;border:1px solid var(--line);color:var(--ink3)}
+.tagm.far{background:transparent;border:1px solid var(--rule);color:var(--ink3)}
 .anchnote{font-size:12px;color:var(--ink3);margin:-8px 0 14px;line-height:1.45}
 .mark{width:34px;height:34px;border-radius:0;flex:none;overflow:visible;background:none;color:var(--ink);display:flex;align-items:center;justify-content:center}
 .sheep{width:100%;height:100%;display:block}
@@ -498,7 +493,6 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .creed{border-top:1px solid var(--rule);margin-top:30px;padding-top:20px}
 .creed p{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:17px;line-height:1.5;color:var(--ink2);margin:0}
 .creed s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ac);margin-top:9px}
-.daily{margin:2px 0 18px;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:15.5px;line-height:1.5;color:var(--ink3)}
 .nowstack{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-top:16px;overscroll-behavior-x:contain}
 .nowstack::-webkit-scrollbar{display:none}
 .nowstack>.now{flex:0 0 100%;scroll-snap-align:center;margin-top:0;animation:none}
@@ -543,11 +537,6 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .sheet .warm{margin-top:0;border:none;background:transparent}
 .planwarm{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;background:var(--sunk);border:none;border-radius:10px;font-family:inherit;font-size:13.5px;color:var(--ink);text-align:left;cursor:pointer}
 .planwarm s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);flex:none}
-.warmsq{width:100%;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:11px 6px;
-  font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
-.warmsq i{font-style:normal;font-size:14px;color:var(--grn);line-height:1}
-.warmsq b{font-size:11.5px;font-weight:500;color:var(--ink)}
-.warmsq s{text-decoration:none;font-size:10px;color:var(--ink3)}
 .toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--paper);font-size:13px;padding:9px 15px;border-radius:9px;opacity:0;transition:.22s;z-index:90;pointer-events:none;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
@@ -654,6 +643,10 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .rings.all .rchk{stroke-width:4}
 .rings.all.set .rchk{stroke-dashoffset:0}
 .rings.all.go.fill .rchk{animation:edcheck .38s cubic-bezier(.4,0,.2,1) 1.05s forwards}
+/* The animated path referenced a keyframe that was never defined, so on the one day it
+   matters — closing all three rings — the check silently never drew. Same start and end
+   values as the static .rings.all.set state, so both paths land identically. */
+@keyframes edcheck{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
 .rleg{margin-top:20px;display:inline-block;text-align:left}
 .rl{display:flex;align-items:center;gap:9px;padding:6px 0}
 /* This is the ring-legend dot, and nothing else. It used to be a bare `.rd`, which also
@@ -735,7 +728,6 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .bddisc input{flex:1}
 .bdcheck{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--card);font-size:13px;line-height:1.5;color:var(--ink2)}
 .bdcheck .dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px;background:#B4791E}
-.bdlab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:20px 0 8px}
 .bdchips{display:flex;flex-wrap:wrap;gap:7px}
 .bdchip{padding:8px 12px;border-radius:999px;border:1px solid var(--rule2);background:var(--card);font-family:inherit;font-size:12.5px;color:var(--ink)}
 .bdchip:active{background:var(--acs);border-color:var(--ac)}
@@ -865,7 +857,6 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <div class="greetrow">
     <div class="greetcol">
       <h1 id="hd">Loading&hellip;</h1>
-      <p class="daily" id="dailyline"></p>
     </div>
     <div id="clock"></div>
   </div>
@@ -1002,7 +993,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <h2>Add-ons &mdash; per payroll run</h2>
   <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per ee / run</span></div>
   <div id="addons"></div>
-  <button class="b quiet" id="adda" style="margin-top:10px">+ add-on</button>
+  <button class="b quiet" id="adda" data-act="addaddon" style="margin-top:10px">+ add-on</button>
 
   <h2>How often you close</h2>
   <p class="note">Learned from your own wins and losses once you have ten of each. Until then these are the estimates used.</p>
@@ -1095,7 +1086,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY="bellwether-v2", OLDKEY="horizon-v2", BAKKEY="bellwether-v1-backup";
 const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK=5;
-const BUILD="2026-07-22.17 day-mode-fix";
+const BUILD="2026-07-22.19 audit";
 const SCHEMA=9;                       /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3166,11 +3157,6 @@ function warmState(){
   save();
   return w;
 }
-function renderWarm(show){
-  /* the talk track lives in the Daily plan sheet now — nothing to paint on Today */
-}
-
-
 const MISSION=[["visits","Drop in on a business"],["clients","See a client"],
   ["partners","Stop by a CPA, bank, or partner"],["calls","Outbound calls"],["follow","Clear a follow-up"]];
 function todayTouches(d){
@@ -3219,7 +3205,7 @@ function renderPace(rows,day){
   const wk=weekAvg();
   $("#pace").innerHTML=`<div class="pace${paceOpen?" open":""}">
     <button class="phead" data-act="pace" aria-expanded="${paceOpen}">
-      <span class="plab">Today's mission</span>
+      <span class="pcl">Today's mission</span>
       <span class="ptrack"><span class="pfill${got>=tgt?" ok":""}" style="width:${pct}%"></span></span>
       <span class="pnum">${got}<s> of ${tgt} done</s></span>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -3706,7 +3692,7 @@ function huddleCardHtml(c,i,tot){
   </div>`;
 }
 function callsDue(){
-  return todayRows(today()).filter(x=>x.block=="call").length;
+  return todayRows(activeD()).filter(x=>x.block=="call").length;
 }
 function nowCardHtml(r,i,tot){
   const a=r.a,n=r.lead;
@@ -3894,51 +3880,7 @@ function renderList(rows,isNow,day){
   if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
   el.innerHTML=html;
 }
-/* The week template says what a Tuesday normally is. Today gets to disagree, for today only,
-   without editing the template — so changing your mind in the car costs one tap and
-   never quietly rewrites how you normally work. */
-function rhythmHtml(d,isNow){
-  const wd=d.getDay();
-  if(wd==0||wd==6)return "";
-  const mode=dayMode(d),norm=weekMode(d),fixed=recurFor(d);
-  const dayName=d.toLocaleDateString(undefined,{weekday:"long"});
-  /* a past or future day is a statement of fact, not a control */
-  const seg=isNow
-    ? `<div class="dmseg" role="group" aria-label="Day mode">${MODES.map(([v,l])=>
-        `<button data-dm="${v}"${mode==v?' class="on" aria-pressed="true"':' aria-pressed="false"'}>${l}</button>`).join("")}</div>`
-    : "";
-  const note=isNow
-    ? (modeOverridden(d)
-        ? `<span><b>${MODELABEL[mode]}</b> — just for today. ${dayName}s are normally ${MODELABEL[norm].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button>`
-        : `<span>${dayName} — normally a <b>${MODELABEL[norm].toLowerCase()}</b>.</span>`)
-    : `<span><b>${MODELABEL[mode]}</b></span>`;
-  /* a standing huddle is pinned at the top of the day as its own card — leaving it here too
-     means the same 8:30 appears twice on one screen */
-  const rest=fixed.filter(f=>!HUDRE.test(f.what||""));
-  const fx=rest.length
-    ? `<div class="dmfix">${rest.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
-    : "";
-  return seg;
-}
-/* the note and any other standing item stay full width under the rail — a 92px column is
-   no place for a sentence */
-function rhythmNoteHtml(d,isNow){
-  const wd=d.getDay();
-  if(wd==0||wd==6)return "";
-  const mode=dayMode(d),norm=weekMode(d),fixed=recurFor(d);
-  const dayName=d.toLocaleDateString(undefined,{weekday:"long"});
-  /* when the day is running as normal there's nothing to say — the switch already shows it */
-  const note=isNow
-    ? (modeOverridden(d)
-        ? `<span><b>${MODELABEL[mode]}</b> — just for today. ${dayName}s are normally ${MODELABEL[norm].toLowerCase()}s.</span><button data-act="dmreset">Back to normal</button>`
-        : "")
-    : `<span><b>${MODELABEL[mode]}</b></span>`;
-  const rest=fixed.filter(f=>!HUDRE.test(f.what||""));
-  const fx=rest.length
-    ? `<div class="dmfix">${rest.map(f=>`<div>${f.at?`<em>${fmtTime(f.at)}</em>`:""}${esc(f.what)}</div>`).join("")}</div>`
-    : "";
-  return (note?`<div class="dmnote">${note}</div>`:"")+fx;
-}
+/* the next five working days as a tappable strip */
 function renderWeek(cur){
   if(!A().length){$("#week").innerHTML="";return}
   const ds=[];let d=today();
@@ -3956,22 +3898,22 @@ function renderWeek(cur){
    different job, so the top block folds itself once the day is genuinely under way.
    Session-scoped on purpose — a manual choice shouldn't outlive the day it was made in. */
 let setupManual=null;
-function setupFolded(){
+function setupFolded(d){
   if(setupManual!==null)return !setupManual;
-  return touchesOn(today())>0;
+  return touchesOn(d||activeD())>0;
 }
 function renderDaySetup(isNow,d){
   const block=$("#setupblock"),sum=$("#setupsummary");
   if(!block||!sum)return;
   if(!isNow){block.classList.remove("folded");sum.innerHTML="";return}
-  const folded=setupFolded();
+  const folded=setupFolded(d);
   block.classList.toggle("folded",folded);
   if(!folded){
-    sum.innerHTML=touchesOn(today())>0
+    sum.innerHTML=touchesOn(d)>0
       ? `<button class="setupsum" data-act="setupfold"><span>Hide the day's set-up</span><s>hide</s></button>`:"";
     return;
   }
-  const done=touchesOn(today()),target=+D.cfg.touchTarget||40;
+  const done=touchesOn(d),target=+D.cfg.touchTarget||40;
   const firstHud=recurHuddles(d)[0];
   sum.innerHTML=`<button class="setupsum" data-act="setupopen">
     <span>${esc(MODELABEL[dayMode(d)]||"Field day")} &middot; ${done} of ${target} done${
@@ -3983,7 +3925,6 @@ function renderDaySetup(isNow,d){
    the record is the same one endDay() writes, marked so it reads honestly as automatic.
    Bounded to three weeks back so a long-dormant install doesn't seal a year of history,
    and nothing about the accounts is touched: open work still carries forward as it did. */
-function unhideCreed(){ if(D.cfg.hideCreed){delete D.cfg.hideCreed;save()} }
 function autoSealPast(){
   const now=today();
   let wrote=false;
@@ -4016,7 +3957,7 @@ async function restartDay(){
 }
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
-  autoSealPast();unhideCreed();
+  autoSealPast();
   const rec=sealed(d);
   $("#datestr").textContent=fmtFull(d);
   $("#dnToday").style.display=isNow?"none":"";
@@ -4039,9 +3980,6 @@ function renderToday(){
     return;
   }
 
-  /* the day's line lives at the foot of the screen with the quote — the top of Today is
-     for the day itself */
-  {const dl=$("#dailyline");if(dl)dl.innerHTML=""}
   $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
@@ -4059,7 +3997,6 @@ function renderToday(){
        <button data-act="catchup">Re-plan it</button></div>`
     : "";
   renderClock(isNow&&A().length>0);
-  renderWarm(isNow&&A().length>0);
   if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
   renderDaySetup(isNow,d);
   renderList(rows,isNow,d);
@@ -4071,13 +4008,10 @@ function renderToday(){
   $("#topbtn").innerHTML=startable
     ? `<button class="endbtn go" data-start="${iso(d)}" style="margin-top:14px">Start ${fmt(d)}</button>`
     : (jumped ? `<button class="endbtn" data-act="restartday" style="margin-top:14px">Restart &mdash; back to today</button>`:"");
-  $("#endbtn").innerHTML=
-    (false)
-      ? ``
-    /* This used to also require the clock to be past 8:30am. Opening the app early and
-       finding the button gone reads as broken, not as clever — a control that comes and goes
-       by the hour is the opposite of trustworthy. It is always here on the active day. */
-    :(isNow&&A().length)
+  /* This used to also require the clock to be past 8:30am. Opening the app early and
+     finding the button gone reads as broken, not as clever — a control that comes and goes
+     by the hour is the opposite of trustworthy. It is always here on the active day. */
+  $("#endbtn").innerHTML=(isNow&&A().length)
       ? `<button class="endbtn" data-act="endday">End my day</button>` : "";
   renderWeek(d);
   const q=isNow?dailyQuote():null;
@@ -4120,13 +4054,15 @@ function moveAction(a,n,dt){
 /* ---------- call block ---------- */
 let queue=[],qi=0;
 function buildQueue(){
-  const due=todayRows(today()).filter(r=>r.block=="call").map(r=>r.a);
+  const due=todayRows(activeD()).filter(r=>r.block=="call").map(r=>r.a);
   const have=new Set(due.map(a=>a.id));
   /* relationships are worked deliberately, on a date you chose — they join a run only when
      a call is actually due. Top-ups are prospecting, which is a volume game. */
+  /* lastTouch is a real calendar date, so it stays compared against the real today —
+     "did I physically dial them already" is a wall-clock question, not a mission-day one. */
   const pool=A().filter(a=>isWorking(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>score(y)-score(x));
-  const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(today()));
+  const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(activeD()));
   return due.concat(pool.slice(0,Math.max(10,need)));
 }
 function startRun(){
@@ -4192,7 +4128,7 @@ function drawCard(){
     const bh=bestHourLine(),L=learnStore();
   $("#ccard").classList.remove("stacked");
     $("#ccard").innerHTML=`<div class="co">Run complete</div>
-      <div class="why">${queue.length} accounts worked. ${touchesOn(today())} touches logged today.</div>
+      <div class="why">${queue.length} accounts worked. ${touchesOn(activeD())} touches logged today.</div>
       ${bh?`<div class="last" style="margin-top:14px">${bh}</div>`:""}
       ${L.fixes>=3?`<div class="last">Learned from ${L.fixes} corrections you've made — the read-back is getting closer to how you talk.</div>`:""}`;
     $(".cbtns").style.display="none";return;
@@ -4251,15 +4187,6 @@ function callOutcome(c){
     }
     return;
   }
-  if(c=="__legacy_talked"){
-    $(".cbtns").style.display="none";
-    $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
-      <label class="f" style="text-align:left">What did they say?<textarea class="t" id="csaid" rows="3" placeholder="Their words, not yours"></textarea></label>
-      <label class="f" style="text-align:left">When next? <s class="hint">blank means ${fmt(plusBiz(today(),cadenceDays(attemptsOn(a))))}</s></label>${dateField("cnext","next tuesday, the 28th")}
-      <div class="sa"><button class="b quiet" data-c="cancel">Back</button><button class="b pri" data-c="savetalk">Save &amp; next</button></div>`;
-    wireDate("cnext");
-    setTimeout(()=>$("#csaid").focus(),80);return;
-  }
   if(c=="notint"){
     $(".cbtns").style.display="none";
     $("#ccard").innerHTML=`<div class="co" style="font-size:20px">${esc(a.name)}</div>
@@ -4269,16 +4196,6 @@ function callOutcome(c){
     return;
   }
   if(c=="cancel"){drawCard();return}
-  if(c=="savetalk"){
-    const said=$("#csaid").value.trim(),dt=dateOf("cnext");
-    logEvent(a,"called",said||"talked");
-    if(said)a.brief=said;
-    openActions(a).filter(n=>actionBlock(n)=="call").forEach(n=>n.done=true);
-    if(dt)a.next.push({id:uid(),date:dt,why:said?said.slice(0,60):"Follow up",kind:kindOf("cnext"),done:false});
-    else keepAlive(a,said?said.slice(0,60):"");
-    if(a.stage=="callback")a.stage="interested";
-    save();advance();return;
-  }
 }
 function markLost(a,reason){
   a.outcome="lost";a.lostReason=reason;logEvent(a,"lost",reason);
@@ -4615,6 +4532,10 @@ function commitProposal(a,p){
 
   if(p.outcome=="notint"||p.outcome=="bad"){
     markLost(a,p.objection||(p.outcome=="bad"?"Bad number":"Not interested"));
+    /* a.dnc is written and never read anywhere. The promise the card makes is still kept,
+       but by a different mechanism: markLost above drops the account out of isWorking, so
+       buildQueue can never surface it again. Left in place deliberately — it is the right
+       field to hang an explicit do-not-call rule on if that is ever wanted. */
     if(p.dnc)a.dnc=true;
     save();advance();return;
   }
@@ -4907,16 +4828,19 @@ function doImport(txt,type){
   const rows=parseRows(txt);
   if(!rows||!rows.length){toast("Couldn't read that — first row must be headers.");return}
   const by={};A().forEach(a=>{if(a.name)by[norm(a.name)]=a});
+  /* built once, appended as we go — so a row still matches an earlier row from this same
+     paste, exactly as it did when every row rescanned the whole book */
+  const dix=dupeIndex();
   let add=0,upd=0,noPhone=0;const fresh=[],maybe=[];
   rows.forEach(r=>{
     let a=by[norm(r.name)];
     if(!a){
       /* an exact-name match already merges; this catches "Doyle Plumbing LLC" landing
          next to the "Doyle Plumbing" you added by hand last week */
-      const near=findDupes(r.name,r.phone,r.addr);
+      const near=findDupes(r.name,r.phone,r.addr,null,dix);
       if(near.length)maybe.push({name:r.name,hit:near[0]});
       a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
-      D.accounts.push(a);by[norm(r.name)]=a;add++;fresh.push(a)}else upd++;
+      D.accounts.push(a);by[norm(r.name)]=a;add++;fresh.push(a);dix.push(dupeKey(a))}else upd++;
     if(r.emps)a.emps=r.emps;
     if(r.city)a.city=r.city;
     if(r.industry)a.industry=r.industry;
@@ -5157,12 +5081,18 @@ const canMap=a=>!!(a&&(a.addr||a.city));
    that varies between a Salesforce export and what you type in a parking lot */
 const bare=s=>norm(s).replace(/\b(the|inc|llc|llp|ltd|co|corp|company|group|and)\b/g,"");
 /* likely-the-same-account, scored by the evidence a rep would actually use */
-function findDupes(name,phone,addr,skipId){
+/* The three normalized fields duplicate detection compares. Computing them per row per
+   account is what made a large import look frozen — a thousand rows against a thousand
+   accounts recomputed them a million times. Callers that scan repeatedly build this once
+   and append to it as they add, which keeps the fuzzy match identical but stops the
+   recomputation. A one-off caller passes nothing and gets the old behaviour. */
+const dupeKey=a=>({a,an:bare(a.name),ap:digits((a.contact||{}).phone),aa:bare(a.addr||"")});
+const dupeIndex=()=>A().map(dupeKey);
+function findDupes(name,phone,addr,skipId,index){
   const bn=bare(name),pd=digits(phone),ad=bare(addr||"");
   if(!bn&&!pd)return [];
-  return A().map(a=>{
+  return (index||dupeIndex()).map(({a,an,ap,aa})=>{
     if(a.id==skipId)return null;
-    const an=bare(a.name),ap=digits((a.contact||{}).phone),aa=bare(a.addr||"");
     let why="";
     if(pd&&ap&&pd.length>=7&&ap.slice(-10)==pd.slice(-10))why="same phone number";
     else if(bn&&an&&(an==bn||(bn.length>=5&&(an.includes(bn)||bn.includes(an)))))
@@ -6333,6 +6263,12 @@ document.addEventListener("click",async e=>{
       await save();closeSheet();render();
       toast(auto?"Logged — next one set for "+fmt(parseD(auto))+".":"Logged.");break}
     case"export":await exportBackup();break;
+    /* the add-on rows already render, edit and persist — this button was the one missing
+       link in a mechanism that was otherwise complete, so it just appends a blank row */
+    case"addaddon":{
+      if(!Array.isArray(D.cfg.addons))D.cfg.addons=[];
+      D.cfg.addons.push({n:"",b:0,p:0});
+      await save();renderSetup();break}
     case"diag":await diagnostics();break;
     case"editnotes":{
       if(!a)break;
@@ -6537,7 +6473,14 @@ if(markEl)markEl.addEventListener("click",()=>{
 let clockT=null;
 function startClock(){
   if(clockT)return;
-  const tick=()=>renderClock(screen=="today"&&viewDate&&iso(viewDate)==iso(today()));
+  /* viewDate is null whenever you're on the real today — renderToday reads it as
+     `viewDate||today()`. Testing it for truthiness here meant every tick decided you
+     weren't on today and blanked the clock, until the next full render put it back.
+     The ticker now asks the same question renderToday asks, so the two can't disagree. */
+  const tick=()=>{
+    const d=viewDate||today();
+    renderClock(screen=="today"&&isActive(d)&&!sealed(d)&&A().length>0);
+  };
   clockT=setInterval(tick,20000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
   window.addEventListener("focus",tick);
@@ -6634,7 +6577,7 @@ async function syncPush(){
   }catch(e){
     syncNote=(e&&e.message)||"Sync failed";
   }finally{syncBusy=false}
-  if(screen=="setup")renderSyncLine();
+  if(screen=="set")renderSyncLine();
   return {up};
 }
 
@@ -6696,7 +6639,7 @@ async function syncAll(loud){
   const upr=await syncPush();
   await syncBackup();
   if(dn.changed)render();
-  if(screen=="setup")renderSyncLine();
+  if(screen=="set")renderSyncLine();
   if(loud){
     if(syncNote)toast(syncNote);
     else toast(`Synced. ${upr.up||0} up, ${dn.down||0} down.`);
