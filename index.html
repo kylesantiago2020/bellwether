@@ -305,6 +305,11 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
 .hudbrief>.h span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hudbrief .hbody{margin-top:9px;font-size:13px;line-height:1.75;color:var(--ink2)}
 .hudbrief .hbody b{color:var(--ink);font-weight:500}
+.cc{transition:transform .19s ease,opacity .19s ease}
+.cc.gone{transform:translateX(-16%) scale(.95);opacity:0}
+.qout{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.qsplit{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink3);margin:0 0 10px}
 .cnav{display:flex;justify-content:center;align-items:center;gap:18px;margin:2px 0 12px}
 .cnav:empty,.ccard:not(.stacked)+.cnav{display:none}
 .cbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -1162,7 +1167,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-23.01 briefing";
+const BUILD="2026-07-23.02 queue-flow";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2545,6 +2550,12 @@ function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on
 function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML="";syncScrollLock()}
 let backTo="today";
 function go(s,id,from){
+  /* A search belongs to the errand you were on. Coming back to Territory an hour later and
+     finding it still filtered to "doyle" reads as broken. Opening an account from a result
+     and pressing back is the same errand, so that path keeps it. */
+  if(screen=="terr"&&s!=="terr"&&s!=="acct"&&terrQ){
+    terrQ="";terrPage=1;const q=$("#q");if(q)q.value="";
+  }
   if(s=="acct"&&from&&from!="acct")backTo=from;
   screen=s;if(id!==undefined)curId=id;
   document.body.dataset.s=s;
@@ -4350,7 +4361,35 @@ function drawCard(){
   paintSpeakBtn();
   speakBrief(a);
 }
-function advance(){_prop=null;qi++;drawCard()}
+/* A logged outcome is finished work. It used to stay in the stack behind him — the queue
+   only rebuilt on re-entry, which is why the cards vanished after tapping Done. Now the
+   card leaves the moment it is done, and the run is a queue that only shrinks.
+   Every removal is undoable: a card that disappears on a mis-tap at 55mph has to be
+   recoverable, or the speed becomes a reason to be careful, which defeats the point. */
+function advance(keep){
+  _prop=null;
+  const t=$("#cstack");
+  const card=t?[...t.querySelectorAll(".cc")][qi]:null;
+  const finish=()=>{
+    if(keep)qi++;
+    else{queue.splice(qi,1);if(qi>=queue.length)qi=Math.max(0,queue.length-1)}
+    drawCard();
+  };
+  if(!keep&&card){card.classList.add("gone");setTimeout(finish,190)}
+  else finish();
+}
+/* one outcome, one line: log it, drop the card, offer the way back */
+function outcomeDone(a,msg){
+  const before=snapshot(a),at=qi;
+  save();
+  advance();
+  toastUndo(msg,()=>{
+    restoreAcct(before);
+    const back=acct(a.id);
+    if(back&&queue.indexOf(back)<0){queue.splice(Math.min(at,queue.length),0,back);qi=at}
+    drawCard();
+  });
+}
 /* the arrow at the top and your thumb are the same gesture now */
 function stepTo(k){
   const t=$("#cstack");
@@ -4371,10 +4410,30 @@ function callOutcome(c){
     logEvent(a,"called",c=="message"?"left message":"no answer");
     reschedule(a,c=="message"?"Left a message — follow":"Try again");
     const nxt=openActions(a).filter(n=>actionBlock(n)=="call")[0];
-    if(nxt)toast((c=="message"?"Message logged":"Logged")+" — back to them "+fmt(parseD(nxt.date))+".");
-    save();advance();return;
+    outcomeDone(a,(c=="message"?"Message logged":"Logged")
+      +(nxt?" — back to them "+fmt(parseD(nxt.date)):""));
+    return;
   }
   if(c=="talked"){ debriefView(a); return }
+  if(c=="quickfollow"){
+    logEvent(a,"called","follow up");
+    reschedule(a,"Follow up");
+    const nxt=openActions(a).filter(n=>actionBlock(n)=="call")[0];
+    outcomeDone(a,"Follow-up set"+(nxt?" for "+fmt(parseD(nxt.date)):""));
+    return;
+  }
+  /* Sold is the one outcome that must not be a single tap. The signed number is what
+     counts toward club and Bellwether cannot know it — so this ends the card and opens
+     the same Won sheet the account screen uses, rather than booking a deal worth zero. */
+  if(c=="quicksold"){
+    const id=a.id;
+    advance();
+    endRun();
+    go("acct",id);
+    setTimeout(()=>logSheet("won"),120);
+    return;
+  }
+  if(c=="quickbad"){ dqSheet(a.id); return }
   if(c=="dbparse"&&voiceOn()){
     const said=($("#dbtext")||{}).value||"";
     if(!said.trim()){toast("Say something first.");return}
@@ -4391,6 +4450,10 @@ function callOutcome(c){
   }
   if(c=="dbback"){ debriefView(a); return }
   if(c=="dbsave"){ if(_prop)commitProposal(a,_prop); return }
+  if(c&&c.indexOf("pkind:")===0){
+    if(_prop){_prop.kind=c.slice(6);proposalView(a,_prop)}
+    return;
+  }
   if(c&&c.indexOf("dqfix:")===0){
     if(_prop){
       const v=c.slice(6);
@@ -4649,6 +4712,17 @@ function debriefView(a){
   $("#ccard").innerHTML=`
     <div class="co" style="font-size:20px">${esc(a.name)}</div>
     <div class="why" style="margin-bottom:12px">How did it go?</div>
+    <!-- most calls end one of these ways, and he is usually driving. One tap, card gone,
+         next prospect. The voice note underneath is for the calls worth describing. -->
+    <div class="qout">
+      <button class="b" data-c="noanswer">No answer</button>
+      <button class="b" data-c="message">Left voicemail</button>
+      <button class="b" data-c="quickfollow">Follow up</button>
+      <button class="b" data-c="notint">Not interested</button>
+      <button class="b" data-c="quicksold">Sold</button>
+      <button class="b" data-c="quickbad">Wrong number</button>
+    </div>
+    <div class="qsplit">or say what happened</div>
     <textarea class="dbf" id="dbtext" rows="4" placeholder="Just say what happened."></textarea>
     ${voiceOn()?`<div class="vrow"><button class="vrec" id="vrec" type="button">Record</button>
       <span class="vstat" id="vstat"></span></div>`:""}
@@ -5067,6 +5141,12 @@ function bestHourLine(){
 
 /* ---------- proposal ---------- */
 let _prop=null;
+/* the inferred kind, unless he has said otherwise on the card */
+function propKind(p){
+  if(p.kind)return p.kind;
+  return p.flags.indexOf("Meeting wanted")>=0?"meet"
+       :(p.flags.indexOf("Send something")>=0?"follow":"call");
+}
 function proposalView(a,p){
   _prop=p;
   const OUT={talked:"Spoke with them",message:"Left a message",noanswer:"No answer",
@@ -5081,6 +5161,13 @@ function proposalView(a,p){
   if(p.objection)rows+=row("Objection",p.objection);
   if(p.stage)rows+=row("Stage","Callback → Interested");
   if(p.dnc)rows+=row("Flag","Do not call — will be honoured");
+  /* The kind used to be inferred from words in the debrief and never shown, so a follow-up
+     call could be filed as a meeting because the word "stop by" appeared somewhere in the
+     sentence. It is now on the card, pre-selected, and changeable — what he sees is what
+     saves. */
+  if(p.date||p.why)rows+=`<div class="prow"><div class="plab">As a</div><div class="pval">
+    <div class="chips" style="margin:0">${[["call","Call"],["visit","Drop-in"],["meet","Meeting"],["follow","Send"]]
+      .map(([k2,l])=>`<button class="chip${propKind(p)==k2?" on":""}" data-pkind="${k2}">${l}</button>`).join("")}</div></div></div>`;
   if(p.dataQuality!="good")rows+=row("Record",dqLabel(p.dataQuality)+" — stage and history keep");
   if(p.flags.length)rows+=row("Noted",p.flags.join(", "));
   if(p.outcome!="notint"&&p.outcome!="bad")
@@ -5155,7 +5242,7 @@ function commitProposal(a,p){
   if(when){
     a.next.push({id:uid(),date:when,
       why:(p.flags.indexOf("Send something")>=0?"Send what you promised — ":"")+(p.why||"Follow up"),
-      kind:(p.flags.indexOf("Meeting wanted")>=0?"meet":(p.flags.indexOf("Send something")>=0?"follow":"call")),
+      kind:propKind(p),
       at:(typed?timeOf("cpdate"):"")||p.at||"",
       done:false,made:iso(today())});
   } else {
@@ -6389,6 +6476,7 @@ tap("log",t=>logSheet(t.dataset.log));
 tap("c",t=>callOutcome(t.dataset.c));
 tap("fix",t=>callOutcome("fix:"+t.dataset.fix));
 tap("dqfix",t=>callOutcome("dqfix:"+t.dataset.dqfix));
+tap("pkind",t=>callOutcome("pkind:"+t.dataset.pkind));
 tap("antown",t=>{chipVal.antown=t.dataset.antown;$$("[data-antown]").forEach(b=>b.classList.toggle("on",b.dataset.antown==t.dataset.antown))});
 tap("huddle",t=>startHuddle(t.dataset.huddle));
 tap("hreveal",()=>{hudShown=true;drawHuddle()});
