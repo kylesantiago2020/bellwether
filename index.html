@@ -620,6 +620,7 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .vrec{font-family:inherit;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:999px;
   border:1px solid var(--rule2);background:var(--card);color:var(--ink)}
 .vrec.on{background:#C0392B;border-color:#C0392B;color:#fff}
+.b.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .vstat{font-size:12.5px;color:var(--ink3);flex:1;min-width:0}
 .vbusy{opacity:.75}
 .aitag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
@@ -1125,7 +1126,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-22.33 audio-unlock";
+const BUILD="2026-07-22.34 listen";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4432,20 +4433,41 @@ async function ttsUrl(text){
 }
 /* fetched quietly while he is still reading the current card, so the next swipe is silent-free */
 function ttsPrefetch(a){ if(a&&naturalOn())ttsUrl(briefLine(a)).catch(()=>{}) }
-function deviceSpeak(text){
-  if(!window.speechSynthesis)return;
+function deviceSpeak(text,onEnd){
+  if(!window.speechSynthesis){if(onEnd)onEnd();return}
   try{
     speechSynthesis.cancel();
     if(!_voice)_voice=pickVoice();
     const u=new SpeechSynthesisUtterance(text);
     if(_voice)u.voice=_voice;
     u.rate=1;u.pitch=1;
+    if(onEnd)u.onend=onEnd;
     speechSynthesis.speak(u);
-  }catch(e){}
+  }catch(e){if(onEnd)onEnd()}
+}
+/* The call run reads briefs automatically and only when Brief aloud is on. Tapping Listen
+   on an account is a different act — a deliberate request — so it goes straight to the
+   voice without consulting that switch. Both share one player, so one always stops the
+   other rather than two voices talking over each other in a parking lot. */
+let sayingId="";
+function sayBrief(a){
+  sayingId=a.id;
+  sayText(briefLine(a),()=>{if(sayingId==a.id){sayingId="";paintSay()}});
+  paintSay();
+}
+function stopSay(){sayingId="";hushBrief();paintSay()}
+function paintSay(){
+  const b=$("#saybtn");if(!b)return;
+  const on=sayingId&&curId==sayingId;
+  b.classList.toggle("on",!!on);
+  b.textContent=on?"Stop":"Listen";
 }
 function speakBrief(a){
   if(!D.cfg.speakBriefs)return;
   const text=briefLine(a);
+  sayText(text);
+}
+function sayText(text,onEnd){
   if(naturalOn()){
     /* hushBrief() increments ttsSeq. Taking the number before calling it meant every
        arriving clip compared stale against a counter that had moved on by one, so both the
@@ -4455,12 +4477,13 @@ function speakBrief(a){
     ttsUrl(text).then(u=>{
       if(my!==ttsSeq)return;            /* he swiped on — that clip is stale */
       const el=ttsPlayer();
+      el.onended=()=>{if(my===ttsSeq&&onEnd)onEnd()};
       el.src=u;
       return el.play();
-    }).catch(()=>{ if(my===ttsSeq)deviceSpeak(text) });   /* no signal, no worker, no problem */
+    }).catch(()=>{ if(my===ttsSeq)deviceSpeak(text,onEnd) });   /* no signal, no worker, no problem */
     return;
   }
-  deviceSpeak(text);
+  deviceSpeak(text,onEnd);
 }
 function speakBriefLegacy(a){
   if(!D.cfg.speakBriefs||!window.speechSynthesis)return;
@@ -4941,6 +4964,7 @@ function renderAccount(){
     ${ph?`<a class="b" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">Call</a><a class="b" href="sms:${esc(ph.replace(/[^0-9+]/g,""))}">Text</a>`:""}
     ${em?`<a class="b" href="mailto:${esc(em)}">Email</a>`:""}
     ${canMap(a)?`<a class="b" href="${mapURL(a)}" target="_blank" rel="noopener">Navigate</a>`:""}
+    <button class="b" id="saybtn" data-say="${a.id}">Listen</button>
     ${(!ph&&!em)?`<button class="b pri" data-act="editacct">Add contact info</button>`:`<button class="b quiet" data-act="editacct">Edit</button>`}
   </div>`;
 
@@ -6166,6 +6190,11 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+tap("say",t=>{
+  ttsUnlock();
+  const a=acct(t.dataset.say);if(!a)return;
+  if(sayingId==a.id)stopSay(); else sayBrief(a);
+});
 tap("nv",t=>{D.cfg.naturalVoice=+t.dataset.nv;save();paintNV();
   toast(+t.dataset.nv?"Natural voice — costs a fraction of a cent a brief.":"Device voice.")});
 tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";closeSheet();render()});
@@ -6945,7 +6974,7 @@ document.addEventListener("input",e=>{
 document.addEventListener("change",e=>{if(e.target.id=="disc"&&curId)render()});
 $("#veil").addEventListener("click",e=>{if(e.target.id=="veil")closeSheet()});
 $("#fab").addEventListener("click",openNewAccount);
-$("#aback").addEventListener("click",()=>go(backTo||"today"));
+$("#aback").addEventListener("click",()=>{stopSay();go(backTo||"today")});
 $("#cexit").addEventListener("click",endRun);
 /* leaving without wrapping up is allowed — the referrals are already logged, and a huddle
    that got cut short shouldn't cost him the names */
