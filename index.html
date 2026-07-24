@@ -1167,7 +1167,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-23.02 queue-flow";
+const BUILD="2026-07-23.03 eyes-up";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4256,15 +4256,30 @@ function buildQueue(){
   const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(activeD()));
   return due.concat(pool.slice(0,Math.max(10,need)));
 }
+/* Coming back from a call to a slept, locked phone means Face ID and re-navigating at
+   40mph — the worst moment in the loop. The lock is held only while a run is open, and iOS
+   drops it whenever the app is backgrounded (which is every call), so it has to be taken
+   again on the way back in. Released the moment the run ends: nothing should hold a screen
+   awake longer than it is being used. */
+let wakeLk=null;
+async function wakeOn(){
+  try{
+    if(!("wakeLock" in navigator)||wakeLk)return;
+    wakeLk=await navigator.wakeLock.request("screen");
+    wakeLk.addEventListener("release",()=>{wakeLk=null});
+  }catch(e){}
+}
+function wakeOff(){try{if(wakeLk){wakeLk.release();wakeLk=null}}catch(e){}}
+const runOpen=()=>{const w=$("#callwrap");return !!w&&w.classList.contains("on")};
 function startRun(){
-  ttsUnlock();
+  ttsUnlock();wakeOn();
   queue=buildQueue();qi=0;
   if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
   $("#callwrap").classList.add("on");syncScrollLock();drawCard();
   if(!D.cfg.sawSpeakTip){D.cfg.sawSpeakTip=1;save();
     toast(D.cfg.speakBriefs?"Briefs read aloud — tap Silent to mute.":"Tap “Brief aloud” to have each one read to you.")}
 }
-function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
+function endRun(){hushBrief();wakeOff();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
 /* The queue was a slideshow you could only move forward through. Same cards, laid out
    so you can thumb back and forth — the buttons always act on whichever one you're
    looking at, and the debrief still takes the whole panel when it opens. */
@@ -4373,6 +4388,7 @@ function advance(keep){
   const finish=()=>{
     if(keep)qi++;
     else{queue.splice(qi,1);if(qi>=queue.length)qi=Math.max(0,queue.length-1)}
+    announceNext=queue.length>0;
     drawCard();
   };
   if(!keep&&card){card.classList.add("gone");setTimeout(finish,190)}
@@ -4620,9 +4636,14 @@ function paintSay(){
   b.classList.toggle("on",!!on);
   b.textContent=on?"Stop":"Listen";
 }
+let announceNext=false;
 function speakBrief(a){
   if(!D.cfg.speakBriefs)return;
-  const text=briefLine(a);
+  /* Arriving at a card and moving on from one are different messages: "here is who you are
+     looking at" versus "that one is done, here is the next". The lead-in is what lets him
+     keep his eyes up and work the queue by ear. */
+  const lead=announceNext;announceNext=false;
+  const text=(lead?"Next up. ":"")+briefLine(a);
   sayText(text);
 }
 function sayText(text,onEnd){
@@ -7831,7 +7852,11 @@ viewDate=today();
     if(!D.cfg.speakBriefs)hushBrief(); else if(queue[qi])speakBrief(queue[qi]);
     paintSpeakBtn();save();
   });
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)onBackFromCall()});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden)return;
+    if(runOpen())wakeOn();          /* iOS released it while he was on the phone */
+    onBackFromCall();
+  });
   onBackFromCall();
   $("#gbtn").addEventListener("click",gateSignIn);
   $("#glocal").addEventListener("click",gateOffline);
