@@ -1167,7 +1167,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-23.03 eyes-up";
+const BUILD="2026-07-23.04 fast";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1753,8 +1753,30 @@ async function load(){
   if(steps.length||loadReport.recovered)await save();
   return loadReport;
 }
-async function save(){
+/* Logging an outcome fires save() several times in quick succession — the handler, the
+   advance, the redraw. Each one serialised the entire book: ~62 ms here, closer to 300 on
+   his phone, and roughly 13 seconds of frozen screen across a forty-call run. The writes
+   are now collapsed into one per burst. calcRev still moves immediately so nothing renders
+   stale, and flush() still forces a real write when iOS is about to kill the tab. */
+let saveT=null,saveWait=[];
+function save(){
   D.v=SCHEMA;calcRev++;
+  D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
+  return new Promise(res=>{
+    saveWait.push(res);
+    if(saveT)return;
+    saveT=setTimeout(()=>{
+      saveT=null;
+      const ws=saveWait;saveWait=[];
+      saveNow().then(ok=>ws.forEach(w=>w(ok)));
+    },110);
+  });
+}
+/* anything that must not be lost calls this directly */
+function saveSoon(){if(saveT){clearTimeout(saveT);saveT=null;const ws=saveWait;saveWait=[];
+  return saveNow().then(ok=>{ws.forEach(w=>w(ok));return ok})} return saveNow()}
+async function saveNow(){
+  D.v=SCHEMA;
   /* every action gets a made-on date the first time it's saved. Doing it here instead of
      at each push site means a new scheduler can never forget to stamp. */
   const st=iso(today());
@@ -1772,6 +1794,8 @@ async function save(){
   if(typeof syncMark=="function")syncMark();
   return ok;
 }
+/* keep the old name working for anything that awaited a guaranteed write */
+const saveHard=saveSoon;
 const fmtWhen=s=>{try{const d=new Date(s);return d.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" "+d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}catch(e){return s||"—"}};
 function daysSinceExport(){
   if(!D.cfg.lastExport)return 999;
@@ -1906,6 +1930,15 @@ function setDayMode(d,m){
   if(m==weekMode(d))delete D.modes[iso(d)]; else D.modes[iso(d)]=m;
 }
 /* what has this relationship actually produced? counted, never guessed */
+/* every account's referral count in one pass, rebuilt only when the book changes */
+let _refIdx=null,_refRev=-1;
+function refIndex(){
+  if(_refIdx&&_refRev===calcRev)return _refIdx;
+  const m={};
+  A().forEach(p=>{if(p.source){const k=norm(p.source);m[k]=(m[k]||0)+1}});
+  _refIdx=m;_refRev=calcRev;
+  return m;
+}
 function refStats(a){
   const refs=(a.events||[]).filter(e=>e.kind=="referral");
   const cut90=iso(addDays(today(),-90)),cut180=iso(addDays(today(),-180));
@@ -4324,6 +4357,8 @@ function wireCallStack(){
   /* stepping lands ON a card rather than near one — the same snap the swipe gets */
   const stepTo=d=>{
     const n=cards().length;
+    /* about to walk off the rendered edge — extend the window first */
+    if(qi+d>=n-1&&queue.length>n){qi=Math.min(queue.length-1,qi+d);drawCard();return}
     const i=Math.max(0,Math.min(n-1,qi+d));
     if(i===qi)return;
     qi=i;centreOn(i);
@@ -4357,6 +4392,11 @@ function wireCallStack(){
     const a=queue.find(x=>x.id===el.dataset.dialid);if(a)armReturn(a);
   }));
 }
+/* The queue is 115 cards and every one used to be built into the DOM. Cards leave as they
+   are worked, so what is ahead of him is all that needs to exist — this keeps the endless
+   feel and about a tenth of the nodes. The window always reaches past wherever he is, so
+   arrowing forward never runs out of card. */
+const CARDWIN=14;
 function drawCard(){
   if(qi>=queue.length){
     const bh=bestHourLine(),L=learnStore();
@@ -4371,7 +4411,10 @@ function drawCard(){
   const a=queue[qi];
   $("#cpg").textContent=`${qi+1} / ${queue.length}`;
   $("#ccard").classList.add("stacked");
-  $("#ccard").innerHTML=`<div class="cstack" id="cstack">${queue.map((x,i)=>cardFace(x,i)).join("")}</div>`;
+  /* indices stay identical to the queue's — the window only ever truncates the tail, so
+     every existing calculation that maps a card position to queue[qi] still holds */
+  const shown=queue.slice(0,Math.min(queue.length,Math.max(CARDWIN,qi+4)));
+  $("#ccard").innerHTML=`<div class="cstack" id="cstack">${shown.map((x,i)=>cardFace(x,i)).join("")}</div>`;
   wireCallStack();
   paintSpeakBtn();
   speakBrief(a);
@@ -5523,7 +5566,11 @@ function sortList(list){
     case"added":return list.sort((x,y)=>(x.id<y.id?1:-1));
     case"touched":return list.sort((x,y)=>touched(y)<touched(x)?-1:1);
     case"due":return list.sort((x,y)=>nextDue(x)<nextDue(y)?-1:1);
-    case"value":return list.sort((x,y)=>dealValue(y)-dealValue(x)||refStats(y).total-refStats(x).total);
+    /* refStats() walks every account to count who names this one as their source, so using
+       it as a sort tiebreak was O(n^2) — seven million comparisons and about 700 ms on his
+       phone. The same answer falls out of one pass that counts every source at once. */
+    case"value":{const ref=refIndex();
+      return list.sort((x,y)=>dealValue(y)-dealValue(x)||(ref[norm(y.name)]||0)-(ref[norm(x.name)]||0))}
     default:return list.sort((x,y)=>dealValue(y)-dealValue(x)||score(y)-score(x));
   }
 }
@@ -7475,7 +7522,8 @@ if(sysDark&&sysDark.addEventListener)sysDark.addEventListener("change",applyThem
    costs more than the gesture ever saved. */
 
 /* iOS suspends and kills tabs without warning — write once more on the way out */
-function flush(){try{if(!window.storage)localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+function flush(){
+  if(saveT){clearTimeout(saveT);saveT=null;saveWait=[];}try{if(!window.storage)localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
 window.addEventListener("pagehide",flush);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState=="hidden")flush()});
 
