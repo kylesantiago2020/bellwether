@@ -307,6 +307,10 @@ body.dark .hudwrap{--ac:#2BB0A9;--acs:#0F332F}
 .hudbrief .hbody b{color:var(--ink);font-weight:500}
 .cc{transition:transform .19s ease,opacity .19s ease}
 .cc.gone{transform:translateX(-16%) scale(.95);opacity:0}
+.cwhy{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:12px}
+.cwhy span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;background:var(--wash);color:var(--ink3)}
+.cwhy span:first-child{background:var(--ambsoft);color:var(--amb)}
 .qout{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .qsplit{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;
   text-transform:uppercase;color:var(--ink3);margin:0 0 10px}
@@ -649,6 +653,18 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .lst{display:flex;width:100%;align-items:center;gap:12px;text-align:left;padding:13px 14px;margin-top:8px;
   border:1px solid var(--rule2);border-radius:12px;background:var(--card);font-family:inherit;color:var(--ink)}
 .lst.on{border-color:var(--ac)}
+.chip.go{border-color:var(--ac);color:var(--ac)}
+.runsrc{display:block;margin:9px auto 0;background:none;border:0;font-family:inherit;font-size:12.5px;
+  color:var(--ink3);text-decoration:underline;text-underline-offset:3px}
+.rtown{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink3);margin:14px 0 6px}
+.rstop{display:flex;width:100%;align-items:center;gap:12px;text-align:left;padding:10px 12px;margin-top:6px;
+  border:1px solid var(--rule2);border-radius:11px;background:var(--card);font-family:inherit;color:var(--ink)}
+.rstop em{flex:none;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);
+  width:20px;text-align:right}
+.rstop span{flex:1;min-width:0}
+.rstop b{display:block;font-size:14px;font-weight:500}
+.rstop s{display:block;text-decoration:none;font-size:12px;color:var(--ink3);margin-top:2px}
 .lst span{flex:1;min-width:0}
 .lst b{display:block;font-size:14px;font-weight:500}
 .lst s{display:block;text-decoration:none;font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.45}
@@ -1167,7 +1183,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-23.04 fast";
+const BUILD="2026-07-23.06 routes";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2692,6 +2708,25 @@ function dqChips(a){
     `<button class="chip${dq(a)==v?" on":""}" data-dq="${a.id}|${v}">${DQICON[v]} ${esc(l)}</button>`).join("")}</div>`;
 }
 /* live counts, so the sheet itself tells you where the work is tonight */
+/* The smart queue is still what the run button does. This is the override — reached by
+   holding, or from the sheet — so the fast path never grows a decision. */
+function runSheet(){
+  const rows=allLists().map(L=>({L,n:listQueue([L.id]).q.length})).filter(x=>x.n>0);
+  const last=(D.cfg.lastRunSrc||[]).filter(id=>listById(id));
+  const pick=new Set(runPick.length?runPick:last);
+  runPick=[...pick];
+  const total=runPick.length?listQueue(runPick).q.length:0;
+  openSheet(`<h3>What are you calling?</h3>
+    <div class="sub">Leave everything unticked for the day's own queue &mdash; who's due, then who scores highest.</div>
+    <div class="lsts">${rows.map(({L,n})=>
+      `<button class="lst${pick.has(L.id)?" on":""}" data-runsel="${esc(L.id)}">
+        <span><b>${esc(L.label)}</b></span><em>${n}</em></button>`).join("")}</div>
+    <div class="sa">
+      <button class="b pri" data-act="runstart">${runPick.length?`Call these ${total}`:"Use the day's queue"}</button>
+      ${runPick.length?`<button class="b quiet" data-act="runnone">Clear</button>`:""}
+    </div>`);
+}
+let runPick=[];
 function listSheet(){
   const rows=allLists().map(L=>{const n=listCount(L);
     return {L,n}}).filter(x=>x.n>0);
@@ -3832,7 +3867,9 @@ function renderNow(rows,day){
       <div class="eyebrow">now</div>
       <div class="nname">${got?"Day cleared.":"The queue is empty."}</div>
       <div class="nwhy">${got?got+" touches logged. Anything past this is house money — go find one more.":"Start a call run — highest-value untouched accounts first."}</div>
-      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
+      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button>
+      <button class="runsrc" data-act="runsrc">or pick a list</button>
+    <button class="runsrc" data-act="routeday">plan today's drive</button></div>`;
     return null;
   }
   const r=nowPick(rows);
@@ -3854,7 +3891,9 @@ function renderNow(rows,day){
       <div class="eyebrow">now</div>
       <div class="nname">${n>1?"Just the huddles.":"Just the huddle."}</div>
       <div class="nwhy">Nothing else is booked${got?` — ${got} touches logged so far`:""}. Walk out of the branch with names and the rest of the day builds itself.</div>
-      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button></div>`;
+      <button class="npri" data-act="run" style="max-width:280px;margin:16px auto 0">Start a call run</button>
+      <button class="runsrc" data-act="runsrc">or pick a list</button>
+    <button class="runsrc" data-act="routeday">plan today's drive</button></div>`;
     return null;
   }
   const huds=huddleStackCards(rows,day||today());
@@ -4101,7 +4140,9 @@ function renderList(rows,isNow,day){
     }
     html+=callgroup();
   }
-  if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button></div>`;
+  if(isNow&&!calls.length&&A().length)html+=`<div class="block"><button class="runbtn ghost" data-act="run">Start a call run</button>
+    <button class="runsrc" data-act="runsrc">or pick a list</button>
+    <button class="runsrc" data-act="routeday">plan today's drive</button></div>`;
   el.innerHTML=html;
 }
 /* the next five working days as a tappable strip */
@@ -4304,10 +4345,58 @@ async function wakeOn(){
 }
 function wakeOff(){try{if(wakeLk){wakeLk.release();wakeLk=null}}catch(e){}}
 const runOpen=()=>{const w=$("#callwrap");return !!w&&w.classList.contains("on")};
-function startRun(){
+/* ---------- runs from lists ----------
+   A list is a source, not a separate mode: everything downstream of the queue is unchanged.
+   Ordering still puts dated commitments first, because a follow-up he promised outranks a
+   cold name whatever list it arrived in. */
+function listQueue(ids){
+  const picked=allLists().filter(L=>ids.indexOf(L.id)>=0);
+  if(!picked.length)return {q:[],skip:{}};
+  const seen={},out=[],skip={phone:0,flagged:0,today:0,closedsale:0};
+  A().forEach(a=>{
+    if(!picked.some(L=>inList(a,L)))return;
+    if(!isWorking(a)){skip.closedsale++;return}
+    if(!dqOK(a)){skip.flagged++;return}
+    if(!(a.contact&&a.contact.phone)){skip.phone++;return}
+    if(lastTouch(a)==iso(today())){skip.today++;return}
+    if(seen[a.id])return;
+    seen[a.id]=1;out.push(a);
+  });
+  const dueIso=iso(activeD());
+  const dueFirst=a=>openActions(a).some(n=>actionBlock(n)=="call"&&n.date<=dueIso)?0:1;
+  out.sort((x,y)=>dueFirst(x)-dueFirst(y)||score(y)-score(x));
+  return {q:out,skip};
+}
+/* the badges that say why this account is in front of him */
+function whyHere(a){
+  const out=[];
+  if(openActions(a).some(n=>actionBlock(n)=="call"&&n.date<=iso(activeD())))out.push("Follow-up due");
+  (a.lists||[]).forEach(t=>out.push(t));
+  allLists().forEach(L=>{if(!L.tag&&inList(a,L))out.push(L.label)});
+  return out.slice(0,4);
+}
+let runSource=[];   /* [] means the smart queue */
+function startRun(src){
   ttsUnlock();wakeOn();
-  queue=buildQueue();qi=0;
-  if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
+  runSource=Array.isArray(src)?src:[];
+  qi=0;
+  if(runSource.length){
+    const r=listQueue(runSource);
+    queue=r.q;
+    if(!queue.length){
+      toast("Nothing callable in that list right now.");return;
+    }
+    /* a run that quietly drops most of a list reads as broken — say what was left out */
+    const s2=r.skip,bits=[];
+    if(s2.phone)bits.push(s2.phone+" with no number");
+    if(s2.flagged)bits.push(s2.flagged+" flagged");
+    if(s2.today)bits.push(s2.today+" already touched");
+    D.cfg.lastRunSrc=runSource.slice();save();
+    toast(queue.length+" to call"+(bits.length?" · skipping "+bits.join(", "):""));
+  }else{
+    queue=buildQueue();
+    if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
+  }
   $("#callwrap").classList.add("on");syncScrollLock();drawCard();
   if(!D.cfg.sawSpeakTip){D.cfg.sawSpeakTip=1;save();
     toast(D.cfg.speakBriefs?"Briefs read aloud — tap Silent to mute.":"Tap “Brief aloud” to have each one read to you.")}
@@ -4320,7 +4409,9 @@ function cardFace(a,idx){
   const ph=(a.contact||{}).phone||"";
   const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
   const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
+  const wy=runSource.length?whyHere(a):[];
   return `<div class="cc" role="group" aria-label="${idx+1} of ${queue.length}: ${esc(a.name)}">
+    ${wy.length?`<div class="cwhy">${wy.map(w=>`<span>${esc(w)}</span>`).join("")}</div>`:""}
     <div class="co">${esc(a.name)}</div>
     <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
     <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
@@ -5606,7 +5697,9 @@ function renderTerritory(){
     : "";
   /* in list mode the chip rail becomes one chip that gets you out again */
   if(L)$("#tfilters").innerHTML=`<button class="chip on" data-act="listclear">${esc(L.label)} &times;</button>`
-    +`<button class="chip" data-act="listmenu">Other lists</button>`;
+    +`<button class="chip" data-act="listmenu">Other lists</button>`
+    +`<button class="chip go" data-runlist="${esc(L.id)}">Work this list &rsaquo;</button>`
+    +`<button class="chip go" data-routelist="${esc(L.id)}">Drive it &rsaquo;</button>`;
   else if(!searching)$("#tfilters").innerHTML=$("#tfilters").innerHTML
     +`<button class="chip" data-act="listmenu">Lists &#9662;</button>`;
   if(L)$("#tcount").innerHTML=`<b>${list.length}</b> in ${esc(L.label)}`;
@@ -6080,6 +6173,79 @@ function catchUp(){
 const mapQuery=a=>[a.name,a.addr||"",a.city||""].filter(Boolean).join(", ");
 const mapURL=a=>"https://maps.apple.com/?q="+encodeURIComponent(mapQuery(a));
 const canMap=a=>!!(a&&(a.addr||a.city));
+/* ---------- routes ----------
+   These accounts have street addresses and towns, never coordinates, so there is no honest
+   way to compute a shortest path. What there IS, already in the app, is a map of which
+   MetroWest towns touch which — so the route is built by chaining towns and ordering the
+   stops inside each one. Not street-optimal; it is the order a rep would drive anyway, and
+   it never sends you back across the territory for one door.
+   Ten stops is the ceiling because that is what a maps URL will carry. */
+const ROUTEMAX=10;
+function routeStops(ids){
+  const picked=ids&&ids.length?allLists().filter(L=>ids.indexOf(L.id)>=0):null;
+  const pool=A().filter(a=>{
+    if(!isOpen(a)||!dqOK(a)||!canMap(a))return false;
+    if(a.type=="bank")return false;              /* branches run through the huddle */
+    if(lastTouch(a)==iso(today()))return false;
+    return picked?picked.some(L=>inList(a,L)):todayRows(activeD()).some(r=>r.a.id==a.id&&r.block=="field");
+  });
+  if(!pool.length)return [];
+  const byTown={};
+  pool.forEach(a=>{const t=String(a.city||"").trim().toLowerCase()||"—";(byTown[t]=byTown[t]||[]).push(a)});
+  Object.keys(byTown).forEach(t=>byTown[t].sort((x,y)=>score(y)-score(x)));
+  const an=anchorOn();
+  const all=Object.keys(byTown);
+  const biggestOf=set=>[...set].sort((x,y)=>byTown[y].length-byTown[x].length)[0];
+  const start=an&&byTown[an.town.toLowerCase()]?an.town.toLowerCase():biggestOf(new Set(all));
+  /* A list can span sixty towns; a day cannot. Only the starting town and the ones that
+     touch it belong on one route — anything further is a different day's drive, and
+     stringing it on would send him to Worcester and back for one door. */
+  const left=new Set(all.filter(t=>t===start||townTier(t,start)<=1));
+  const order=[];let cur=start;
+  while(left.size){
+    if(!left.has(cur))cur=biggestOf(left);
+    order.push(...byTown[cur]);
+    left.delete(cur);
+    if(!left.size)break;
+    const nxt=[...left].filter(t=>(NEIGHBORS[cur]||[]).indexOf(t)>=0)
+                       .sort((x,y)=>byTown[y].length-byTown[x].length)[0];
+    cur=nxt||biggestOf(left);
+  }
+  order.elsewhere=pool.length-order.length;
+  order.hub=start;
+  return order;
+}
+/* Apple Maps takes one destination from a URL and nothing more, so a multi-stop handoff
+   has to go to Google. Waypoints are driven in the order given, which is what makes the
+   ordering above worth doing. */
+function routeURL(stops){
+  const list=stops.slice(0,ROUTEMAX);
+  if(!list.length)return "";
+  const q=a=>encodeURIComponent(mapQuery(a));
+  const dest=list[list.length-1],way=list.slice(0,-1).map(q).join("|");
+  return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination="+q(dest)
+    +(way?"&waypoints="+way:"");
+}
+function routeSheet(ids){
+  const stops=routeStops(ids);
+  if(!stops.length){toast("Nothing to drive to \u2014 those accounts have no address.");return}
+  const first=stops.slice(0,ROUTEMAX);
+  let last="",rows="";
+  first.forEach((a,i)=>{
+    const t=(a.city||"").trim();
+    if(t.toLowerCase()!==last){last=t.toLowerCase();rows+=`<div class="rtown">${esc(t||"No town")}</div>`}
+    rows+=`<button class="rstop" data-open="${a.id}"><em>${i+1}</em>
+      <span><b>${esc(a.name)}</b><s>${esc(a.addr||a.city||"")}</s></span></button>`;
+  });
+  const hub=(stops.hub||"").replace(/\b\w/g,c=>c.toUpperCase());
+  openSheet(`<h3>Drive order</h3>
+    <div class="sub">${stops.length} stop${stops.length==1?"":"s"} around ${esc(hub)}, in the order to take them.
+      ${stops.length>ROUTEMAX?`Maps carries the first ${ROUTEMAX}. `:""}
+      ${stops.elsewhere?`${stops.elsewhere} more in this list are too far for one day.`:""}</div>
+    ${rows}
+    <div class="sa"><a class="b pri" href="${routeURL(first)}" target="_blank" rel="noopener">Open in Maps</a>
+      <button class="b quiet" data-act="close">Close</button></div>`);
+}
 /* "Doyle Plumbing" and "Doyle Plumbing LLC" are the same business — strip the noise
    that varies between a Salesforce export and what you type in a parking lot */
 const bare=s=>norm(s).replace(/\b(the|inc|llc|llp|ltd|co|corp|company|group|and)\b/g,"");
@@ -6601,6 +6767,13 @@ tap("say",t=>{
 tap("nv",t=>{D.cfg.naturalVoice=+t.dataset.nv;save();paintNV();
   toast(+t.dataset.nv?"Natural voice — costs a fraction of a cent a brief.":"Device voice.")});
 tap("list",t=>{terrList_=t.dataset.list;terrPage=1;terrQ="";closeSheet();render()});
+tap("runlist",t=>{closeSheet();startRun([t.dataset.runlist])});
+tap("routelist",t=>{closeSheet();routeSheet([t.dataset.routelist])});
+tap("runsel",t=>{
+  const id=t.dataset.runsel,i=runPick.indexOf(id);
+  if(i>=0)runPick.splice(i,1); else runPick.push(id);
+  runSheet();
+});
 /* picking today's topic inside the layer also pre-fills the debrief — one choice, made once */
 tap("htopic",t=>{pickChip(t,"htopic")});
 tap("wtopic",t=>{pickChip(t,"wtopic")});
@@ -7202,6 +7375,7 @@ document.addEventListener("click",async e=>{
       keepAlive(a,"Reopened — make contact");
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":startRun();break;
+    case"runsrc":runSheet();break;
     case"allq":showAllQ=!showAllQ;openQ=null;render();break;
     case"close":closeSheet();break;
     case"addnext":addNextSheet();break;
@@ -7317,7 +7491,11 @@ document.addEventListener("click",async e=>{
       D.cfg.addons.push({n:"",b:0,p:0});
       await save();renderSetup();break}
     case"listmenu":listSheet();break;
+    case"runpick":runSheet();break;
+    case"routeday":routeSheet(null);break;
     case"listclear":{terrList_=null;terrPage=1;closeSheet();render();break}
+    case"runstart":{const src=runPick.slice();runPick=[];closeSheet();startRun(src);break}
+    case"runnone":{runPick=[];runSheet();break}
     case"diag":await diagnostics();break;
     case"editnotes":{
       if(!a)break;
