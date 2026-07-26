@@ -568,6 +568,36 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .thread .tentry:last-child{border-bottom:none}
 .thread s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
 .thread p{margin:4px 0 0;font-size:13.5px;line-height:1.55;color:var(--ink)}
+/* ---- the deck: Bellwether's primary surface ----
+   The day is one vertical sequence of cards. Bubbles are the timeline and the only
+   global navigation; seams are slim segment labels that never capture the snap;
+   the action row is pinned below and re-binds to whichever card is centred. */
+#bubbles{display:flex;gap:16px;overflow-x:auto;padding:12px 2px;border-bottom:1px solid var(--rule);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#bubbles::-webkit-scrollbar{display:none}
+#bubbles:empty{display:none;border:0;padding:0}
+.bub{flex:none;background:none;border:0;font-family:inherit;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0}
+.bub i{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule2);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-style:normal}
+.bub i svg{width:17px;height:17px;display:block}
+.bub em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;color:var(--ink3)}
+.bub.live i{border:2px solid var(--ac);color:var(--ac)}
+.bub.live em{color:var(--ink);font-weight:500}
+.bub.done{opacity:.4}
+#deckshell{margin:10px -6px 0}
+#deck{display:flex;flex-direction:column;gap:12px;padding:6px 4px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain}
+#deck::-webkit-scrollbar{display:none}
+#deck>.cc{flex:0 0 86%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:center;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:22px 20px;overflow:hidden}
+#deck .co{font-size:25px;font-weight:500;letter-spacing:-.6px;line-height:1.2}
+#deck .meta{margin-top:7px;font-size:13.5px;color:var(--ink2)}
+#deck .why{margin-top:14px;font-size:14px;color:var(--ink2);line-height:1.6;max-width:420px;margin-left:auto;margin-right:auto}
+#deck .last{margin-top:12px;font-size:12.5px;color:var(--ink3);line-height:1.55}
+#deck .dial{margin-top:16px}
+.seam{flex:none;scroll-snap-align:none;display:flex;align-items:baseline;gap:8px;padding:4px 12px;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.seam b{font-size:12.5px;font-weight:500;color:var(--ink)}
+.seam span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3)}
+.seam s{text-decoration:none;margin-left:auto;font-size:11.5px;color:var(--ac);flex:none}
+#deckact{display:grid;gap:8px;padding:10px 0 0}
+#deckact:empty{display:none}
+#deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
 /* Two rows that were mostly air now carry the day's numbers: the mark sits beside the
    mission clock, and the day-mode switch runs down the margin next to the greeting. */
@@ -975,6 +1005,11 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
   <div id="carry"></div>
   <div id="catchup"></div>
+  <!-- the deck: the active day's one surface. Bubbles above, action row below.
+       On preview and sealed days these stay empty and the legacy renderers run. -->
+  <div id="bubbles"></div>
+  <div id="deckshell"><div id="deck"></div></div>
+  <div id="deckact"></div>
   <button class="jump" id="dnToday" style="display:none">Back to today</button>
   <div id="now"></div>
   <div id="blocks"></div>
@@ -1154,21 +1189,11 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <div class="ctopbar">
     <button class="b quiet" id="cexit">Done</button>
     <span class="pg" id="cpg"></span>
-    <button class="cospeak" id="cospeak" type="button">Brief aloud</button>
-    <button class="b quiet" id="cskip">Skip &rsaquo;</button>
+    <span style="width:52px"></span>
   </div>
   <div class="ccard" id="ccard"></div>
-  <!-- stepping sits under the card, next to the thumb, not up in the chrome -->
-  <div class="cnav" id="cnav">
-    <button class="stepbtn" id="cprev" aria-label="Previous card">&#8249;</button>
-    <button class="stepbtn" id="cnext" aria-label="Next card">&#8250;</button>
-  </div>
-  <div class="cbtns">
-    <button class="cb no" data-c="noanswer">No answer</button>
-    <button class="cb no" data-c="message">Left message</button>
-    <button class="cb dead" data-c="notint">Not interested</button>
-    <button class="cb talked" data-c="talked">Talked</button>
-  </div>
+  <!-- retired chrome kept as inert nodes so long-standing style toggles stay harmless -->
+  <div class="cbtns" style="display:none"></div>
 </div>
 
 <!-- huddle -->
@@ -1207,7 +1232,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.01 feed";
+const BUILD="2026-07-26.02 deck";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2752,6 +2777,9 @@ function runSheet(){
       `<button class="lst${runPick.indexOf(L.id)>=0?" on":""}" data-runsel="${esc(L.id)}">
         <span><b>${esc(L.label)}</b>${L.blurb?`<s>${esc(L.blurb)}</s>`:""}</span><em>${n}</em></button>`).join("")}
     </div>
+    <div class="chips" style="margin-top:14px">
+      <button class="chip${D.cfg.speakBriefs?" on":""}" data-act="briefaloud">Read each brief aloud</button>
+    </div>
     <div class="sa">
       <button class="b pri" data-act="runstart">${total?`Call these ${total}`:"Nothing callable right now"}</button>
     </div>`);
@@ -4268,7 +4296,7 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#huddles","#carry","#catchup","#clock","#now","#pace","#setupsummary"].forEach(quiet);
+    ["#shape","#huddles","#carry","#catchup","#clock","#now","#pace","#setupsummary","#bubbles","#deck","#deckact"].forEach(quiet);
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
@@ -4297,9 +4325,22 @@ function renderToday(){
        <button data-act="catchup">Re-plan it</button></div>`
     : "";
   renderClock(isNow&&A().length>0);
-  if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
-  renderDaySetup(isNow,d);
-  renderList(rows,isNow,d);
+  const deckMode=isNow&&A().length>0;
+  if(deckMode){
+    /* the deck IS the day — the widget layer stands down. Preview and sealed days
+       keep the legacy renderers: there's nothing to DO on Thursday from Tuesday,
+       so Thursday doesn't get deck physics. */
+    ["#now","#pace","#blocks","#anchorslot","#setupsummary"].forEach(quiet);
+    $("#setupblock").classList.add("folded");
+    $("#hd").innerHTML="";
+    renderDeck();
+  }else{
+    ["#bubbles","#deck","#deckact"].forEach(quiet);
+    const de=$("#deck");if(de)de.style.height="";
+    if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
+    renderDaySetup(isNow,d);
+    renderList(rows,isNow,d);
+  }
   /* every business day has a beginning and an ending — one button, whichever applies */
   /* on a day you haven't started yet, the only thing you can do is start it — that button
      belongs at the top of the screen, not underneath a plan you can't act on */
@@ -4317,6 +4358,11 @@ function renderToday(){
   const q=isNow?dailyQuote():null;
   $("#quote").innerHTML=(weekRecap(d,d))+
     (q?`<div class="quote"><div class="said">&ldquo;${esc(q[0])}&rdquo;</div><div class="who">${esc(q[1])}</div></div>`:"");
+  if(deckMode){
+    /* on deck days these live inside cards: carry and quote on Start, the ending on
+       the End card, the week behind the header date via the day arrows */
+    ["#endbtn","#week","#quote","#carry"].forEach(quiet);
+  }
 }
 function weekAvg(){
   let t=0;for(let i=0;i<7;i++)t+=touchesOn(addDays(today(),-i));
@@ -4351,7 +4397,262 @@ function moveAction(a,n,dt){
   commit("Moved to "+fmt(parseD(dt))+".",()=>{n.date=was});
 }
 
-/* ---------- call block ---------- */
+/* ==================== the deck ====================
+   Bellwether's primary surface. The active day is ONE vertical sequence of cards —
+   a stage is a labelled segment, not a container, so there is exactly one scroller
+   and one gesture. Cards are DERIVED from account state on every render, never
+   stored: completing work shrinks the deck, undo re-deals the card back in, and a
+   day that changes under him re-deals honestly. Card types register in DECKTYPE;
+   adding an activity means adding a face and actions there — never touching the
+   pipeline. Full contract in deck-architecture.md. */
+const DECKWIN=16;
+let deckKey=null,dI=0,dSpeakT=null,deckBound=false;
+const segPos={},deckSegSeen={};
+let dbA=null,dbBefore=null;     /* the account the debrief takeover is about */
+const DICON={
+ start:'<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/>',
+ huddle:'<circle cx="8" cy="8" r="3"/><path d="M2 20c0-3 2.7-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M15 15c3 0 6 2 7 5"/>',
+ field:'<path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/>',
+ calls:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.8 2Z"/>',
+ follow:'<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>',
+ end:'<path d="M20 13A8 8 0 1 1 11 4a6.5 6.5 0 0 0 9 9Z"/>',
+ check:'<path d="m4 12.5 6 5.5L20 6"/>'};
+const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DICON[k]||DICON.calls}</svg>`;
+const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
+const DACT={start:[["begin","Begin the day",1]],
+ huddle:[["enterhud","Start the huddle",1]],
+ call:[["noanswer","No answer"],["message","Message"],["talked","Talked",1]],
+ meet:[["done","Done",1],["later","Later"],["skip","Skip"]],
+ visit:[["done","Done",1],["later","Later"],["skip","Skip"]],
+ follow:[["done","Done",1],["later","Later"],["skip","Skip"]],
+ end:[["endday","End my day",1]]};
+const dayBegun=()=>D.cfg.begun===activeISO();
+const deckOn=()=>screen==="today"&&isActive(viewDate||today())&&A().length>0&&!sealed(activeD());
+
+/* the day, dealt: derived top to bottom from what today actually owes */
+function deckCards(){
+  const d=activeD(),rows=todayRows(d),office=dayMode(d)==="office";
+  const out=[],push=(type,seg,a,r,x)=>out.push(Object.assign({key:type+":"+(a?a.id:seg)+(r&&r.lead?":"+r.lead.id:""),type,seg,a,r},x||{}));
+  if(!dayBegun())push("start","start",null,null);
+  const huds=huddleStackCards(rows,d).filter(c=>c.a);
+  huds.forEach(c=>push("huddle","huddle",c.a,null,{c}));
+  const pinned=new Set(huds.map(c=>c.a.id));
+  const rank={meet:0,visit:1};
+  const fieldAll=rows.filter(r=>(r.block==="meet"||r.block==="visit")&&!(pinned.has(r.a.id)&&r.block==="meet"))
+    .filter(r=>r.a.skip!==iso(today()))
+    .sort((x,y)=>(x.block==="meet"||y.block==="meet"?0:anchorTier(x.a)-anchorTier(y.a))
+      ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
+  const fieldCards=()=>{fieldAll.filter(r=>!isParked(r)).forEach(r=>push(r.block,"field",r.a,r));
+    fieldAll.filter(isParked).forEach(r=>push(r.block,"field",r.a,r,{far:1}))};
+  const callCards=()=>(runSource.length?listQueue(runSource).q:buildQueue()).forEach(a=>push("call","calls",a,null));
+  const followCards=()=>rows.filter(r=>r.block==="follow"&&r.a.skip!==iso(today())).sort(byTime).forEach(r=>push("follow","follow",r.a,r));
+  if(office){callCards();followCards();fieldCards()}else{fieldCards();callCards();followCards()}
+  push("end","end",null,null);
+  out.forEach(c=>deckSegSeen[c.seg]=1);   /* the timeline remembers finished segments */
+  return out;
+}
+
+function deckCtx(a){
+  const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
+  return lt?`<div class="ctx"><s>Last touch · ${days(parseD(lt),today())}d ago</s>${le&&le.text?`<p>${esc(le.text.slice(0,110))}</p>`:""}</div>`
+    :`<div class="ctx"><s>Never touched · attempt ${attemptsOn(a)+1}</s></div>`;
+}
+function deckChip(a){
+  const cn=(a.events||[]).length;
+  return `<button class="threadchip" data-thread="${a.id}" aria-label="History for ${esc(a.name)}, ${cn} ${cn==1?"entry":"entries"}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg><b>${cn}</b></button>`;
+}
+function deckFace(c){
+  const a=c.a,K=`data-key="${esc(c.key)}"`;
+  if(c.type==="start"){
+    const cn=carryNote(),q=dailyQuote(),rows=todayRows(activeD());
+    return `<div class="cc" ${K} role="group" aria-label="Start the day">
+      <div class="cwhy"><span>${esc(fmtFull(activeD()))}</span></div>
+      <div class="co">${greeting()}</div>
+      <div class="why">${rows.length?dayShape(rows,activeD()):"Nothing owed yet — the deck builds as you add work."}</div>
+      ${cn?`<div class="ctx"><s>You wanted to remember</s><p>${esc(cn.text)}</p></div>`:""}
+      ${q?`<div class="last said">&ldquo;${esc(q[0])}&rdquo; &mdash; ${esc(q[1])}</div>`:""}
+      <button class="threadchip" data-act="anchor">Daily plan &amp; warm-up</button>
+    </div>`;
+  }
+  if(c.type==="huddle")
+    return `<div class="cc" ${K} role="group" aria-label="Huddle at ${esc(a.name)}">
+      <div class="cwhy"><span>${c.c&&c.c.at?fmtTime(c.c.at)+" · ":""}huddle${c.c&&c.c.over?" · missed":""}</span></div>
+      <div class="co">${esc(a.name)}</div>
+      <div class="why">${huddleGist(a)}</div>
+      <div class="last">Walk out with names and the rest of the day builds itself.</div>
+    </div>`;
+  if(c.type==="end"){
+    const got=touchesOn(activeD()),tgt=+D.cfg.touchTarget||40;
+    return `<div class="cc" ${K} role="group" aria-label="End of day">
+      <div class="cwhy"><span>end of day</span></div>
+      <div class="co">${got>=tgt?"That's the mission.":"The last card."}</div>
+      <div class="why">${got} of ${tgt} touches logged.</div>
+      <div class="last">Ending the day seals the journal — anything unfinished carries forward, nothing is lost.</div>
+    </div>`;
+  }
+  if(c.type==="call"){
+    const ph=(a.contact||{}).phone||"",nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
+    const wy=runSource.length?whyHere(a):[];
+    return `<div class="cc" ${K} role="group" aria-label="Call ${esc(a.name)}">
+      <div class="cwhy"><span>call</span>${wy.map(w=>`<span>${esc(w)}</span>`).join("")}</div>
+      <div class="co">${esc(a.name)}</div>
+      <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
+      <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
+      ${deckCtx(a)}
+      ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
+      ${deckChip(a)}
+      ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
+      <button class="dqbtn${dqOK(a)?"":" on"}" data-dqopen="${a.id}">${dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
+    </div>`;
+  }
+  /* meet / visit / follow — a row from today's plan as a full card */
+  const r=c.r,why=(r.due||[]).map(n=>n.why).filter(Boolean).join(" · ")||"Follow up";
+  const at=rowAt(r),em=(a.contact||{}).email||"";
+  const kind={meet:"meeting",visit:"drop-in",follow:"follow-up"}[c.type];
+  const chips=[at?fmtTime(at):"",kind,c.far&&a.city?esc(a.city)+" · further out":"",TYPESHORT[a.type]||""].filter(Boolean);
+  const go_=c.type!=="follow"&&canMap(a)?`<a class="dial" href="${mapURL(a)}" target="_blank" rel="noopener">Directions${a.city?" &mdash; "+esc(a.city):""}</a>`
+    :(c.type==="follow"&&em?`<a class="dial" href="mailto:${esc(em)}">Email ${esc((a.contact||{}).name||a.name)}</a>`:"");
+  return `<div class="cc" ${K} role="group" aria-label="${kind} — ${esc(a.name)}">
+    <div class="cwhy">${chips.map(x=>`<span>${x}</span>`).join("")}</div>
+    <div class="co">${esc(a.name)}</div>
+    <div class="meta">${[a.emps?a.emps+" ee":"",a.city,dealValue(a)?k(dealValue(a)):""].filter(Boolean).join(" · ")}</div>
+    <div class="why">${esc(why)}${r.over?" · overdue":""}</div>
+    ${deckCtx(a)}
+    ${deckChip(a)}
+    ${go_}
+  </div>`;
+}
+function seamHtml(seg,n){
+  const lists=runSource.map(id=>{const L=listById(id);return L?L.label:""}).filter(Boolean).join(" + ");
+  const lab=seg==="calls"?(lists||"Bellwether's pick")+" · "+n:String(n);
+  const act=seg==="calls"?"runsrc":seg==="field"?"anchor":"";
+  return `<${act?"button":"div"} class="seam"${act?` data-act="${act}"`:""}><b>${SEGLABEL[seg]}</b><span>${lab}</span>${act?`<s>${seg==="calls"?"lists":"plan"} &rsaquo;</s>`:""}</${act?"button":"div"}>`;
+}
+
+function deckCardEls(){const d=$("#deck");return d?[...d.querySelectorAll(".cc")]:[]}
+function deckCur(){const d=$("#deck");return d&&d._deck?d._deck[Math.min(dI,d._deck.length-1)]:null}
+function renderDeckActions(c){
+  const el=$("#deckact");if(!el)return;
+  const acts=(c&&DACT[c.type])||[];
+  el.style.gridTemplateColumns=`repeat(${acts.length||1},1fr)`;
+  el.innerHTML=acts.map(([id,lab,pri])=>`<button class="cb${pri?" talked":""}" data-deckact="${id}">${lab}</button>`).join("");
+}
+function renderBubbles(deck){
+  const holder=$("#bubbles");if(!holder)return;
+  const have={};deck.forEach(c=>{if(!have[c.seg])have[c.seg]={n:0,at:null};have[c.seg].n++;
+    if(c.type==="huddle"&&c.c&&c.c.at&&!have[c.seg].at)have[c.seg].at=c.c.at});
+  const order=["start","huddle","field","calls","follow","end"];
+  holder.innerHTML=order.filter(s=>deckSegSeen[s]||have[s]).map(s=>{
+    const done=!have[s];
+    return `<button class="bub${done?" done":""}" data-bub="${s}" aria-label="${SEGLABEL[s]}${done?", done":""}">
+      <i>${dSvg(done?"check":s)}</i><em>${have[s]&&have[s].at?fmtTime(have[s].at):SEGLABEL[s]}</em></button>`;}).join("");
+}
+const paintBubbles=seg=>$$("#bubbles .bub").forEach(b=>b.classList.toggle("live",b.dataset.bub===seg));
+
+function deckFocus(i,jump){
+  const d=$("#deck");if(!d||!d._deck)return;
+  const deck=d._deck;
+  dI=Math.max(0,Math.min(deck.length-1,i));
+  const c=deck[dI];if(!c)return;
+  deckKey=c.key;if(c.seg)segPos[c.seg]=c.key;
+  renderDeckActions(c);paintBubbles(c.seg);
+  if(jump){const elc=deckCardEls()[dI];
+    if(elc)d.scrollTop=elc.offsetTop-(d.clientHeight-elc.offsetHeight)/2}
+  /* the ambient machinery follows the card type: awake and speaking for calls, quiet otherwise */
+  clearTimeout(dSpeakT);
+  if(c.type==="call"){wakeOn();dSpeakT=setTimeout(()=>speakBrief(c.a),300)}
+  else{wakeOff();hushBrief()}
+}
+function deckSize(){
+  const d=$("#deck");if(!d)return;
+  requestAnimationFrame(()=>{
+    const act=$("#deckact"),nav=document.querySelector(".nav");
+    const h=Math.max(320,window.innerHeight-d.getBoundingClientRect().top-((act&&act.offsetHeight)||58)-((nav&&nav.offsetHeight)||92)-12);
+    d.style.height=h+"px";
+  });
+}
+function renderDeck(){
+  const el=$("#deck");if(!el)return;
+  /* a new active day starts with a clean timeline and no remembered positions */
+  if(renderDeck._day!==activeISO()){renderDeck._day=activeISO();
+    for(const k in deckSegSeen)delete deckSegSeen[k];
+    for(const k in segPos)delete segPos[k];
+    deckKey=null;dI=0}
+  const deck=deckCards();
+  let fi=deck.findIndex(c=>c.key===deckKey);if(fi<0)fi=0;
+  const shownN=Math.min(deck.length,Math.max(DECKWIN,fi+5));
+  let html="",lastSeg=null;
+  const segCount={};deck.forEach(c=>segCount[c.seg]=(segCount[c.seg]||0)+1);
+  deck.slice(0,shownN).forEach(c=>{
+    if(c.seg!==lastSeg){lastSeg=c.seg;
+      if(c.seg!=="start"&&c.seg!=="end")html+=seamHtml(c.seg,segCount[c.seg])}
+    html+=deckFace(c);
+  });
+  if(deck.length>shownN)html+=`<div class="seam"><b>&hellip;</b><span>${deck.length-shownN} more below</span></div>`;
+  el.innerHTML=html;
+  el._deck=deck;el._shownN=shownN;
+  renderBubbles(deck);
+  deckFocus(fi,true);
+  deckSize();
+  if(!deckBound){deckBound=true;wireDeck(el);
+    window.addEventListener("resize",()=>{if(deckOn())deckSize()});
+    /* dialling arms the return-to-debrief loop from any surface, without blocking tel: */
+    document.addEventListener("click",e=>{const t=e.target.closest("[data-dialid]");
+      if(t){const a=acct(t.dataset.dialid);if(a)armReturn(a)}});
+  }
+}
+function wireDeck(t){
+  let queued=false;
+  t.addEventListener("scroll",()=>{
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;
+      const mid=t.scrollTop+t.clientHeight/2;
+      let best=Infinity,idx=0;
+      deckCardEls().forEach((c,k)=>{const d=Math.abs(c.offsetTop+c.offsetHeight/2-mid);if(d<best){best=d;idx=k}});
+      if(idx!==dI){
+        deckFocus(idx,false);
+        /* walking toward the rendered edge extends the window */
+        if(idx>=t._shownN-3&&t._deck.length>t._shownN)renderDeck();
+      }
+    });
+  },{passive:true});
+}
+/* completion pipeline: point the focus at the next card, let this one leave upward,
+   then re-deal — the deck compresses and the day is visibly shorter */
+function deckAdvanceKey(c){
+  const d=$("#deck"),deck=d&&d._deck;if(!deck)return;
+  const i=deck.findIndex(x=>x.key===c.key);
+  const nx=deck[i+1]||deck[i-1];
+  deckKey=nx?nx.key:null;
+}
+function deckGone(c,fin){
+  const sel=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
+  if(sel){sel.classList.add("gone");setTimeout(fin,200)}else fin();
+}
+function deckDo(c,act){
+  const a=c.a;
+  if(act==="begin"){deckAdvanceKey(c);D.cfg.begun=activeISO();
+    deckGone(c,()=>{save();toastUndo("Day begun — go get it.",()=>{delete D.cfg.begun;save();render()});render()});return}
+  if(act==="enterhud"){startHuddle(a.id);return}
+  if(act==="endday"){endDay();return}
+  if(c.type==="call"){
+    dbA=a;dbBefore=snapshot(a);
+    if(act==="talked")debriefView(a);else callOutcome(act);
+    return;
+  }
+  if(act==="done"){deckAdvanceKey(c);deckGone(c,()=>completeAction(a,c.r.lead.id,"Logged."));return}
+  if(act==="later"){laterSheet(a.id,c.r.lead.id);return}
+  if(act==="skip"){deckAdvanceKey(c);const was=a.skip;a.skip=iso(today());
+    deckGone(c,()=>commit("Skipped for today.",()=>{a.skip=was}));return}
+}
+
+
+/* ---------- call block ----------
+   The run overlay is retired: calls live in the deck's calls segment, and the
+   callwrap survives only as the debrief takeover. queue/qi remain declared for
+   the few legacy references that still read them. */
 let queue=[],qi=0,speakT=null;
 function buildQueue(){
   const due=todayRows(activeD()).filter(r=>r.block=="call").map(r=>r.a);
@@ -4424,63 +4725,36 @@ function whyHere(a){
   return out.slice(0,4);
 }
 let runSource=[];   /* [] means the smart queue */
-let runStat={done:0,talked:0};   /* this run's payoff — reset by startRun */
 function startRun(src){
-  ttsUnlock();wakeOn();
+  /* the chooser's commit: point the calls segment at a source and jump the deck there */
+  ttsUnlock();
   runSource=Array.isArray(src)?src:[];
-  qi=0;
   if(runSource.length){
     const r=listQueue(runSource);
-    queue=r.q;
-    if(!queue.length){
-      toast("Nothing callable in that list right now.");return;
-    }
-    /* a run that quietly drops most of a list reads as broken — say what was left out */
+    if(!r.q.length){toast("Nothing callable in that list right now.");runSource=[];return}
     const s2=r.skip,bits=[];
     if(s2.phone)bits.push(s2.phone+" with no number");
     if(s2.flagged)bits.push(s2.flagged+" flagged");
     if(s2.today)bits.push(s2.today+" already touched");
-    D.cfg.lastRunSrc=runSource.slice();save();
-    toast(queue.length+" to call"+(bits.length?" · skipping "+bits.join(", "):""));
+    D.cfg.lastRunSrc=runSource.slice();
+    toast(r.q.length+" to call"+(bits.length?" · skipping "+bits.join(", "):""));
   }else{
-    queue=buildQueue();
-    if(!queue.length){toast("Nobody to call — import competitor accounts in Territory.");return}
-    /* he chose the smart queue this time — don't pre-tick last week's lists next time */
-    D.cfg.lastRunSrc=[];save();
+    if(!buildQueue().length)toast("Nobody to call — import competitor accounts in Territory.");
+    D.cfg.lastRunSrc=[];
   }
-  runStat={done:0,talked:0};
-  $("#callwrap").classList.add("on");syncScrollLock();drawCard();
+  save();
+  segPos.calls=null;render();
+  const d=$("#deck"),deck=d&&d._deck;
+  if(deck){const i=deck.findIndex(c=>c.seg==="calls");
+    if(i>=0){deckKey=deck[i].key;renderDeck()}}
   if(!D.cfg.sawSpeakTip){D.cfg.sawSpeakTip=1;save();
-    toast(D.cfg.speakBriefs?"Briefs read aloud — tap Silent to mute.":"Tap “Brief aloud” to have each one read to you.")}
+    toast(D.cfg.speakBriefs?"Briefs read aloud on call cards.":"Briefs can be read aloud — the switch lives behind the Calls label.")}
 }
-function endRun(){hushBrief();wakeOff();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();save();render()}
+/* closing the debrief takeover — nothing dropped, just done with the panel */
+function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on");syncScrollLock();dbA=null;dbBefore=null}
 /* The queue was a slideshow you could only move forward through. Same cards, laid out
    so you can thumb back and forth — the buttons always act on whichever one you're
    looking at, and the debrief still takes the whole panel when it opens. */
-function cardFace(a,idx){
-  const ph=(a.contact||{}).phone||"";
-  const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
-  const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
-  const wy=runSource.length?whyHere(a):[];
-  const cn=(a.events||[]).length;
-  /* the front of the card carries exactly one line of context — the thing you'll need to
-     say in the next fifteen seconds. Everything else lives behind the thread chip: the
-     count alone says "you've been here before" without making you read your way in. */
-  return `<div class="cc" role="group" aria-label="${idx+1} of ${queue.length}: ${esc(a.name)}">
-    ${wy.length?`<div class="cwhy">${wy.map(w=>`<span>${esc(w)}</span>`).join("")}</div>`:""}
-    <div class="co">${esc(a.name)}</div>
-    <div class="meta">${[TYPELABEL[a.type]||"",a.emps?a.emps+" employees":"",a.city,(a.today&&a.today.bundle)||""].filter(Boolean).join(" · ")}</div>
-    <div class="why">${esc(nx?nx.why:"Untouched — first attempt")}${(a.contact&&a.contact.name)?` · ask for ${esc(a.contact.name)}`:""}</div>
-    ${lt?`<div class="ctx"><s>Last touch · ${days(parseD(lt),today())}d ago</s>${le&&le.text?`<p>${esc(le.text.slice(0,110))}</p>`:""}</div>`
-       :`<div class="ctx"><s>Never touched · attempt ${attemptsOn(a)+1}</s></div>`}
-    ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
-    <button class="threadchip" data-thread="${a.id}" aria-label="History for ${esc(a.name)}, ${cn} ${cn==1?"entry":"entries"}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg>
-      <b>${cn}</b></button>
-    ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
-    <button class="dqbtn${dqOK(a)?"":" on"}" data-dqopen="${a.id}">${dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
-  </div>`;
-}
 /* the thread: everything ever logged on this account, newest first. Opened from the run
    today; built standalone so the account screen and a future Today stage can open the
    same sheet. Stamps are day-level because events store dates — clock times would be a
@@ -4498,138 +4772,22 @@ function threadSheet(id){
     }).join("")}</div>
     <div class="sa"><button class="b quiet" data-act="close">Done</button></div>`);
 }
-function wireCallStack(){
-  const t=$("#cstack");if(!t)return;
-  const cards=()=>[...t.querySelectorAll(".cc")];
-  const cp=$("#cprev"),cn=$("#cnext");
-  const paintArrows=()=>{
-    const n=cards().length;
-    if(cp)cp.disabled=qi<=0;
-    if(cn)cn.disabled=qi>=n-1;
-  };
-  /* measure where the cards actually are rather than assuming a uniform step — snap
-     clamps at both ends, so arithmetic would drift on the first and last card */
-  const centreOn=(k,smooth)=>{
-    const c=cards()[k];if(!c)return;
-    t.scrollTo({top:c.offsetTop-(t.clientHeight-c.offsetHeight)/2,behavior:smooth?"smooth":"auto"});
-  };
-  const nearest=()=>{
-    const mid=t.scrollTop+t.clientHeight/2;
-    let best=Infinity,idx=0;
-    cards().forEach((c,k)=>{
-      const d=Math.abs(c.offsetTop+c.offsetHeight/2-mid);
-      if(d<best){best=d;idx=k}
-    });
-    return idx;
-  };
-  /* stepping lands ON a card rather than near one — the same snap the swipe gets */
-  const stepTo=d=>{
-    const n=cards().length;
-    /* about to walk off the rendered edge — extend the window first */
-    if(qi+d>=n-1&&queue.length>n){qi=Math.min(queue.length-1,qi+d);drawCard();return}
-    const i=Math.max(0,Math.min(n-1,qi+d));
-    if(i===qi)return;
-    qi=i;centreOn(i,true);
-    $("#cpg").textContent=`${qi+1} / ${n}`;
-    paintArrows();paintSpeakBtn();
-    clearTimeout(speakT);
-    speakT=setTimeout(()=>{speakBrief(queue[qi]);ttsPrefetch(queue[qi+1])},260);
-  };
-  if(cp)cp.onclick=()=>stepTo(-1);
-  if(cn)cn.onclick=()=>stepTo(1);
-  paintArrows();
-  /* one frame later, so the track has a measured width to scroll within */
-  requestAnimationFrame(()=>centreOn(qi));
-  let queued=false;
-  t.addEventListener("scroll",()=>{
-    if(queued)return;
-    queued=true;
-    requestAnimationFrame(()=>{
-      queued=false;
-      const i=nearest();
-      if(i!==qi){
-        qi=i;$("#cpg").textContent=`${qi+1} / ${queue.length}`;paintSpeakBtn();paintArrows();
-        /* thumbing through six cards should not fire six fetches and six voices — wait
-           until he actually settles on one */
-        clearTimeout(speakT);
-        speakT=setTimeout(()=>{speakBrief(queue[qi]);ttsPrefetch(queue[qi+1])},260);
-      }
-    });
-  },{passive:true});
-  $$("#cstack [data-dialid]").forEach(el=>el.addEventListener("click",()=>{
-    const a=queue.find(x=>x.id===el.dataset.dialid);if(a)armReturn(a);
-  }));
-}
-/* The queue is 115 cards and every one used to be built into the DOM. Cards leave as they
-   are worked, so what is ahead of him is all that needs to exist — this keeps the endless
-   feel and about a tenth of the nodes. The window always reaches past wherever he is, so
-   arrowing forward never runs out of card. */
-const CARDWIN=14;
-function drawCard(){
-  if(qi>=queue.length){
-    const bh=bestHourLine(),L=learnStore();
-    const got=touchesOn(activeD()),tgt=+D.cfg.touchTarget||40;
-    const bits=[runStat.done?`${runStat.done} worked`:"",
-      runStat.talked?`${runStat.talked} conversation${runStat.talked==1?"":"s"}`:"",
-      `${got} of ${tgt} touches today`].filter(Boolean).join(" · ");
-    $("#ccard").classList.remove("stacked");
-    $("#ccard").innerHTML=`<div class="eyebrow" style="margin-bottom:10px">run complete</div>
-      <div class="co">${got>=tgt?"That's the mission.":"That's the run."}</div>
-      <div class="why">${bits}</div>
-      ${bh?`<div class="last" style="margin-top:14px">${bh}</div>`:""}
-      ${L.fixes>=3?`<div class="last">Learned from ${L.fixes} corrections you've made — the read-back is getting closer to how you talk.</div>`:""}
-      <button class="npri" data-act="runexit" style="max-width:280px;margin:22px auto 0">Done</button>`;
-    $(".cbtns").style.display="none";return;
-  }
-  $(".cbtns").style.display="grid";
-  const a=queue[qi];
-  $("#cpg").textContent=`${qi+1} / ${queue.length}`;
-  $("#ccard").classList.add("stacked");
-  /* indices stay identical to the queue's — the window only ever truncates the tail, so
-     every existing calculation that maps a card position to queue[qi] still holds */
-  const shown=queue.slice(0,Math.min(queue.length,Math.max(CARDWIN,qi+4)));
-  $("#ccard").innerHTML=`<div class="cstack" id="cstack">${shown.map((x,i)=>cardFace(x,i)).join("")}</div>`;
-  wireCallStack();
-  paintSpeakBtn();
-  speakBrief(a);
-}
-/* A logged outcome is finished work. It used to stay in the stack behind him — the queue
-   only rebuilt on re-entry, which is why the cards vanished after tapping Done. Now the
-   card leaves the moment it is done, and the run is a queue that only shrinks.
-   Every removal is undoable: a card that disappears on a mis-tap at 55mph has to be
-   recoverable, or the speed becomes a reason to be careful, which defeats the point. */
+/* the debrief's verdicts: an outcome ends the takeover and drops the card from the deck */
 function advance(keep){
   _prop=null;
-  const t=$("#cstack");
-  const card=t?[...t.querySelectorAll(".cc")][qi]:null;
-  const finish=()=>{
-    if(keep)qi++;
-    else{runStat.done++;queue.splice(qi,1);if(qi>=queue.length)qi=Math.max(0,queue.length-1)}
-    announceNext=queue.length>0;
-    drawCard();
-  };
-  if(!keep&&card){card.classList.add("gone");setTimeout(finish,190)}
-  else finish();
+  const a=dbA;
+  endRun();
+  if(keep||!a){save();render();return}
+  const d=$("#deck"),deck=d&&d._deck;
+  const c=deck?deck.find(x=>x.type==="call"&&x.a&&x.a.id===a.id):null;
+  if(c){deckAdvanceKey(c);deckGone(c,()=>{save();render()})}
+  else{save();render()}
 }
-/* one outcome, one line: log it, drop the card, offer the way back */
-function outcomeDone(a,msg){
-  const before=snapshot(a),at=qi;
-  save();
+/* one outcome, one line: log it, drop the card, offer the whole way back */
+function outcomeDone(a,msg,before){
+  const snap=before||dbBefore;
   advance();
-  toastUndo(msg,()=>{
-    restoreAcct(before);
-    const back=acct(a.id);
-    if(back&&queue.indexOf(back)<0){queue.splice(Math.min(at,queue.length),0,back);qi=at}
-    drawCard();
-  });
-}
-/* the arrow at the top and your thumb are the same gesture now */
-function stepTo(k){
-  const t=$("#cstack");
-  if(!t){qi=k;drawCard();return}
-  const c=[...t.querySelectorAll(".cc")][k];
-  if(!c){qi=k;drawCard();return}
-  t.scrollTo({top:c.offsetTop-(t.clientHeight-c.offsetHeight)/2,behavior:"smooth"});
+  if(snap)toastUndo(msg,()=>restoreAcct(snap));else toast(msg);
 }
 function reschedule(a,note){
   const att=attemptsOn(a);
@@ -4638,21 +4796,24 @@ function reschedule(a,note){
   if(cur)cur.date=when; else a.next.push({id:uid(),date:when,why:note||"Try again",kind:"call",done:false});
 }
 function callOutcome(c){
-  const a=queue[qi];if(!a)return;
+  const a=dbA||((deckCur()&&deckCur().type==="call")?deckCur().a:null);if(!a)return;
+  /* the whole-way-back snapshot: taken before any mutation this outcome makes */
+  const before=dbBefore||snapshot(a);
   if(c=="noanswer"||c=="message"){
     logEvent(a,"called",c=="message"?"left message":"no answer");
     reschedule(a,c=="message"?"Left a message — follow":"Try again");
     const nxt=openActions(a).filter(n=>actionBlock(n)=="call")[0];
+    dbA=a;
     outcomeDone(a,(c=="message"?"Message logged":"Logged")
-      +(nxt?" — back to them "+fmt(parseD(nxt.date)):""));
+      +(nxt?" — back to them "+fmt(parseD(nxt.date)):""),before);
     return;
   }
-  if(c=="talked"){ runStat.talked++; debriefView(a); return }
+  if(c=="talked"){ debriefView(a); return }
   if(c=="quickfollow"){
     logEvent(a,"called","follow up");
     reschedule(a,"Follow up");
     const nxt=openActions(a).filter(n=>actionBlock(n)=="call")[0];
-    outcomeDone(a,"Follow-up set"+(nxt?" for "+fmt(parseD(nxt.date)):""));
+    outcomeDone(a,"Follow-up set"+(nxt?" for "+fmt(parseD(nxt.date)):""),before);
     return;
   }
   /* Sold is the one outcome that must not be a single tap. The signed number is what
@@ -4661,7 +4822,6 @@ function callOutcome(c){
   if(c=="quicksold"){
     const id=a.id;
     advance();
-    endRun();
     go("acct",id);
     setTimeout(()=>logSheet("won"),120);
     return;
@@ -4720,7 +4880,7 @@ function callOutcome(c){
       <div class="sa"><button class="b quiet" data-c="cancel">Back</button></div>`;
     return;
   }
-  if(c=="cancel"){drawCard();return}
+  if(c=="cancel"){if(dbA)debriefView(dbA);return}
 }
 function markLost(a,reason){
   a.outcome="lost";a.lostReason=reason;logEvent(a,"lost",reason);
@@ -4931,20 +5091,16 @@ function onBackFromCall(){
   const a=acct(p.id);
   disarmReturn();
   if(!a)return;
-  if(!$("#callwrap").classList.contains("on")){
-    /* the run was killed mid-call — reopen it exactly where he left off */
-    queue=buildQueue();
-    let i=queue.findIndex(x=>x.id===a.id);
-    if(i<0){queue=[a];i=0}
-    qi=i;
-    $("#callwrap").classList.add("on");syncScrollLock();
-  }
-  debriefView(a);
+  debriefView(a);   /* the debrief takeover opens itself */
 }
 
 /* ---------- debrief ---------- */
 function debriefView(a){
   hushBrief();
+  dbA=a;if(!dbBefore)dbBefore=snapshot(a);
+  const w=$("#callwrap");
+  if(!w.classList.contains("on")){w.classList.add("on");syncScrollLock()}
+  $("#cpg").textContent="";
   $(".cbtns").style.display="none";
   $("#ccard").classList.remove("stacked");
   $("#ccard").innerHTML=`
@@ -6899,7 +7055,7 @@ tap("rel",t=>{const a=cur();if(!a)return;
   const was=a.rel;a.rel=t.dataset.rel;
   if(was!=a.rel)logEvent(a,"note","relationship \u2192 "+(relLabel(a.rel)||a.rel).toLowerCase());
   save();render()});
-tap("lost",t=>{markLost(queue[qi],t.dataset.lost);save();advance()});
+tap("lost",t=>{if(!dbA)return;markLost(dbA,t.dataset.lost);save();advance()});
 tap("lostr",t=>{const a=cur();if(!a)return;
   const before=snapshot(a);markLost(a,t.dataset.lostr);closeSheet();
   commit("Logged as lost.",()=>restoreAcct(before))});
@@ -7406,6 +7562,16 @@ tap("pbpage",t=>{pbPage=t.dataset.pbpage.replace(/^m:/,"");window.scrollTo(0,0);
 tap("bref",t=>{const i=t.dataset.bref;bRef[i]=!bRef[i];render()});
 tap("bmo",t=>{const a=cur();bMo=t.dataset.bmo||null;if(a&&bMo)bSeen[a.id]=1;render()});
 tap("bsafe",()=>{bSafe=!bSafe;bMo=null;render()});
+/* the deck's two inputs: the pinned action row, and the bubble timeline */
+tap("deckact",t=>{const c=deckCur();if(c)deckDo(c,t.dataset.deckact)});
+tap("bub",t=>{
+  const s=t.dataset.bub,d=$("#deck"),deck=d&&d._deck;if(!deck)return;
+  let i=deck.findIndex(c=>c.key===segPos[s]);        /* return to where he left it */
+  if(i<0)i=deck.findIndex(c=>c.seg===s);             /* else the segment's first card */
+  if(i<0){toast(SEGLABEL[s]+" — all done.");return}
+  if(i>=d._shownN){deckKey=deck[i].key;renderDeck()}
+  else deckFocus(i,true);
+});
 const TAPSEL=Object.keys(TAPS).concat("act").map(k=>"[data-"+k+"]").join(",");
 document.addEventListener("click",async e=>{
   const t=e.target.closest(TAPSEL);
@@ -7464,6 +7630,8 @@ document.addEventListener("click",async e=>{
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":runSheet();break;   /* legacy id — every door is the chooser now */
     case"runsrc":runSheet();break;
+    case"briefaloud":{ttsUnlock();D.cfg.speakBriefs=!D.cfg.speakBriefs;
+      if(!D.cfg.speakBriefs)hushBrief();save();runSheet();break}
     case"runexit":endRun();break;
     case"allq":showAllQ=!showAllQ;openQ=null;render();break;
     case"close":closeSheet();break;
@@ -7645,16 +7813,10 @@ document.addEventListener("change",e=>{if(e.target.id=="disc"&&curId)render()});
 $("#veil").addEventListener("click",e=>{if(e.target.id=="veil")closeSheet()});
 $("#fab").addEventListener("click",openNewAccount);
 $("#aback").addEventListener("click",()=>{stopSay();go(backTo||"today")});
-$("#cexit").addEventListener("click",endRun);
+$("#cexit").addEventListener("click",()=>{endRun();render()});
 /* leaving without wrapping up is allowed — the referrals are already logged, and a huddle
    that got cut short shouldn't cost him the names */
 $("#hudexit").addEventListener("click",exitHuddle);
-$("#cskip").addEventListener("click",()=>{
-  /* Skip used to redraw the whole panel; now it just slides the stack, so the arrow and
-     the swipe do exactly the same thing and neither loses your place. */
-  if(qi>=queue.length)return;
-  if(qi+1<queue.length&&$("#cstack"))stepTo(qi+1); else advance();
-});
 $("#dnPrev").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),-1);showAllRows=false;render()});
 $("#dnNext").addEventListener("click",()=>{viewDate=addDays(viewDate||today(),1);showAllRows=false;render()});
 $("#dnToday").addEventListener("click",()=>{viewDate=activeD();showAllRows=false;render()});
@@ -8160,13 +8322,6 @@ viewDate=today();
   render();
   startClock();
   await syncBoot();
-  paintSpeakBtn();
-  $("#cospeak").addEventListener("click",()=>{
-    ttsUnlock();
-    D.cfg.speakBriefs=!D.cfg.speakBriefs;
-    if(!D.cfg.speakBriefs)hushBrief(); else if(queue[qi])speakBrief(queue[qi]);
-    paintSpeakBtn();save();
-  });
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden)return;
     if(runOpen())wakeOn();          /* iOS released it while he was on the phone */
