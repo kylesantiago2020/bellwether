@@ -564,6 +564,11 @@ body.deckon .fab{bottom:calc(160px + env(safe-area-inset-bottom))}
 .ctx p{margin:3px auto 0;font-size:13.5px;color:var(--ink2);line-height:1.55;max-width:420px}
 .threadchip{align-self:center;margin:14px auto 0;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1px solid var(--rule2);background:var(--paper);color:var(--ink2);font-family:inherit;font-size:12px;cursor:pointer}
 .threadchip svg{width:14px;height:14px;display:block}
+/* two quiet affordances, one row: what happened before, and how to get there */
+.chiprow{display:flex;justify-content:center;align-items:center;gap:8px;margin:14px 0 0}
+.chiprow .threadchip{margin:0;padding:9px 15px}
+.mapchip{color:var(--ink2);text-decoration:none}
+.mapchip.sure{border-color:var(--grn);color:var(--grn)}
 .threadchip b{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink)}
 .thread{margin-top:6px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;text-align:left}
 .thread .tentry{padding:11px 0;border-bottom:1px solid var(--rule)}
@@ -1266,7 +1271,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.04 deck";
+const BUILD="2026-07-26.06 deck";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4515,7 +4520,9 @@ function routeGo(){
   D.cfg.routeStarted=activeISO();save();
   window.open(routeURL(stops.slice(0,ROUTEMAX)),"_blank");
   render();
-  toast(stops.length>ROUTEMAX?"First "+ROUTEMAX+" stops sent to Google Maps — relaunch from the Field seam as the day shrinks.":"Route sent to Google Maps.");
+  toast(stops.noaddr
+    ? stops.noaddr+" stop"+(stops.noaddr==1?"":"s")+" have no street address — if Maps can't find one, add it from the route sheet."
+    : (stops.length>ROUTEMAX?"First "+ROUTEMAX+" stops sent to Google Maps — relaunch from the Field seam as the day shrinks.":"Route sent to Google Maps."));
 }
 function routeFace(c){
   const stops=routeStops(null);
@@ -4528,7 +4535,8 @@ function routeFace(c){
     <div class="meta">${esc(towns.join(" · "))||"Add addresses and the drive order builds itself"}</div>
     <div class="rstops">${shown.map((a,i)=>`<div><s>${i+1}</s>${esc(a.name)}<em>${esc(a.city||"")}</em></div>`).join("")}
     ${stops.length>4?`<div class="rmore">+ ${stops.length-4} more in drive order</div>`:""}
-    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}</div>
+    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}
+    ${stops.noaddr?`<div class="rmore">${stops.noaddr} without a street address &mdash; Maps searches by name for those</div>`:""}</div>
     <div class="last">Live &mdash; reorders as the day changes${timed?"; set times outrank the drive order in the deck":""}. Google Maps carries the miles and minutes.</div>
   </div>`;
 }
@@ -4537,9 +4545,10 @@ function deckRouteSheet(){
   const towns=[...new Set(stops.map(a=>a.city).filter(Boolean))];
   openSheet(`<h3>${routeStarted()?"Route — live":"Today's route"}</h3>
     <div class="sub">${stops.length} remaining${towns.length?" · "+esc(towns.join(" · ")):""} · touches so far ${touchesOn(activeD())}</div>
-    <div class="rstops" style="max-width:none;margin-top:14px">${stops.slice(0,8).map((a,i)=>`<div><s>${i+1}</s>${esc(a.name)}<em>${esc(a.city||"")}</em></div>`).join("")||'<div style="color:var(--ink3)">Nothing left in the field — the day moved on.</div>'}
+    <div class="rstops" style="max-width:none;margin-top:14px">${stops.slice(0,8).map((a,i)=>`<div data-open="${a.id}"><s>${i+1}</s>${esc(a.name)}<em>${mapSure(a)?esc(a.city||""):"no address &rsaquo;"}</em></div>`).join("")||'<div style="color:var(--ink3)">Nothing left in the field — the day moved on.</div>'}
     ${stops.length>8?`<div class="rmore">+ ${stops.length-8} more in order</div>`:""}
-    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}</div>
+    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}
+    ${stops.noaddr?`<div class="rmore">${stops.noaddr} of these have no street address. Maps searches by name and can miss &mdash; tap one to add its address.</div>`:""}</div>
     <div class="chips" style="margin-top:14px">
       <button class="chip" data-act="addstop">+ Add stop</button>
       <button class="chip" data-act="anchor">Daily plan</button>
@@ -4570,8 +4579,13 @@ function deckCtx(a){
 }
 function deckChip(a){
   const cn=(a.events||[]).length;
-  return `<button class="threadchip" data-thread="${a.id}" aria-label="History for ${esc(a.name)}, ${cn} ${cn==1?"entry":"entries"}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg><b>${cn}</b></button>`;
+  /* the map pin is the escape hatch: the route owns the day's driving, but one address
+     is sometimes all you want. Green ring when Bellwether has a street address to send. */
+  const pin=canMap(a)?`<a class="threadchip mapchip${mapSure(a)?" sure":""}" href="${mapURL(a)}" target="_blank" rel="noopener"
+    aria-label="Directions to ${esc(a.name)}${mapSure(a)?"":" — no street address on file, Maps will search by name"}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg></a>`:"";
+  return `<div class="chiprow"><button class="threadchip" data-thread="${a.id}" aria-label="History for ${esc(a.name)}, ${cn} ${cn==1?"entry":"entries"}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg><b>${cn}</b></button>${pin}</div>`;
 }
 function deckFace(c){
   if(c.type==="route")return routeFace(c);
@@ -6577,8 +6591,24 @@ function catchUp(){
    If you don't name one, Bellwether uses your own cadence and says so. */
 /* street address if we have one, otherwise the business name and town — Apple Maps
    resolves both, and a rep should never be copy-pasting an address in a parking lot */
-const mapQuery=a=>[a.name,a.addr||"",a.city||""].filter(Boolean).join(", ");
-const mapURL=a=>"https://maps.apple.com/?q="+encodeURIComponent(mapQuery(a));
+/* Google resolves a street address; it does not reliably resolve a business name copied
+   out of a CRM. "TLC (The Learning Center of Hopkinton)" and "RF Venue, Inc." are what
+   Salesforce calls them, not what the map calls them — and a waypoint Google can't find
+   kills the whole multi-stop route, not just that stop. So: address first, name only as
+   the fallback (parentheticals and legal suffixes stripped), and always the state, so
+   "Ashland" isn't Oregon. */
+const MAPSTATE=()=>(D.cfg.mapState||"MA").trim();
+const mapName=s=>String(s||"").replace(/\([^)]*\)/g," ")
+  .replace(/\b(inc|llc|llp|ltd|corp|corporation|co|company)\b\.?/gi," ")
+  .replace(/[,\s]+/g," ").trim();
+const mapQuery=a=>(a&&a.addr
+  ? [a.addr,a.city||"",MAPSTATE()]
+  : [mapName(a&&a.name),(a&&a.city)||"",MAPSTATE()]).filter(Boolean).join(", ");
+/* a stop Maps can actually pin: an address is dependable, a bare name is a coin flip */
+const mapSure=a=>!!(a&&a.addr);
+/* one tap should start driving, not open a pin — and navigation is Google's job now,
+   for one stop the same as for the route */
+const mapURL=a=>"https://www.google.com/maps/dir/?api=1&travelmode=driving&destination="+encodeURIComponent(mapQuery(a));
 const canMap=a=>!!(a&&(a.addr||a.city));
 /* ---------- routes ----------
    These accounts have street addresses and towns, never coordinates, so there is no honest
@@ -6622,6 +6652,7 @@ function routeStops(ids){
   }
   order.elsewhere=pool.length-order.length;
   order.hub=start;
+  order.noaddr=order.filter(a=>!mapSure(a)).length;
   return order;
 }
 /* Apple Maps takes one destination from a URL and nothing more, so a multi-stop handoff
