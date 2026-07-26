@@ -1303,7 +1303,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.14 voice";
+const BUILD="2026-07-26.15 voice";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4361,6 +4361,16 @@ async function restartDay(){
   await save();render();toTop();
   toast("Day reset. Set it up again whenever you like.");
 }
+/* Standing the deck down is three steps, and the sealed-day path only ever did one of
+   them: it emptied the cards but left deckSize's pixel height on #deck, so an ended day
+   showed a viewport of nothing between the headline and the summary. One helper now owns
+   all of it — cards out, height released, deck-day chrome off, voice quiet. */
+function deckDown(){
+  ["#bubbles","#deck","#deckact"].forEach(s=>{const el=$(s);if(el)el.innerHTML=""});
+  const de=$("#deck");if(de)de.style.height="";
+  document.body.classList.remove("deckon");
+  if(typeof hushBrief==="function")hushBrief();
+}
 function renderToday(){
   const d=viewDate||today(),isNow=isActive(d);
   autoSealPast();
@@ -4374,7 +4384,8 @@ function renderToday(){
   /* a sealed day is a journal entry — it doesn't take instructions any more */
   if(rec){
     $("#hd").innerHTML=isNow?"That's the day.":"&#10003; Completed";
-    ["#shape","#huddles","#carry","#catchup","#clock","#now","#pace","#setupsummary","#bubbles","#deck","#deckact"].forEach(quiet);
+    ["#shape","#huddles","#carry","#catchup","#clock","#now","#pace","#setupsummary"].forEach(quiet);
+    deckDown();
     $("#setupblock").classList.remove("folded");
     $("#blocks").innerHTML=doneCard(rec,d);
     const nb=nextBiz(d);
@@ -4414,8 +4425,7 @@ function renderToday(){
     $("#hd").innerHTML="";
     renderDeck();
   }else{
-    ["#bubbles","#deck","#deckact"].forEach(quiet);
-    const de=$("#deck");if(de)de.style.height="";
+    deckDown();
     if(isNow){renderNow(rows,d);if(A().length)renderPace(rows,d);else quiet("#pace")}else{quiet("#now");quiet("#pace")}
     renderDaySetup(isNow,d);
     renderList(rows,isNow,d);
