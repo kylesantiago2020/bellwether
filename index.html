@@ -632,14 +632,20 @@ body.deckon #clock{margin:0 0 4px}
 .cc.flipout{transform:rotateY(88deg);transition:transform .09s ease-in}
 .cc.flipin{animation:flipin .18s ease-out}
 @keyframes flipin{from{transform:rotateY(-88deg)}to{transform:rotateY(0)}}
-.beye{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);background:var(--ambsoft);padding:3px 10px;border-radius:999px;margin-bottom:10px}
-.brows{margin:12px auto 0;max-width:340px;text-align:left;border-top:1px solid var(--rule);overflow:hidden}
-.brow{padding:8px 0 7px;border-bottom:1px solid var(--rule)}
+.beye{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);background:var(--ambsoft);padding:3px 10px;border-radius:999px}
+/* the back's header is its own thing — borrowing the front's clamped .co sliced the
+   name's descenders and tinted it. One line each, sized to always fit. */
+.bco{font-size:18.5px;font-weight:600;letter-spacing:-.2px;color:var(--ink);line-height:1.3;margin-top:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96%;margin-left:auto;margin-right:auto}
+.bmeta{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* five single-line rows fit every phone by arithmetic, not by clipping — a briefing row
+   is a cue, and the full sentence lives behind Full account */
+.brows{margin:10px auto 0;max-width:340px;width:100%;text-align:left;border-top:1px solid var(--rule)}
+.brow{padding:6px 0 5px;border-bottom:1px solid var(--rule)}
 .brow:last-child{border-bottom:0}
-.brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
-.brow b{display:block;font-weight:400;font-size:13.5px;line-height:1.45;color:var(--ink);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.bact{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;margin:14px auto 0}
-.bhint{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3)}
+.brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.brow b{display:block;font-weight:400;font-size:13.5px;line-height:1.4;color:var(--ink);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bact{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;width:100%;margin:12px auto 0}
+.bhint{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3)}
 #deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
 /* the one-viewport invariant is enforced, not hoped for: long names, stacked chips and
    wordy briefs clamp instead of pushing the dial button off the card */
@@ -1286,7 +1292,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.09 flip";
+const BUILD="2026-07-26.10 flip";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4706,8 +4712,8 @@ function briefFace(c){
   const a=c.a,rows=briefRows(a,c);
   return `<div class="cc back" data-key="${esc(c.key)}" role="group" aria-label="Briefing for ${esc(a.name)}">
     <div class="beye">before you walk in</div>
-    <div class="co" style="font-size:19px">${esc(a.name)}</div>
-    <div class="meta">${esc([emps(a)?emps(a)+" ee":"",a.city,dealValue(a)?k(dealValue(a)):""].filter(Boolean).join(" · "))}</div>
+    <div class="bco">${esc(a.name)}</div>
+    <div class="bmeta">${esc([emps(a)?emps(a)+" ee":"",a.city,dealValue(a)?k(dealValue(a)):""].filter(Boolean).join(" · "))}</div>
     <div class="brows">${rows.map(r=>`<div class="brow"><s>${esc(r.l)}</s><b>${esc(r.v)}</b></div>`).join("")
       ||'<div class="brow"><b>Nothing on file yet — walk in and change that.</b></div>'}</div>
     <div class="bact"><button class="cb" data-open="${a.id}">Full account</button>
