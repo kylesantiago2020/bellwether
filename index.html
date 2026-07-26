@@ -572,6 +572,11 @@ body.deckon .fab{bottom:calc(160px + env(safe-area-inset-bottom))}
 .threadchip b{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink)}
 .thread{margin-top:6px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;text-align:left}
 .thread .tentry{padding:11px 0;border-bottom:1px solid var(--rule)}
+.thread .trow{display:flex;align-items:center;gap:8px}
+.thread .trow s{flex:1;min-width:0}
+.tdel{flex:none;background:none;border:0;font-family:inherit;font-size:19px;line-height:1;color:var(--ink3);
+  padding:2px 6px;margin:-2px -4px -2px 0;border-radius:8px;cursor:pointer}
+.tdel:active{background:var(--wash);color:var(--ink)}
 .thread .tentry:last-child{border-bottom:none}
 .thread s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
 .thread p{margin:4px 0 0;font-size:13.5px;line-height:1.55;color:var(--ink)}
@@ -1295,7 +1300,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.12 notes";
+const BUILD="2026-07-26.13 notes";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5162,13 +5167,16 @@ function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on
 const EVLABEL={called:"Call",met:"Met",note:"Note",referral:"Referral",won:"Won",lost:"Lost"};
 function threadSheet(id){
   const a=acct(id);if(!a)return;
-  const ev=(a.events||[]).slice().reverse();
+  /* keep the true index while showing newest first, so a delete removes the entry the
+     finger is actually on — history you can add to but never correct is a liability */
+  const ev=(a.events||[]).map((e,i)=>({e,i})).reverse();
   openSheet(`<h3>${esc(a.name)}</h3>
     <div class="sub">${ev.length?"Everything logged, newest first.":"Nothing logged yet — add the first note or let a touch start it."}</div>
-    <div class="thread">${ev.map(e=>{
+    <div class="thread">${ev.map(({e,i})=>{
       const d=parseD(e.when);
       const stamp=iso(d)==iso(today())?"Today":(iso(d)==iso(addDays(today(),-1))?"Yesterday":fmt(d));
-      return `<div class="tentry"><s>${stamp} · ${EVLABEL[e.kind]||esc(e.kind)}</s>${e.text?`<p>${esc(e.text)}</p>`:""}</div>`;
+      return `<div class="tentry"><div class="trow"><s>${stamp} · ${EVLABEL[e.kind]||esc(e.kind)}</s>
+        <button class="tdel" data-delev="${i}" data-acct="${a.id}" aria-label="Delete this entry">&times;</button></div>${e.text?`<p>${esc(e.text)}</p>`:""}</div>`;
     }).join("")}</div>
     <textarea class="dbf" id="thnote" rows="3" placeholder="Add a note &mdash; what you noticed, who you saw, what to remember."></textarea>
     <div class="sa">
@@ -8100,6 +8108,19 @@ document.addEventListener("click",async e=>{
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":runSheet();break;   /* legacy id — every door is the chooser now */
     case"runsrc":runSheet();break;
+    case"delev":{
+      const acc=acct(t.dataset.acct);if(!acc)break;
+      const i=+t.dataset.delev;
+      if(!(acc.events||[])[i])break;
+      const was=snapshot(acc);
+      const gone=acc.events[i];
+      acc.events.splice(i,1);
+      /* attempts, last-touch and cadence are all derived from events, so removing one
+         corrects them by itself — nothing to recompute, nothing left inconsistent */
+      commit((EVLABEL[gone.kind]||"Entry")+" deleted.",()=>restoreAcct(was));
+      threadSheet(acc.id);
+      break;
+    }
     case"postnote":{
       const a=acct(t.dataset.id),box=$("#thnote");
       const txt=box?(box.value||"").trim():"";
