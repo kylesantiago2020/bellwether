@@ -474,6 +474,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:22px;background:var(--fill);color:#fff;border:none;font-size:23px;line-height:0;z-index:41}
 /* on deck days the action row owns the bottom edge — the FAB moves up out of its lane */
 body.deckon .fab{bottom:calc(160px + env(safe-area-inset-bottom))}
+/* a flipped card owns its own two doors — the global + has no business sitting on them */
+body.flipped .fab{opacity:0;pointer-events:none}
 #gate{position:fixed;inset:0;z-index:95;background:var(--paper);display:none;flex-direction:column;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 26px calc(28px + env(safe-area-inset-bottom));overflow-y:auto}
 #gate.on{display:flex}
 #gate .sub{font-size:14px;color:var(--ink2);margin-top:22px;line-height:1.55;max-width:34ch}
@@ -647,14 +649,18 @@ body.deckon #clock{margin:0 0 4px}
    is a cue, and the full sentence lives behind Full account */
 /* the card is a fixed-height flex column: any child with overflow:hidden gets squeezed
    and sliced mid-line when content exceeds it. Nothing on the back shrinks except the
-   row list, and fitBack() drops whole rows rather than letting one clip. */
+   row list, which takes the leftover space and scrolls inside it. */
 #deck>.cc.back>*{flex:none}
-#deck>.cc.back>.brows{flex:0 1 auto;min-height:0}
-.brows{margin:10px auto 0;max-width:340px;width:100%;text-align:left;border-top:1px solid var(--rule);overflow:hidden}
+#deck>.cc.back>.brows{flex:1 1 auto;min-height:0}
+.brows{margin:10px auto 0;max-width:340px;width:100%;text-align:left;border-top:1px solid var(--rule);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 13px),transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 13px),transparent)}
 .brow{padding:6px 0 5px;border-bottom:1px solid var(--rule)}
 .brow:last-child{border-bottom:0}
 .brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
-.brow b{display:block;font-weight:400;font-size:13.5px;line-height:1.4;color:var(--ink);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow b{font-weight:400;font-size:13.5px;line-height:1.4;color:var(--ink);margin-top:1px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bact{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;width:100%;margin:12px auto 0}
 .bhint{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3)}
 #deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
@@ -1303,7 +1309,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.16 wiring";
+const BUILD="2026-07-27.17 scroll";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4747,15 +4753,16 @@ function briefFace(c){
 }
 let deckFlipped=new Set();
 const MOTION_OK=()=>!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+function paintFlipped(){document.body.classList.toggle("flipped",deckFlipped.size>0)}
 function deckFlip(c){
   const el=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
   if(!el)return;
   const swap=()=>{
     if(deckFlipped.has(c.key))deckFlipped.delete(c.key);else deckFlipped.add(c.key);
+    paintFlipped();
     el.insertAdjacentHTML("beforebegin",deckFace(c));
     const nu=el.previousElementSibling;el.remove();
     deckSize&&deckSize();
-    requestAnimationFrame(fitBack);
     if(nu&&MOTION_OK()){nu.classList.add("flipin");setTimeout(()=>nu.classList.remove("flipin"),200)}
   };
   if(MOTION_OK()){el.classList.add("flipout");setTimeout(swap,90)}else swap();
@@ -4872,17 +4879,9 @@ function deckFocus(i,jump){
   if(c.type==="call"&&dayBegun()){wakeOn();dSpeakT=setTimeout(()=>speakBrief(c.a),300)}
   else{wakeOff();hushBrief()}
 }
-/* a briefing shows fewer rows rather than a sliced one: after layout, drop trailing
-   rows until the back fits its card. Honest by construction — what you see is whole. */
-function fitBack(){
-  deckCardEls().forEach(el=>{
-    if(!el.classList||!el.classList.contains("back"))return;
-    const rows=el.querySelector&&el.querySelector(".brows");if(!rows)return;
-    let guard=0;
-    while(el.scrollHeight>el.clientHeight+1&&rows.children.length>1&&guard++<8)
-      rows.removeChild(rows.lastElementChild);
-  });
-}
+/* .10-.11 tried to fit the back by dropping rows, measuring the CARD for overflow — but
+   .brows clips internally, so the card never reported any and a row was sliced instead.
+   The row list scrolls now: every row stays reachable and nothing is ever cut. */
 function deckSize(){
   const d=$("#deck");if(!d)return;
   requestAnimationFrame(()=>{
@@ -4891,7 +4890,6 @@ function deckSize(){
     const actH=act?act.offsetHeight:58;
     const h=Math.max(320,window.innerHeight-d.getBoundingClientRect().top-actH-((nav&&nav.offsetHeight)||92)-12);
     d.style.height=h+"px";
-    fitBack();
   });
 }
 function renderDeck(){
@@ -4900,7 +4898,7 @@ function renderDeck(){
   if(renderDeck._day!==activeISO()){renderDeck._day=activeISO();
     for(const k in deckSegSeen)delete deckSegSeen[k];
     for(const k in segPos)delete segPos[k];
-    deckFlipped.clear();
+    deckFlipped.clear();paintFlipped();
     deckKey=null;dI=0}
   const deck=deckCards();
   let fi=deck.findIndex(c=>c.key===deckKey);if(fi<0)fi=0;
@@ -4944,7 +4942,7 @@ function swipeTier(type,side,f){
   if(!lane||f<TIER1)return null;
   return (f>=TIER2&&lane[1])?lane[1]:lane[0];
 }
-let swipedAt=0;
+let swipedAt=0,movedAt=0;
 function wireSwipe(t){
   let el=null,x0=0,y0=0,lock=null,card=null;
   /* Tap turns the card over: the front is what to do, the back is what to know before
@@ -4952,7 +4950,7 @@ function wireSwipe(t){
      the deck optimizes for "help me prepare" before "tell me how it went". Never a
      horizontal drag: horizontal means a verdict. */
   t.addEventListener("click",e=>{
-    if(Date.now()-swipedAt<400)return;          /* that was a swipe, not a tap */
+    if(Date.now()-swipedAt<400||Date.now()-movedAt<400)return;  /* a gesture, not a tap */
     if(e.target.closest("button,a,input,textarea"))return;
     const c=deckCur();if(!c||!c.a||!SWIPE[c.type]||c.type==="start")return;
     const hit=e.target.closest(".cc");
@@ -4972,6 +4970,7 @@ function wireSwipe(t){
   t.addEventListener("touchmove",e=>{
     if(!el)return;
     const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+    if(Math.abs(dx)>8||Math.abs(dy)>8)movedAt=Date.now();   /* scrolling the briefing counts */
     if(lock===null&&(Math.abs(dx)>8||Math.abs(dy)>8))lock=Math.abs(dx)>Math.abs(dy)?"h":"v";
     if(lock!=="h")return;
     e.preventDefault();swipedAt=Date.now();
