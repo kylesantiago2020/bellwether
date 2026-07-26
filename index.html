@@ -472,6 +472,8 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .ni{width:20px;height:20px}
 .badge{position:absolute;transform:translate(15px,-5px);background:var(--ac);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 .fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:22px;background:var(--fill);color:#fff;border:none;font-size:23px;line-height:0;z-index:41}
+/* on deck days the action row owns the bottom edge — the FAB moves up out of its lane */
+body.deckon .fab{bottom:calc(160px + env(safe-area-inset-bottom))}
 #gate{position:fixed;inset:0;z-index:95;background:var(--paper);display:none;flex-direction:column;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 26px calc(28px + env(safe-area-inset-bottom));overflow-y:auto}
 #gate.on{display:flex}
 #gate .sub{font-size:14px;color:var(--ink2);margin-top:22px;line-height:1.55;max-width:34ch}
@@ -572,16 +574,22 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
    The day is one vertical sequence of cards. Bubbles are the timeline and the only
    global navigation; seams are slim segment labels that never capture the snap;
    the action row is pinned below and re-binds to whichever card is centred. */
-#bubbles{display:flex;gap:16px;overflow-x:auto;padding:12px 2px;border-bottom:1px solid var(--rule);scrollbar-width:none;-webkit-overflow-scrolling:touch}
-#bubbles::-webkit-scrollbar{display:none}
+/* the timeline spans the day the way the day spans the width — even, calm, iOS-page-dot
+   steady: activation changes ink, never geometry */
+#bubbles{display:flex;padding:6px 6px 8px;border-bottom:1px solid var(--rule)}
 #bubbles:empty{display:none;border:0;padding:0}
-.bub{flex:none;background:none;border:0;font-family:inherit;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0}
-.bub i{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule2);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-style:normal}
+.bub{flex:1;background:none;border:0;font-family:inherit;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0;min-width:0}
+.bub i{box-sizing:border-box;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule2);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-style:normal}
 .bub i svg{width:17px;height:17px;display:block}
-.bub em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;color:var(--ink3)}
+.bub em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bub.live i{border:2px solid var(--ac);color:var(--ac)}
 .bub.live em{color:var(--ink);font-weight:500}
 .bub.done{opacity:.4}
+/* deck days run tight at the top — the deck gets the height back */
+body.deckon .daynav{margin-bottom:2px}
+body.deckon .greetrow{margin:0}
+body.deckon #hd:empty{display:none;margin:0}
+body.deckon #clock{margin:0 0 4px}
 #deckshell{margin:10px -6px 0}
 #deck{display:flex;flex-direction:column;gap:12px;padding:6px 4px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain}
 #deck::-webkit-scrollbar{display:none}
@@ -597,7 +605,33 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 .seam s{text-decoration:none;margin-left:auto;font-size:11.5px;color:var(--ac);flex:none}
 #deckact{display:grid;gap:8px;padding:10px 0 0}
 #deckact:empty{display:none}
+/* the route card — the mission briefing. Stops as a quiet manifest, not a table */
+.rstops{margin:12px auto 0;max-width:340px;text-align:left}
+.rstops div{display:flex;gap:9px;align-items:baseline;padding:3px 0;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rstops div s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);flex:none;width:16px}
+.rstops div em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);margin-left:auto;flex:none}
+.rmore{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);margin-top:5px}
+/* swipe verdicts — the label rises beside the thumb, the card follows the finger */
+#deck>.cc{position:relative;touch-action:pan-y}
+#deck>.cc.dragging{transition:none}
+.cc.gonex-r{transform:translateX(112%) rotate(1.5deg);opacity:0}
+.cc.gonex-l{transform:translateX(-112%) rotate(-1.5deg);opacity:0}
+#deckshell{position:relative}
+#swipelab{position:absolute;top:50%;font:600 13px/1 ui-sans-serif,system-ui;letter-spacing:.02em;padding:9px 14px;border-radius:999px;background:var(--ink);color:var(--paper);opacity:0;pointer-events:none;z-index:5;transition:opacity .12s}
+#swipelab.l{right:14px}#swipelab.r{left:14px}
+#swipelab.on{opacity:1}
 #deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
+/* the one-viewport invariant is enforced, not hoped for: long names, stacked chips and
+   wordy briefs clamp instead of pushing the dial button off the card */
+#deck .co{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#deck .meta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#deck .why{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:10px}
+#deck .ctx p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#deck .last{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:9px}
+#deck .cwhy{margin-bottom:9px}
+#deck .ctx{margin-top:10px}
+#deck .dial{margin-top:13px;padding:13px}
+#deck .dqbtn{margin-top:9px}
 @media (prefers-reduced-motion:reduce){.cstack{scroll-behavior:auto}}
 /* Two rows that were mostly air now carry the day's numbers: the mark sits beside the
    mission clock, and the day-mode switch runs down the margin next to the greeting. */
@@ -1232,7 +1266,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.02 deck";
+const BUILD="2026-07-26.04 deck";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4326,6 +4360,7 @@ function renderToday(){
     : "";
   renderClock(isNow&&A().length>0);
   const deckMode=isNow&&A().length>0;
+  document.body.classList.toggle("deckon",!!deckMode);
   if(deckMode){
     /* the deck IS the day — the widget layer stands down. Preview and sealed days
        keep the legacy renderers: there's nothing to DO on Thursday from Tuesday,
@@ -4406,7 +4441,7 @@ function moveAction(a,n,dt){
    adding an activity means adding a face and actions there — never touching the
    pipeline. Full contract in deck-architecture.md. */
 const DECKWIN=16;
-let deckKey=null,dI=0,dSpeakT=null,deckBound=false;
+let deckKey=null,dI=0,dSpeakT=null,deckBound=false,deckCallTotal=0;
 const segPos={},deckSegSeen={};
 let dbA=null,dbBefore=null;     /* the account the debrief takeover is about */
 const DICON={
@@ -4419,14 +4454,17 @@ const DICON={
  check:'<path d="m4 12.5 6 5.5L20 6"/>'};
 const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DICON[k]||DICON.calls}</svg>`;
 const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
+DICON.route='<path d="M5 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M7 18h8a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h8"/>';
 const DACT={start:[["begin","Begin the day",1]],
  huddle:[["enterhud","Start the huddle",1]],
+ route:[["addstop","Add stop"],["startroute","Start route",1]],
  call:[["noanswer","No answer"],["message","Message"],["talked","Talked",1]],
  meet:[["done","Done",1],["later","Later"],["skip","Skip"]],
  visit:[["done","Done",1],["later","Later"],["skip","Skip"]],
  follow:[["done","Done",1],["later","Later"],["skip","Skip"]],
  end:[["endday","End my day",1]]};
 const dayBegun=()=>D.cfg.begun===activeISO();
+const routeStarted=()=>D.cfg.routeStarted===activeISO();
 const deckOn=()=>screen==="today"&&isActive(viewDate||today())&&A().length>0&&!sealed(activeD());
 
 /* the day, dealt: derived top to bottom from what today actually owes */
@@ -4442,9 +4480,24 @@ function deckCards(){
     .filter(r=>r.a.skip!==iso(today()))
     .sort((x,y)=>(x.block==="meet"||y.block==="meet"?0:anchorTier(x.a)-anchorTier(y.a))
       ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
-  const fieldCards=()=>{fieldAll.filter(r=>!isParked(r)).forEach(r=>push(r.block,"field",r.a,r));
+  const fieldCards=()=>{
+    if(!fieldAll.length)return;
+    /* the route card leads the field until the route is running; after Start Route it
+       collapses into the seam and the stops themselves take the front */
+    if(!routeStarted())push("route","field",null,null);
+    fieldAll.filter(r=>!isParked(r)).forEach(r=>push(r.block,"field",r.a,r));
     fieldAll.filter(isParked).forEach(r=>push(r.block,"field",r.a,r,{far:1}))};
-  const callCards=()=>(runSource.length?listQueue(runSource).q:buildQueue()).forEach(a=>push("call","calls",a,null));
+  const callCards=()=>{
+    /* the deck is TODAY, not the list: a 766-account list deals a day-sized hand and
+       keeps re-dealing from the remainder as calls complete. buildQueue self-caps. */
+    let pool=(runSource.length?listQueue(runSource).q:buildQueue()).filter(a=>a.skip!==iso(today()));
+    deckCallTotal=pool.length;
+    if(runSource.length){
+      const cap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+      pool=pool.slice(0,cap);
+    }
+    pool.forEach(a=>push("call","calls",a,null));
+  };
   const followCards=()=>rows.filter(r=>r.block==="follow"&&r.a.skip!==iso(today())).sort(byTime).forEach(r=>push("follow","follow",r.a,r));
   if(office){callCards();followCards();fieldCards()}else{fieldCards();callCards();followCards()}
   push("end","end",null,null);
@@ -4452,6 +4505,64 @@ function deckCards(){
   return out;
 }
 
+/* The deck's route delegates to the app's proven town-chain engine (routeStops/routeURL
+   further down): drive order comes from town adjacency, Google Maps carries the miles
+   and minutes. routeStops(null) = today's remaining mappable field stops, already
+   excluding banks (huddles own those) and anything touched today. */
+function routeGo(){
+  const stops=routeStops(null);
+  if(!stops.length){toast("No mappable stops — add an address or town to these accounts.");return}
+  D.cfg.routeStarted=activeISO();save();
+  window.open(routeURL(stops.slice(0,ROUTEMAX)),"_blank");
+  render();
+  toast(stops.length>ROUTEMAX?"First "+ROUTEMAX+" stops sent to Google Maps — relaunch from the Field seam as the day shrinks.":"Route sent to Google Maps.");
+}
+function routeFace(c){
+  const stops=routeStops(null);
+  const towns=[...new Set(stops.map(a=>a.city).filter(Boolean))];
+  const timed=todayRows(activeD()).filter(r=>r.block==="meet"&&rowAt(r)).length;
+  const shown=stops.slice(0,4);
+  return `<div class="cc" data-key="${esc(c.key)}" role="group" aria-label="Today's route">
+    <div class="cwhy"><span>today&rsquo;s route</span>${timed?`<span>${timed} timed</span>`:""}</div>
+    <div class="co">${stops.length?stops.length+" stop"+(stops.length==1?"":"s"):"No route yet"}</div>
+    <div class="meta">${esc(towns.join(" · "))||"Add addresses and the drive order builds itself"}</div>
+    <div class="rstops">${shown.map((a,i)=>`<div><s>${i+1}</s>${esc(a.name)}<em>${esc(a.city||"")}</em></div>`).join("")}
+    ${stops.length>4?`<div class="rmore">+ ${stops.length-4} more in drive order</div>`:""}
+    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}</div>
+    <div class="last">Live &mdash; reorders as the day changes${timed?"; set times outrank the drive order in the deck":""}. Google Maps carries the miles and minutes.</div>
+  </div>`;
+}
+function deckRouteSheet(){
+  const stops=routeStops(null);
+  const towns=[...new Set(stops.map(a=>a.city).filter(Boolean))];
+  openSheet(`<h3>${routeStarted()?"Route — live":"Today's route"}</h3>
+    <div class="sub">${stops.length} remaining${towns.length?" · "+esc(towns.join(" · ")):""} · touches so far ${touchesOn(activeD())}</div>
+    <div class="rstops" style="max-width:none;margin-top:14px">${stops.slice(0,8).map((a,i)=>`<div><s>${i+1}</s>${esc(a.name)}<em>${esc(a.city||"")}</em></div>`).join("")||'<div style="color:var(--ink3)">Nothing left in the field — the day moved on.</div>'}
+    ${stops.length>8?`<div class="rmore">+ ${stops.length-8} more in order</div>`:""}
+    ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}</div>
+    <div class="chips" style="margin-top:14px">
+      <button class="chip" data-act="addstop">+ Add stop</button>
+      <button class="chip" data-act="anchor">Daily plan</button>
+    </div>
+    <div class="sa">
+      <button class="b quiet" data-act="close">Close</button>
+      ${stops.length?`<button class="b pri" data-act="routego">${routeStarted()?"Continue route":"Start route"}</button>`:""}
+    </div>`);
+}
+function addStopSheet(){
+  const taken=new Set(todayRows(activeD()).map(r=>r.a.id));
+  openSheet(`<h3>Add a stop</h3><div class="sub">Search the book — the route reorders around it.</div>
+    <input class="srch" id="stopq" placeholder="Business or town&hellip;" autocomplete="off" style="margin-top:12px">
+    <div id="stopres" style="margin-top:10px"></div>`);
+  const res=$("#stopres"),q=$("#stopq");
+  const draw=()=>{
+    const s=(q.value||"").trim().toLowerCase();
+    const hits=!s?[]:A().filter(a=>isOpen(a)&&!taken.has(a.id)&&((a.name||"").toLowerCase().includes(s)||(a.city||"").toLowerCase().includes(s))).slice(0,8);
+    res.innerHTML=hits.map(a=>`<button class="lst" data-addvisit="${a.id}"><span><b>${esc(a.name)}</b><s>${esc([a.city,a.emps?a.emps+" ee":""].filter(Boolean).join(" · "))}</s></span></button>`).join("")
+      ||(s?'<div style="color:var(--ink3);font-size:13px;padding:6px 2px">No open accounts match.</div>':"");
+  };
+  q.addEventListener("input",draw);setTimeout(()=>q.focus(),60);
+}
 function deckCtx(a){
   const lt=lastTouch(a),le=lastEvent(a,["note","called","met"]);
   return lt?`<div class="ctx"><s>Last touch · ${days(parseD(lt),today())}d ago</s>${le&&le.text?`<p>${esc(le.text.slice(0,110))}</p>`:""}</div>`
@@ -4463,6 +4574,7 @@ function deckChip(a){
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg><b>${cn}</b></button>`;
 }
 function deckFace(c){
+  if(c.type==="route")return routeFace(c);
   const a=c.a,K=`data-key="${esc(c.key)}"`;
   if(c.type==="start"){
     const cn=carryNote(),q=dailyQuote(),rows=todayRows(activeD());
@@ -4493,7 +4605,7 @@ function deckFace(c){
   }
   if(c.type==="call"){
     const ph=(a.contact||{}).phone||"",nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
-    const wy=runSource.length?whyHere(a):[];
+    const wy=(runSource.length?whyHere(a):[]).slice(0,2);
     return `<div class="cc" ${K} role="group" aria-label="Call ${esc(a.name)}">
       <div class="cwhy"><span>call</span>${wy.map(w=>`<span>${esc(w)}</span>`).join("")}</div>
       <div class="co">${esc(a.name)}</div>
@@ -4511,8 +4623,9 @@ function deckFace(c){
   const at=rowAt(r),em=(a.contact||{}).email||"";
   const kind={meet:"meeting",visit:"drop-in",follow:"follow-up"}[c.type];
   const chips=[at?fmtTime(at):"",kind,c.far&&a.city?esc(a.city)+" · further out":"",TYPESHORT[a.type]||""].filter(Boolean);
-  const go_=c.type!=="follow"&&canMap(a)?`<a class="dial" href="${mapURL(a)}" target="_blank" rel="noopener">Directions${a.city?" &mdash; "+esc(a.city):""}</a>`
-    :(c.type==="follow"&&em?`<a class="dial" href="mailto:${esc(em)}">Email ${esc((a.contact||{}).name||a.name)}</a>`:"");
+  /* navigation lives on the route card now — this card is the conversation:
+     why you're here, who you're calling on, what happened last time */
+  const go_=c.type==="follow"&&em?`<a class="dial" href="mailto:${esc(em)}">Email ${esc((a.contact||{}).name||a.name)}</a>`:"";
   return `<div class="cc" ${K} role="group" aria-label="${kind} — ${esc(a.name)}">
     <div class="cwhy">${chips.map(x=>`<span>${x}</span>`).join("")}</div>
     <div class="co">${esc(a.name)}</div>
@@ -4525,9 +4638,10 @@ function deckFace(c){
 }
 function seamHtml(seg,n){
   const lists=runSource.map(id=>{const L=listById(id);return L?L.label:""}).filter(Boolean).join(" + ");
-  const lab=seg==="calls"?(lists||"Bellwether's pick")+" · "+n:String(n);
-  const act=seg==="calls"?"runsrc":seg==="field"?"anchor":"";
-  return `<${act?"button":"div"} class="seam"${act?` data-act="${act}"`:""}><b>${SEGLABEL[seg]}</b><span>${lab}</span>${act?`<s>${seg==="calls"?"lists":"plan"} &rsaquo;</s>`:""}</${act?"button":"div"}>`;
+  const nn=seg==="calls"&&deckCallTotal>n?n+" of "+deckCallTotal:String(n);
+  const lab=seg==="calls"?(lists||"Bellwether's pick")+" · "+nn:nn;
+  const act=seg==="calls"?"runsrc":seg==="field"?"routesheet":"";
+  return `<${act?"button":"div"} class="seam"${act?` data-act="${act}"`:""}><b>${SEGLABEL[seg]}</b><span>${lab}</span>${act?`<s>${seg==="calls"?"lists":"route"} &rsaquo;</s>`:""}</${act?"button":"div"}>`;
 }
 
 function deckCardEls(){const d=$("#deck");return d?[...d.querySelectorAll(".cc")]:[]}
@@ -4602,7 +4716,57 @@ function renderDeck(){
       if(t){const a=acct(t.dataset.dialid);if(a)armReturn(a)}});
   }
 }
+/* one gesture, one meaning: right completes with the card's primary outcome, left defers.
+   Every option stays visible in the action row — the swipe is the fast lane, not a menu. */
+const SWIPE={call:{r:["noanswer","No answer"],l:["skip","Set aside"]},
+ meet:{r:["done","Done"],l:["later","Later"]},
+ visit:{r:["done","Done"],l:["later","Later"]},
+ follow:{r:["done","Done"],l:["later","Later"]},
+ start:{r:["begin","Begin"],l:null}};
+function wireSwipe(t){
+  let el=null,x0=0,y0=0,lock=null,card=null;
+  const shell=$("#deckshell");
+  if(shell&&!$("#swipelab")){const s=document.createElement("div");s.id="swipelab";shell.appendChild(s)}
+  t.addEventListener("touchstart",e=>{
+    if(anyOverlay())return;
+    const c=deckCur();
+    el=(c&&SWIPE[c.type])?e.target.closest(".cc"):null;
+    if(el&&c&&el.getAttribute("data-key")!==c.key)el=null;
+    if(!el)return;card=c;lock=null;
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+  },{passive:true});
+  t.addEventListener("touchmove",e=>{
+    if(!el)return;
+    const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+    if(lock===null&&(Math.abs(dx)>8||Math.abs(dy)>8))lock=Math.abs(dx)>Math.abs(dy)?"h":"v";
+    if(lock!=="h")return;
+    e.preventDefault();
+    const side=dx>0?"r":"l",opt=SWIPE[card.type][side];
+    el.classList.add("dragging");
+    el.style.transform="translateX("+dx+"px)";
+    const L=$("#swipelab");
+    if(L){
+      if(opt){L.textContent=opt[1];L.className=side+(Math.abs(dx)>44?" on":"");
+        L.style.top=(el.offsetTop-t.scrollTop+el.offsetHeight/2-16)+"px"}
+      else L.className="";
+    }
+  },{passive:false});
+  const end=e=>{
+    if(!el)return;
+    const L=$("#swipelab");if(L)L.className="";
+    const dx=(e.changedTouches&&e.changedTouches.length?e.changedTouches[0].clientX-x0:0);
+    const side=dx>0?"r":"l",opt=lock==="h"?SWIPE[card.type][side]:null;
+    const go=lock==="h"&&opt&&Math.abs(dx)>Math.min(150,t.clientWidth*0.34);
+    el.classList.remove("dragging");
+    el.style.transform="";
+    if(go){card._dir=side;deckDo(card,opt[0]);card._dir=null}
+    el=null;card=null;lock=null;
+  };
+  t.addEventListener("touchend",end,{passive:true});
+  t.addEventListener("touchcancel",end,{passive:true});
+}
 function wireDeck(t){
+  wireSwipe(t);
   let queued=false;
   t.addEventListener("scroll",()=>{
     if(queued)return;queued=true;
@@ -4627,9 +4791,9 @@ function deckAdvanceKey(c){
   const nx=deck[i+1]||deck[i-1];
   deckKey=nx?nx.key:null;
 }
-function deckGone(c,fin){
+function deckGone(c,fin,dir){
   const sel=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
-  if(sel){sel.classList.add("gone");setTimeout(fin,200)}else fin();
+  if(sel){sel.classList.add(dir==="r"?"gonex-r":dir==="l"?"gonex-l":"gone");setTimeout(fin,200)}else fin();
 }
 function deckDo(c,act){
   const a=c.a;
@@ -4637,15 +4801,19 @@ function deckDo(c,act){
     deckGone(c,()=>{save();toastUndo("Day begun — go get it.",()=>{delete D.cfg.begun;save();render()});render()});return}
   if(act==="enterhud"){startHuddle(a.id);return}
   if(act==="endday"){endDay();return}
+  if(act==="startroute"||act==="routego"){routeGo();return}
+  if(act==="addstop"){addStopSheet();return}
   if(c.type==="call"){
+    if(act==="skip"){deckAdvanceKey(c);const was=a.skip;a.skip=iso(today());
+      deckGone(c,()=>commit("Set aside for today.",()=>{a.skip=was}),"l");return}
     dbA=a;dbBefore=snapshot(a);
     if(act==="talked")debriefView(a);else callOutcome(act);
     return;
   }
-  if(act==="done"){deckAdvanceKey(c);deckGone(c,()=>completeAction(a,c.r.lead.id,"Logged."));return}
+  if(act==="done"){deckAdvanceKey(c);deckGone(c,()=>completeAction(a,c.r.lead.id,"Logged."),c._dir);return}
   if(act==="later"){laterSheet(a.id,c.r.lead.id);return}
   if(act==="skip"){deckAdvanceKey(c);const was=a.skip;a.skip=iso(today());
-    deckGone(c,()=>commit("Skipped for today.",()=>{a.skip=was}));return}
+    deckGone(c,()=>commit("Skipped for today.",()=>{a.skip=was}),c._dir);return}
 }
 
 
@@ -6426,7 +6594,9 @@ function routeStops(ids){
     if(!isOpen(a)||!dqOK(a)||!canMap(a))return false;
     if(a.type=="bank")return false;              /* branches run through the huddle */
     if(lastTouch(a)==iso(today()))return false;
-    return picked?picked.some(L=>inList(a,L)):todayRows(activeD()).some(r=>r.a.id==a.id&&r.block=="field");
+    /* rows carry meet/visit blocks — "field" was a block that never existed, so the
+       day route silently returned empty. Real bug, fixed while unifying with the deck. */
+    return picked?picked.some(L=>inList(a,L)):todayRows(activeD()).some(r=>r.a.id==a.id&&(r.block=="meet"||r.block=="visit"));
   });
   if(!pool.length)return [];
   const byTown={};
@@ -7630,6 +7800,9 @@ document.addEventListener("click",async e=>{
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":runSheet();break;   /* legacy id — every door is the chooser now */
     case"runsrc":runSheet();break;
+    case"routesheet":deckRouteSheet();break;
+    case"routego":closeSheet();routeGo();break;
+    case"addstop":closeSheet();addStopSheet();break;
     case"briefaloud":{ttsUnlock();D.cfg.speakBriefs=!D.cfg.speakBriefs;
       if(!D.cfg.speakBriefs)hushBrief();save();runSheet();break}
     case"runexit":endRun();break;
