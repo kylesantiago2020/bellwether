@@ -1295,7 +1295,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.11 flip";
+const BUILD="2026-07-26.12 notes";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5164,13 +5164,18 @@ function threadSheet(id){
   const a=acct(id);if(!a)return;
   const ev=(a.events||[]).slice().reverse();
   openSheet(`<h3>${esc(a.name)}</h3>
-    <div class="sub">${ev.length?"Everything logged, newest first.":"Nothing logged yet — the first call starts the story."}</div>
+    <div class="sub">${ev.length?"Everything logged, newest first.":"Nothing logged yet — add the first note or let a touch start it."}</div>
     <div class="thread">${ev.map(e=>{
       const d=parseD(e.when);
       const stamp=iso(d)==iso(today())?"Today":(iso(d)==iso(addDays(today(),-1))?"Yesterday":fmt(d));
       return `<div class="tentry"><s>${stamp} · ${EVLABEL[e.kind]||esc(e.kind)}</s>${e.text?`<p>${esc(e.text)}</p>`:""}</div>`;
     }).join("")}</div>
-    <div class="sa"><button class="b quiet" data-act="close">Done</button></div>`);
+    <textarea class="dbf" id="thnote" rows="3" placeholder="Add a note &mdash; what you noticed, who you saw, what to remember."></textarea>
+    <div class="sa">
+      <button class="b quiet" data-act="close">Done</button>
+      <button class="b pri" data-act="postnote" data-id="${a.id}">Post note</button>
+    </div>`);
+  const t=$("#thnote");if(t)setTimeout(()=>t.focus(),80);
 }
 /* the debrief's verdicts: an outcome ends the takeover and drops the card from the deck */
 function advance(keep){
@@ -8095,6 +8100,18 @@ document.addEventListener("click",async e=>{
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":runSheet();break;   /* legacy id — every door is the chooser now */
     case"runsrc":runSheet();break;
+    case"postnote":{
+      const a=acct(t.dataset.id),box=$("#thnote");
+      const txt=box?(box.value||"").trim():"";
+      if(!a)break;
+      if(!txt){toast("Nothing to post yet.");break}
+      const was=snapshot(a);
+      /* a note is not a touch: it never moves last-touch, attempts or cadence */
+      logEvent(a,"note",txt);
+      commit("Note added.",()=>restoreAcct(was));
+      closeSheet();
+      break;
+    }
     case"routesheet":deckRouteSheet();break;
     case"routego":closeSheet();routeGo();break;
     case"addstop":closeSheet();addStopSheet();break;
