@@ -1303,7 +1303,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.15 voice";
+const BUILD="2026-07-26.16 wiring";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -7445,6 +7445,20 @@ tap("dq",t=>{
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
 tap("thread",t=>threadSheet(t.dataset.thread));
+/* dispatch is by attribute name: a control must carry a registered key (or data-act) or
+   the delegated handler never sees it. This one shipped without either and did nothing. */
+tap("delev",t=>{
+  const acc=acct(t.dataset.acct);if(!acc)return;
+  const i=+t.dataset.delev;
+  if(!(acc.events||[])[i])return;
+  const was=snapshot(acc);
+  const gone=acc.events[i];
+  acc.events.splice(i,1);
+  /* attempts, last-touch and cadence are derived from events — removing one corrects
+     them all, with nothing to recompute and nothing left inconsistent */
+  commit((EVLABEL[gone.kind]||"Entry")+" deleted.",()=>restoreAcct(was));
+  threadSheet(acc.id);
+});
 tap("coach",async t=>{
   const a=acct(t.dataset.coach);if(!a)return;
   toast("Asking\u2026");
@@ -8079,6 +8093,9 @@ const TAPSEL=Object.keys(TAPS).concat("act").map(k=>"[data-"+k+"]").join(",");
 document.addEventListener("click",async e=>{
   const t=e.target.closest(TAPSEL);
   if(!t)return;
+  /* swiping often begins on a button — the back's two doors, the chips. Without this a
+     verdict swipe could also open an account on release. */
+  if(Date.now()-swipedAt<400&&t.closest&&t.closest("#deck"))return;
   for(const k of Object.keys(TAPS))if(t.dataset[k]!==undefined){await TAPS[k](t);return}
   const a=cur();
 
@@ -8133,19 +8150,6 @@ document.addEventListener("click",async e=>{
       save();render();toast("Reopened. It's back in the queue.");break}
     case"run":runSheet();break;   /* legacy id — every door is the chooser now */
     case"runsrc":runSheet();break;
-    case"delev":{
-      const acc=acct(t.dataset.acct);if(!acc)break;
-      const i=+t.dataset.delev;
-      if(!(acc.events||[])[i])break;
-      const was=snapshot(acc);
-      const gone=acc.events[i];
-      acc.events.splice(i,1);
-      /* attempts, last-touch and cadence are all derived from events, so removing one
-         corrects them by itself — nothing to recompute, nothing left inconsistent */
-      commit((EVLABEL[gone.kind]||"Entry")+" deleted.",()=>restoreAcct(was));
-      threadSheet(acc.id);
-      break;
-    }
     case"postnote":{
       const a=acct(t.dataset.id),box=$("#thnote");
       const txt=box?(box.value||"").trim():"";
