@@ -627,6 +627,19 @@ body.deckon #clock{margin:0 0 4px}
 #swipelab{position:absolute;top:50%;font:600 13px/1 ui-sans-serif,system-ui;letter-spacing:.02em;padding:9px 14px;border-radius:999px;background:var(--ink);color:var(--paper);opacity:0;pointer-events:none;z-index:5;transition:opacity .12s}
 #swipelab.l{right:14px}#swipelab.r{left:14px}
 #swipelab.on{opacity:1}
+/* the back of the card — front is what to do, back is what to know */
+#deck{perspective:900px}
+.cc.flipout{transform:rotateY(88deg);transition:transform .09s ease-in}
+.cc.flipin{animation:flipin .18s ease-out}
+@keyframes flipin{from{transform:rotateY(-88deg)}to{transform:rotateY(0)}}
+.beye{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);background:var(--ambsoft);padding:3px 10px;border-radius:999px;margin-bottom:10px}
+.brows{margin:12px auto 0;max-width:340px;text-align:left;border-top:1px solid var(--rule);overflow:hidden}
+.brow{padding:8px 0 7px;border-bottom:1px solid var(--rule)}
+.brow:last-child{border-bottom:0}
+.brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.brow b{display:block;font-weight:400;font-size:13.5px;line-height:1.45;color:var(--ink);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bact{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;margin:14px auto 0}
+.bhint{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3)}
 #deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
 /* the one-viewport invariant is enforced, not hoped for: long names, stacked chips and
    wordy briefs clamp instead of pushing the dial button off the card */
@@ -1273,7 +1286,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-26.07 deck";
+const BUILD="2026-07-26.09 flip";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2634,7 +2647,14 @@ function bundlePanel(a,q,rec,val){
     const list0=annual({emps:a.emps,bundle:sel,freq:q.freq,addons:q.addons||[],disc:0});
     const net=annual({emps:a.emps,bundle:sel,freq:q.freq,addons:q.addons||[],disc:+q.disc||0});
     if((+q.disc||0)>35)h+=`<div class="giveaway warn">You're giving away ${$$$(list0-net)} a year. Trade it for something.</div>`;
-    if(rec.peo)h+=`<div class="peo">Benefits ambition plus ${a.emps} employees \u2014 this is a PEO conversation, not a payroll one.</div>`;
+    if(rec.peo){
+      const ts=tsFit(a);
+      h+=`<div class="peo">Benefits ambition plus ${a.emps} employees &mdash; this is a PEO conversation, not a payroll one.`
+        +(ts&&ts.band=="ask"
+           ? ` You don't have their enrollment yet: <b>do at least half of them take the health plan?</b> That answer decides it.`
+           : ts?` ${esc(ts.why)} &mdash; run revenue per employee against ADP Benchmark and ask what turnover cost them last year.`:"")
+        +`</div>`;
+    }
     h+=`<div class="est"><div class="n">${$$$(val)}</div><div class="l">${a.type=="client"?"incremental to your number":"annual to your number"}</div></div>`;
   }
   h+=`<button class="bdsafe" data-bsafe="1">${bSafe?"Show my side":"Hand them the phone"}</button>`;
@@ -4602,8 +4622,116 @@ function deckChip(a){
   return `<div class="chiprow"><button class="threadchip" data-thread="${a.id}" aria-label="History for ${esc(a.name)}, ${cn} ${cn==1?"entry":"entries"}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.9 8.9 0 0 1-3.9-.9L3 20l1.2-4.3a8 8 0 0 1-1.2-4.2A8.4 8.4 0 0 1 11.5 3.2h.5a8.4 8.4 0 0 1 9 8.3Z"/></svg><b>${cn}</b></button>${pin}</div>`;
 }
+/* ---------- the card back: a briefing, not a dossier ----------
+   BRIEF[type] is an ordered list of row builders; each returns {l,v} or null, and the
+   first five with content render — a never-touched prospect might show two, and that is
+   the truth. The relationship picks the rows, the card type only reshapes the top: a
+   follow-up leads with what's owed, a timed meeting with the hour. The same rows feed
+   the spoken brief, so what he reads and what he hears never disagree. Deep detail
+   stays behind Full account, because nobody reads a comparison table on a sidewalk. */
+const tfmt=t=>{const p=String(t||"").split(":");if(p.length<2)return t||"";const H=+p[0];
+  return ((H%12)||12)+":"+p[1]+(H<12?" am":" pm")};
+const bfAsk=a=>{const c=a.contact||{};return c.name?{l:"ask for",v:c.name+(c.title?" · "+c.title:"")}:null};
+const bfLast=a=>{const e=lastEvent(a,TOUCH);
+  return e?{l:"last touch · "+days(parseD(e.when),today())+"d",v:e.text||e.kind}
+          :{l:"last touch",v:"Never — this is the first impression"}};
+const bfOwed=a=>{const n=openActions(a).filter(x=>actionBlock(x)==="follow")[0];
+  return n&&n.why?{l:"you promised",v:n.why}:null};
+const bfRuns=a=>{const p=providerOf(a);
+  const parts=[p?"on "+p:"",(a.today&&a.today.freq)||a.freq||"",
+    (emps(a)>=10&&!a.medEmps)?"medical unknown":""].filter(Boolean);
+  return parts.length?{l:"runs today",v:parts.join(" · ")}:null};
+const bfLead=a=>{const ts=tsFit(a);
+  if(ts&&ts.band!=="ask")return {l:"lead with",v:"TotalSource — "+ts.why+". Ask what turnover cost them last year"};
+  if(ts)return {l:"lead with",v:"The enrollment question: do at least half take the health plan? That answer decides TotalSource"};
+  return null};
+const bfOn=a=>{const t=a.today||{};return t.bundle?{l:"on today",v:t.bundle+(t.freq?" · "+t.freq:"")}:null};
+const bfGaps=a=>{const g=[];
+  if(!(a.planAssets>0))g.push("401(k)");
+  if(/essential/i.test((a.today||{}).bundle||""))g.push("HR upgrade room");
+  if(emps(a)>=10&&!a.medEmps)g.push("benefits unknown");
+  return g.length?{l:"missing",v:g.join(" · ")}:null};
+const bfNeverMet=a=>(a.events||[]).some(e=>e.kind==="met"||e.kind==="visited")?null
+  :{l:"note",v:"You've never met in person — that is the visit"};
+/* the ask that advances the stage — CPA wording is Kyle-specific, other relationship
+   types fall back to the app's stage nudges */
+const CPAASK={notmet:"Walk in, introduce yourself, leave with one name",
+  intro:"Ask which of their clients complain about payroll",
+  building:"Ask for one specific warm intro",
+  referring:"Close the loop on the last referral, then propose Accountant Connect",
+  trusted:"Quarterly review of their book — protect the rhythm"};
+const bfStageAsk=a=>{const st=REL.some(([c])=>c===a.rel)?a.rel:"notmet";
+  const lab=((REL.find(([c])=>c===st)||[])[1]||"").toLowerCase();
+  return {l:"stage · "+lab,v:(a.type==="cpa"?CPAASK[st]:RELNUDGE[st])||""}};
+const bfRefs=a=>{const r=refStats(a);if(!r.total)return null;
+  return {l:"referrals",v:r.total+" logged · "+r.sourced+" sourced"
+    +(r.wonV?" · "+k(r.wonV)+" won":(r.openV?" · "+k(r.openV)+" open":""))}};
+const bfTrend=a=>{const r=refStats(a);
+  if(!r.total)return {l:"referrals",v:"None logged from this branch yet"};
+  const t=r.last90>r.prior90?"up":r.last90<r.prior90?"down":"steady";
+  return {l:"branch",v:r.last90+" in 90d · "+t+" from "+r.prior90}};
+const bfHud=a=>{const h=a.huddle;
+  if(h&&h.on)return {l:"last huddle · "+days(parseD(h.on),today())+"d",
+    v:(h.lesson?"taught "+h.lesson:"ran the huddle")+(h.next?" · next: "+h.next:"")};
+  const e=lastEvent(a,["met"]);
+  return e&&/huddle/i.test(e.text||"")?{l:"last huddle · "+days(parseD(e.when),today())+"d",v:e.text||""}:null};
+
+const bfFlight=a=>{const r=refStats(a);
+  return r.openV?{l:"in flight",v:r.sourced+" sourced · "+k(r.openV)+" open"}:null};
+const bfScore=a=>{const r=refStats(a);
+  return r.total?{l:"scorecard",v:r.total+" referrals · "+r.sourced+" opps · "+k(r.wonV)+" closed"}
+    :{l:"scorecard",v:"No referrals yet — ask what they need from you to send one"}};
+const bfMeetAt=(a,c)=>{const at=c&&c.r&&rowAt(c.r);
+  return at?{l:"meeting",v:tfmt(at)+((c.r.lead&&c.r.lead.why)?" — "+c.r.lead.why:"")}:null};
+const bfOwedLead=(a,c)=>{const n=(c&&c.r&&c.r.lead)||openActions(a).filter(x=>actionBlock(x)==="follow")[0];
+  return n&&n.why?{l:"you owe them",v:n.why}:null};
+const BRIEF={
+  prospect:[bfAsk,bfRuns,bfLast,bfOwed,bfLead],
+  client:[bfAsk,bfOn,bfGaps,bfNeverMet,bfLast,bfOwed],
+  cpa:[bfAsk,bfStageAsk,bfRefs,bfLast,bfOwed],
+  bank:[bfAsk,bfTrend,bfHud,bfFlight,bfLast],
+  partner:[bfAsk,bfScore,bfFlight,bfLast,bfOwed]};
+function briefRows(a,c){
+  const rows=[];
+  const top=c&&c.type==="follow"?bfOwedLead(a,c):c&&c.type==="meet"?bfMeetAt(a,c):null;
+  if(top)rows.push(top);
+  for(const f of (BRIEF[a.type]||BRIEF.prospect)){
+    if(rows.length>=5)break;
+    const r=f(a,c);
+    if(r&&r.v&&!rows.some(x=>x.l===r.l||x.v===r.v))rows.push(r);
+  }
+  return rows.slice(0,5);
+}
+function briefFace(c){
+  const a=c.a,rows=briefRows(a,c);
+  return `<div class="cc back" data-key="${esc(c.key)}" role="group" aria-label="Briefing for ${esc(a.name)}">
+    <div class="beye">before you walk in</div>
+    <div class="co" style="font-size:19px">${esc(a.name)}</div>
+    <div class="meta">${esc([emps(a)?emps(a)+" ee":"",a.city,dealValue(a)?k(dealValue(a)):""].filter(Boolean).join(" · "))}</div>
+    <div class="brows">${rows.map(r=>`<div class="brow"><s>${esc(r.l)}</s><b>${esc(r.v)}</b></div>`).join("")
+      ||'<div class="brow"><b>Nothing on file yet — walk in and change that.</b></div>'}</div>
+    <div class="bact"><button class="cb" data-open="${a.id}">Full account</button>
+      <button class="cb talked" data-logwhat="${a.id}" data-kind="${c.type}" data-lead="${(c.r&&c.r.lead)?c.r.lead.id:""}">Log what happened</button></div>
+    <div class="bhint">tap anywhere to flip back &middot; swipes still work</div>
+  </div>`;
+}
+let deckFlipped=new Set();
+const MOTION_OK=()=>!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+function deckFlip(c){
+  const el=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
+  if(!el)return;
+  const swap=()=>{
+    if(deckFlipped.has(c.key))deckFlipped.delete(c.key);else deckFlipped.add(c.key);
+    el.insertAdjacentHTML("beforebegin",deckFace(c));
+    const nu=el.previousElementSibling;el.remove();
+    deckSize&&deckSize();
+    if(nu&&MOTION_OK()){nu.classList.add("flipin");setTimeout(()=>nu.classList.remove("flipin"),200)}
+  };
+  if(MOTION_OK()){el.classList.add("flipout");setTimeout(swap,90)}else swap();
+}
 function deckFace(c){
   if(c.type==="route")return routeFace(c);
+  if(c.a&&SWIPE[c.type]&&c.type!=="start"&&deckFlipped.has(c.key))return briefFace(c);
   const a=c.a,K=`data-key="${esc(c.key)}"`;
   if(c.type==="start"){
     const cn=carryNote(),q=dailyQuote(),rows=todayRows(activeD());
@@ -4691,7 +4819,7 @@ function renderDeckActions(c){
     el.style.gridTemplateColumns="1fr";
     el.innerHTML=`<div class="swipehint">&lsaquo; ${esc(lane.l?lane.l[0][1]:"")}${lane.l&&lane.l[1]?" &middot; further, "+esc(lane.l[1][1].toLowerCase()):""}
       &nbsp;&nbsp;|&nbsp;&nbsp;${esc(lane.r[0][1])}${lane.r[1]?" &middot; further, "+esc(lane.r[1][1].toLowerCase()):""} &rsaquo;
-      <s>tap the card to log what happened</s></div>`;
+      <s>tap the card to flip it &mdash; the briefing is on the back</s></div>`;
   }else el.innerHTML="";
 }
 function renderBubbles(deck){
@@ -4734,6 +4862,7 @@ function renderDeck(){
   if(renderDeck._day!==activeISO()){renderDeck._day=activeISO();
     for(const k in deckSegSeen)delete deckSegSeen[k];
     for(const k in segPos)delete segPos[k];
+    deckFlipped.clear();
     deckKey=null;dI=0}
   const deck=deckCards();
   let fi=deck.findIndex(c=>c.key===deckKey);if(fi<0)fi=0;
@@ -4780,17 +4909,17 @@ function swipeTier(type,side,f){
 let swipedAt=0;
 function wireSwipe(t){
   let el=null,x0=0,y0=0,lock=null,card=null;
-  /* Talked has no gesture on purpose — it is the one outcome worth a screen. Returning
-     from a real dial already opens the debrief; this covers the conversation you had
-     without dialling from the app, and every stop you want to describe. */
+  /* Tap turns the card over: the front is what to do, the back is what to know before
+     the door opens. The debrief moved to the back's button and the far-right swipe —
+     the deck optimizes for "help me prepare" before "tell me how it went". Never a
+     horizontal drag: horizontal means a verdict. */
   t.addEventListener("click",e=>{
     if(Date.now()-swipedAt<400)return;          /* that was a swipe, not a tap */
     if(e.target.closest("button,a,input,textarea"))return;
     const c=deckCur();if(!c||!c.a||!SWIPE[c.type]||c.type==="start")return;
     const hit=e.target.closest(".cc");
     if(!hit||hit.getAttribute("data-key")!==c.key)return;
-    dbA=c.a;dbBefore=snapshot(c.a);dbLead=(c.r&&c.r.lead)?c.r.lead.id:null;
-    debriefView(c.a,c.type);
+    deckFlip(c);
   });
   const shell=$("#deckshell");
   if(shell&&!$("#swipelab")){const s=document.createElement("div");s.id="swipelab";shell.appendChild(s)}
@@ -5155,19 +5284,13 @@ function markLost(a,reason){
    ------------------------------------------------------------------------------ */
 
 /* ---------- spoken brief ---------- */
-function briefLine(a){
+function briefLine(a,c){
+  /* one briefing model, two channels: the spoken brief reads the same rows the card
+     back shows, so eyes in a parking lot and ears on the road never disagree */
   const bits=[a.name];
-  const meta=[a.emps?a.emps+" employees":"", a.city].filter(Boolean).join(", ");
+  const meta=[emps(a)?emps(a)+" employees":"",a.city].filter(Boolean).join(", ");
   if(meta)bits.push(meta);
-  const prov=(a.notes||"").match(/On ([A-Za-z0-9&.\- ]+?) today\./);
-  if(prov)bits.push("currently on "+prov[1]);
-  else if(a.today&&a.today.bundle)bits.push("on "+a.today.bundle);
-  const nx=openActions(a).sort((x,y)=>x.date<y.date?-1:1)[0];
-  if(nx&&nx.why)bits.push(nx.why);
-  const lt=lastTouch(a);
-  bits.push(lt?("Last touch "+days(parseD(lt),today())+" days ago"):"Never touched");
-  if(a.contact&&a.contact.name)bits.push("Ask for "+a.contact.name);
-  else bits.push("No name on file — get one");
+  briefRows(a,c).forEach(r=>bits.push(r.l.replace(/\s*·\s*/g,", ")+": "+r.v));
   return bits.join(". ")+".";
 }
 /* The utterance never named a voice, so iOS handed it the compact system default — the
@@ -7203,6 +7326,9 @@ function pickChip(t,group){
 
 tap("go",t=>go(t.dataset.go));
 tap("open",t=>{openQ=null;showAllQ=false;go("acct",t.dataset.open,screen)});
+tap("logwhat",t=>{const a=acct(t.dataset.logwhat);if(!a)return;
+  dbA=a;dbBefore=snapshot(a);dbLead=t.dataset.lead||null;
+  debriefView(a,t.dataset.kind||"visit")});
 tap("week",t=>{viewDate=parseD(t.dataset.week);showAllRows=false;render()});
 tap("start",t=>startDay(t.dataset.start));
 tap("tf",t=>{terrFilter=t.dataset.tf;render()});
@@ -7461,6 +7587,36 @@ const PB=[
   "Owner who wants absolute control of every HR decision",
   "Nobody enrolled in benefits today and no intent to offer them",
   "Workers' comp history or industry that won't underwrite cleanly"]},
+ {t:"The Profit Case",k:"note",i:[
+  "The whole frame in one line: employees either make the owner money or cost the owner money. Everything else is detail.",
+  "ADP's numbers on companies using TotalSource well — grow 7-9% faster than those not using it, turnover 10-14% lower, 50% less likely to go out of business.",
+  "Use those as a reason to meet, not as a promise. They describe companies that use it correctly, and the owner will hear a guarantee if you let them.",
+  "TotalSource touches every line of a P&L. Sell the P&L, not the product — payroll people talk features, profit people get meetings.",
+  "Three numbers carry the whole conversation: revenue per employee, labor cost as a share of revenue, and the cost of turnover. Learn these three and you can run a profit conversation with any owner."]},
+ {t:"Three Questions That Qualify",k:"talk",i:[
+  "How many employees do you have?",
+  "Do you offer health insurance to your employees?",
+  "Would you say at least half of them are actually taking it?",
+  "Those three answers decide whether this is a TotalSource conversation or a payroll one — and they are exactly what Bellwether uses to flag a fit, so log them."]},
+ {t:"Metric 1 — Revenue Per Employee",k:"note",i:[
+  "Revenue divided by total employees. Ask their rough annual revenue and you can do it in your head.",
+  "It measures how productive the workforce is. A number that falls while headcount climbs means overhiring or underperformance.",
+  "Say it like this: if your revenue isn't growing as fast as your headcount, that gap is costing you margin.",
+  "Worked example — 40 employees, $5M in revenue, so $125,000 per employee. ADP Benchmark says their industry runs $200,000. They are not as profitable as they should be.",
+  "There are only two ways to fix that gap: fewer employees, or more productive employees. TotalSource plays in both, which is why the number is worth raising.",
+  "Pull the industry comparison from ADP Benchmark so the number is theirs, not yours."]},
+ {t:"Metric 2 — Labor Cost as a Percent of Revenue",k:"note",i:[
+  "Total compensation — wages, benefits and taxes — divided by revenue. Usually the largest controllable expense they have.",
+  "Typical ranges: retail and e-commerce 10-20% · manufacturing 12-30% (the low end is heavily automated) · construction 20-25% · technology and SaaS 20-30% · restaurants and hospitality 25-35% · professional services 30-50% · healthcare and wellness such as salons and spas 40-50%.",
+  "Worked example — a 45-employee HVAC company doing $10M with $5M in labor is at 50% against a 25% benchmark. Their labor cost is badly out of line and they may not know it.",
+  "The profit insight that lands: going from 35% to 32% is three points of margin straight to the bottom line. A two or three point improvement changes their year.",
+  "Own the caveat before they do — benchmarks vary widely by industry and model. You are starting a conversation, not auditing them."]},
+ {t:"Metric 3 — Cost of Turnover",k:"note",i:[
+  "Rule of thumb: one and a half to two times the person's salary every time you replace them.",
+  "What's inside that number: recruiting, lost productivity, training time, manager distraction, and the hit your customers feel.",
+  "Replacement cost by role, as a share of annual salary — entry level or non-skilled 30-50% · service and production 40-70% · clerical and administrative 50-80% · skilled hourly 75-100% · professional 75-125% · technical 100-150% · supervisor 100-150%.",
+  "Worked example — a $60,000 employee walking out costs them $90,000 to $120,000. Ten departures a year is $900,000 to $1.2M.",
+  "This one lands hardest because it is the biggest hidden cost in the business and almost every owner underestimates it. Ask how many people left last year, then do the math out loud."]},
  {t:"Qualification Checklist",k:"check",i:[
   "Employee count and how many are full-time",
   "Do they offer health insurance? What plan type?",
@@ -7493,6 +7649,22 @@ const PB=[
   {q:"My employees will be confused.",a:"They'll see better plans and a real HR line to call. We handle the communication and I'm there for the rollout."},
   {q:"We're too small.",a:"That's exactly why the buying power matters. But if the numbers don't work for you, I'll tell you and we'll do something else."},
   {q:"What if we want out later?",a:"Then you leave. I'd rather you stay because it works than because you're stuck."}]},
+ {t:"The Objection Path",k:"note",i:[
+  "Every objection runs the same five steps, and the point of each is to buy the next one. Acknowledge, explore, discover, connect, advance.",
+  "Acknowledge — \u201cI understand.\u201d You are not agreeing, you are lowering the temperature so they keep talking.",
+  "Explore — \u201cCan I ask...\u201d One question that makes them describe their own situation instead of defending it.",
+  "Discover — \u201cHow are you currently handling...\u201d This is where the actual problem surfaces.",
+  "Connect — \u201cThat's where a lot of companies your size end up finding value.\u201d Their situation, other people's outcome.",
+  "Advance — \u201cWould it make sense to look at that further?\u201d Ask for the next step, not the sale.",
+  "The reframe to keep in your pocket: almost every objection on this list is a reason to meet, not a reason to leave."]},
+ {t:"What's Behind the No",k:"qa",i:[
+  {q:"We're happy with our current provider.",a:"Usually means no compelling reason to change, or they don't understand what a PEO does, or they're busy and comfortable. Try: most of the companies we work with were satisfied too before they looked at TotalSource \u2014 out of curiosity, what's working best with what you have now? Then follow with the real question: does your current provider make your business more profitable?"},
+  {q:"We're too small for a PEO.",a:"Size is exactly why buying power matters \u2014 you're paying small-company rates for benefits today. Ask how many employees and how many take the health plan. If the numbers genuinely don't work, say so and position RUN instead; you keep the relationship and the credibility."},
+  {q:"We already have HR.",a:"Ask what that person actually spends their week on. Most of the time it's one person doing payroll, benefits, compliance and hiring on top of another job. TotalSource doesn't replace them \u2014 it gives them a team, and gives you someone carrying the liability."},
+  {q:"We don't have time for this right now.",a:"Time is the symptom. Ask how many hours a week the back office eats and who it's taking away from. If they're too busy to look at what's costing them time, that's the case, not the obstacle."},
+  {q:"Benefits aren't a problem.",a:"Ask what the last renewal came in at and how many employees are enrolled. \u201cNot a problem\u201d often means they absorbed the increase quietly or cut coverage. Participation is where the truth is."},
+  {q:"We don't want a co-employment relationship.",a:"Say what it means before they hear a worse version elsewhere: you still hire, fire, set pay and run your business \u2014 we become the employer of record for HR, benefits and compliance. Name it plainly and the fear usually goes away."},
+  {q:"We have a good relationship with our broker.",a:"Good \u2014 keep it. Ask what their broker does for them beyond the annual renewal, and whether they'd want to see what the plans look like at our buying power. This is a comparison, not a divorce."}]},
  {t:"Wrap-Up",k:"check",i:[
   "Got a current census and renewal date",
   "Confirmed plan type \u2014 fully insured versus level-funded",
