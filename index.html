@@ -652,10 +652,15 @@ body.deckon #clock{margin:0 0 4px}
    row list, which takes the leftover space and scrolls inside it. */
 #deck>.cc.back>*{flex:none}
 #deck>.cc.back>.brows{flex:1 1 auto;min-height:0}
-.brows{margin:10px auto 0;max-width:340px;width:100%;text-align:left;border-top:1px solid var(--rule);
-  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 13px),transparent);
-  mask-image:linear-gradient(to bottom,#000 calc(100% - 13px),transparent)}
+.brows{margin:10px auto 0;max-width:340px;width:100%;max-height:100%;text-align:left;
+  border-top:1px solid var(--rule);
+  /* no mask here: iOS has a long history of breaking momentum scrolling on masked
+     elements, and a scroll that works matters more than a soft edge */
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* the cue that there is more, painted on the card instead of on the scroller */
+#deck>.cc.back{position:relative}
+#deck>.cc.back.more::after{content:"";position:absolute;left:0;right:0;bottom:78px;height:16px;
+  background:linear-gradient(to bottom,transparent,var(--card));pointer-events:none}
 .brow{padding:6px 0 5px;border-bottom:1px solid var(--rule)}
 .brow:last-child{border-bottom:0}
 .brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
@@ -664,6 +669,7 @@ body.deckon #clock{margin:0 0 4px}
 .bact{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;width:100%;margin:12px auto 0}
 .bhint{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3)}
 #deck .said{font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink2)}
+.behindline{display:block;margin-top:6px;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3)}
 /* the one-viewport invariant is enforced, not hoped for: long names, stacked chips and
    wordy briefs clamp instead of pushing the dial button off the card */
 #deck .co{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -1309,7 +1315,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.17 scroll";
+const BUILD="2026-07-27.18 dayhand";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4172,6 +4178,25 @@ function greeting(){
   /* one line, not two — the second one said nothing and cost 38 pixels every morning */
   return nm?`${part}, ${nm}.`:`${part}.`;
 }
+/* The headline has to describe the deck, not the pile behind it. Counting todayRows meant
+   every overdue drop-in and every eligible call was announced as today's plan — 139 stops
+   and 190 dials. This counts what was actually dealt and says what is waiting. */
+function deckShape(rows,d){
+  const c={meet:0,visit:0,call:0,follow:0};
+  rows.forEach(r=>c[r.block]++);
+  const behind=[];
+  if(deckDropTotal>deckDropShown){behind.push((deckDropTotal-deckDropShown)+" more drop-ins");
+    c.visit=Math.min(c.visit,deckDropShown)}
+  if(deckCallTotal>deckCallShown&&deckCallShown){behind.push((deckCallTotal-deckCallShown)+" more to call");
+    c.call=Math.min(c.call,deckCallShown)}
+  const lab={meet:["meeting","meetings"],visit:["drop-in","drop-ins"],
+             call:["call","calls"],follow:["follow-up","follow-ups"]};
+  const order=(d&&dayMode(d)=="office")?["call","follow","meet","visit"]:["meet","visit","call","follow"];
+  const head=order.filter(k2=>c[k2])
+    .map(k2=>`<b>${c[k2]}</b> ${c[k2]==1?lab[k2][0]:lab[k2][1]}`)
+    .join(" &nbsp;·&nbsp; ");
+  return head+(behind.length?`<s class="behindline">${behind.join(" · ")} waiting behind today</s>`:"");
+}
 function dayShape(rows,d){
   const c={meet:0,visit:0,call:0,follow:0};
   rows.forEach(r=>c[r.block]++);
@@ -4528,6 +4553,9 @@ const DICON={
  check:'<path d="m4 12.5 6 5.5L20 6"/>'};
 const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DICON[k]||DICON.calls}</svg>`;
 const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
+/* a field day is stops you can actually make — the rest waits its turn */
+const DROPCAP=20;
+let deckDropTotal=0,deckDropShown=0,deckCallShown=0;
 DICON.route='<path d="M5 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M7 18h8a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h8"/>';
 /* Cards whose entire purpose is one decision keep a button. The work cards — calls,
    stops, meetings, follow-ups — are driven by the swipe, so the row disappears under
@@ -4555,20 +4583,31 @@ function deckCards(){
       ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
   const fieldCards=()=>{
     if(!fieldAll.length)return;
-    /* the route card leads the field until the route is running; after Start Route it
-       collapses into the seam and the stops themselves take the front */
+    /* A backlog is not a plan. Every overdue drop-in lands on today, so the field segment
+       used to deal 139 stops — a number no one can work and everyone stops believing.
+       It deals a day-sized hand instead, highest-priority first, and the seam says how
+       many are behind it. Meetings are never capped: those are commitments. */
     if(!routeStarted())push("route","field",null,null);
-    fieldAll.filter(r=>!isParked(r)).forEach(r=>push(r.block,"field",r.a,r));
-    fieldAll.filter(isParked).forEach(r=>push(r.block,"field",r.a,r,{far:1}))};
+    const live=fieldAll.filter(r=>!isParked(r)),parked=fieldAll.filter(isParked);
+    const meets=live.filter(r=>r.block==="meet");
+    const drops=live.filter(r=>r.block!=="meet");
+    deckDropTotal=drops.length;
+    const cap=Math.max(1,+D.cfg.dropCap||DROPCAP);
+    const hand=drops.slice(0,cap);
+    deckDropShown=hand.length;
+    [...meets,...hand].sort((x,y)=>fieldAll.indexOf(x)-fieldAll.indexOf(y))
+      .forEach(r=>push(r.block,"field",r.a,r));
+    parked.forEach(r=>push(r.block,"field",r.a,r,{far:1}))};
   const callCards=()=>{
     /* the deck is TODAY, not the list: a 766-account list deals a day-sized hand and
        keeps re-dealing from the remainder as calls complete. buildQueue self-caps. */
     let pool=(runSource.length?listQueue(runSource).q:buildQueue()).filter(a=>a.skip!==iso(today()));
     deckCallTotal=pool.length;
-    if(runSource.length){
-      const cap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
-      pool=pool.slice(0,cap);
-    }
+    /* the cap used to apply only when a list was chosen, so Bellwether's own pick dealt
+       every eligible account — 190 dials announced as a day. A day-sized hand either way. */
+    const cap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+    pool=pool.slice(0,cap);
+    deckCallShown=pool.length;
     pool.forEach(a=>push("call","calls",a,null));
   };
   const followCards=()=>rows.filter(r=>r.block==="follow"&&r.a.skip!==iso(today())).sort(byTime).forEach(r=>push("follow","follow",r.a,r));
@@ -4754,6 +4793,14 @@ function briefFace(c){
 let deckFlipped=new Set();
 const MOTION_OK=()=>!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 function paintFlipped(){document.body.classList.toggle("flipped",deckFlipped.size>0)}
+/* mark backs whose briefing runs past the fold, so the fade only shows when it is true */
+function paintMore(){
+  deckCardEls().forEach(el=>{
+    if(!el.classList||!el.classList.contains("back"))return;
+    const rows=el.querySelector&&el.querySelector(".brows");
+    el.classList.toggle("more",!!rows&&rows.scrollHeight>rows.clientHeight+2);
+  });
+}
 function deckFlip(c){
   const el=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
   if(!el)return;
@@ -4763,6 +4810,7 @@ function deckFlip(c){
     el.insertAdjacentHTML("beforebegin",deckFace(c));
     const nu=el.previousElementSibling;el.remove();
     deckSize&&deckSize();
+    requestAnimationFrame(paintMore);
     if(nu&&MOTION_OK()){nu.classList.add("flipin");setTimeout(()=>nu.classList.remove("flipin"),200)}
   };
   if(MOTION_OK()){el.classList.add("flipout");setTimeout(swap,90)}else swap();
@@ -4776,7 +4824,7 @@ function deckFace(c){
     return `<div class="cc" ${K} role="group" aria-label="Start the day">
       <div class="cwhy"><span>${esc(fmtFull(activeD()))}</span></div>
       <div class="co">${greeting()}</div>
-      <div class="why">${rows.length?dayShape(rows,activeD()):"Nothing owed yet — the deck builds as you add work."}</div>
+      <div class="why">${rows.length?deckShape(rows,activeD()):"Nothing owed yet — the deck builds as you add work."}</div>
       ${cn?`<div class="ctx"><s>You wanted to remember</s><p>${esc(cn.text)}</p></div>`:""}
       ${q?`<div class="last said">&ldquo;${esc(q[0])}&rdquo; &mdash; ${esc(q[1])}</div>`:""}
       <button class="threadchip" data-act="anchor">Daily plan &amp; warm-up</button>
@@ -4833,7 +4881,9 @@ function deckFace(c){
 }
 function seamHtml(seg,n){
   const lists=runSource.map(id=>{const L=listById(id);return L?L.label:""}).filter(Boolean).join(" + ");
-  const nn=seg==="calls"&&deckCallTotal>n?n+" of "+deckCallTotal:String(n);
+  const nn=seg==="calls"&&deckCallTotal>n?n+" of "+deckCallTotal
+    :seg==="field"&&deckDropTotal>deckDropShown?n+" of "+(n-deckDropShown+deckDropTotal)
+    :String(n);
   const lab=seg==="calls"?(lists||"Bellwether's pick")+" · "+nn:nn;
   const act=seg==="calls"?"runsrc":seg==="field"?"routesheet":"";
   return `<${act?"button":"div"} class="seam"${act?` data-act="${act}"`:""}><b>${SEGLABEL[seg]}</b><span>${lab}</span>${act?`<s>${seg==="calls"?"lists":"route"} &rsaquo;</s>`:""}</${act?"button":"div"}>`;
@@ -4890,6 +4940,7 @@ function deckSize(){
     const actH=act?act.offsetHeight:58;
     const h=Math.max(320,window.innerHeight-d.getBoundingClientRect().top-actH-((nav&&nav.offsetHeight)||92)-12);
     d.style.height=h+"px";
+    paintMore();
   });
 }
 function renderDeck(){
