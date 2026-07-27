@@ -1261,6 +1261,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <button class="b quiet" data-act="signout">Sign out</button>
   </div>
 
+  <div id="geoline" style="margin-top:18px"></div>
   <p class="read" style="font-size:12px" id="dangerzone"></p>
 </section>
 
@@ -1329,7 +1330,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.20 fit";
+const BUILD="2026-07-27.21 geo";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4659,7 +4660,7 @@ function routeFace(c){
     ${stops.length>4?`<div class="rmore">+ ${stops.length-4} more in drive order</div>`:""}
     ${stops.elsewhere?`<div class="rmore">${stops.elsewhere} further out &mdash; a different day&rsquo;s drive</div>`:""}
     ${stops.noaddr?`<div class="rmore">${stops.noaddr} without a street address &mdash; Maps searches by name for those</div>`:""}</div>
-    <div class="last">Live &mdash; reorders as the day changes${timed?"; set times outrank the drive order in the deck":""}. Google Maps carries the miles and minutes.</div>
+    <div class="last">${stops.byMiles?`Ordered by distance &mdash; about ${Math.round(stops.miles)} mi of driving, straight-line. `:"Ordered by town. "}Live &mdash; reorders as the day changes. Google Maps carries the real miles and minutes.</div>
   </div>`;
 }
 function deckRouteSheet(){
@@ -6745,6 +6746,24 @@ function renderReview(){
 function countEvents(kind){return A().reduce((s,a)=>s+(a.events||[]).filter(e=>e.kind==kind).length,0)}
 
 /* ---------- setup ---------- */
+/* The map is a one-time cost with a permanent payoff, so the panel says plainly what is
+   done, what is left, and what can never be done without a street address. */
+function renderGeoLine(){
+  const el=$("#geoline");if(!el)return;
+  const all=A().filter(a=>isOpen(a)&&dqOK(a));
+  const mapped=all.filter(geoOf).length;
+  const wanted=all.filter(geoWanted).length;
+  const noAddr=all.filter(a=>!a.addr&&!geoOf(a)).length;
+  const running=!!geoRun;
+  el.innerHTML=`<h3 style="margin:0 0 4px">Drive order</h3>
+    <p class="read" style="font-size:12px">${mapped?`<b>${mapped}</b> accounts mapped — their drives order by real distance.`
+      :"Nothing mapped yet — drives are ordered by town, which wanders."}
+      ${wanted?` <b>${wanted}</b> still to look up.`:""}
+      ${noAddr?` ${noAddr} have no street address and can't be mapped until they do.`:""}</p>
+    ${running?`<p class="read" style="font-size:12px">Looking up ${geoRun.done+geoRun.fail} of ${geoRun.total}&hellip; about a second each, and it saves as it goes.</p>`:""}
+    <button class="b${running?" danger":""}" data-act="geocode"${!wanted&&!running?" disabled":""}>
+      ${running?"Stop":wanted?`Map ${wanted} address${wanted==1?"":"es"}`:"Everything mappable is mapped"}</button>`;
+}
 function renderSetup(){
   const c=D.cfg;
   const set=(id,v)=>{const el=$("#"+id);if(el)el.value=v==null?"":v};
@@ -6773,6 +6792,7 @@ function renderSetup(){
   paintNV();
   const l1=learnedRate("quoted"),l3=learnedRate("callback");
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
+  renderGeoLine();
   renderSyncLine();
   $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
@@ -6919,6 +6939,126 @@ const canMap=a=>!!(a&&(a.addr||a.city));
    it never sends you back across the territory for one door.
    Ten stops is the ceiling because that is what a maps URL will carry. */
 const ROUTEMAX=10;
+/* ============================================================
+   GEOGRAPHY — real coordinates, so a drive can be ordered by distance
+   instead of by town adjacency. Every account keeps a.geo {lat,lon,at,src}
+   once looked up; nothing is ever geocoded twice, and an account without a
+   street address is never guessed at (the .05 lesson: a name is not a place).
+   ============================================================ */
+const geoOf=a=>{const g=a&&a.geo;return (g&&isFinite(g.lat)&&isFinite(g.lon))?g:null};
+const geoWanted=a=>isOpen(a)&&dqOK(a)&&!!a.addr&&!geoOf(a);
+function milesBetween(p,q){
+  const rad=d=>d*Math.PI/180, R=3958.8;
+  const dLat=rad(q.lat-p.lat), dLon=rad(q.lon-p.lon);
+  const s=Math.sin(dLat/2)**2+Math.cos(rad(p.lat))*Math.cos(rad(q.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
+}
+const legMiles=(a,b)=>milesBetween(geoOf(a),geoOf(b));
+/* nearest-neighbour gets a decent route fast; 2-opt then unpicks the crossings it
+   leaves behind, which is where most of the wasted mileage in a hand-built day hides */
+function twoOpt(seq,fixed,floor){
+  if(seq.length<4)return seq;
+  const canMove=i=>(i>=(floor||1))&&(!fixed||!fixed.has(seq[i].id));
+  let improved=true,guard=0;
+  while(improved&&guard++<40){
+    improved=false;
+    for(let i=1;i<seq.length-2;i++){
+      for(let k=i+1;k<seq.length-1;k++){
+        if(!canMove(i)||!canMove(k))continue;
+        const a=seq[i-1],b=seq[i],c=seq[k],d=seq[k+1];
+        if(legMiles(a,b)+legMiles(c,d)>legMiles(a,c)+legMiles(b,d)+1e-9){
+          const mid=seq.slice(i,k+1).reverse();
+          seq=seq.slice(0,i).concat(mid,seq.slice(k+1));
+          improved=true;
+        }
+      }
+    }
+  }
+  return seq;
+}
+/* Timed meetings are commitments, so they hold their clock order and the untimed stops
+   are threaded around them at the cheapest point on the drive. With nothing timed it is
+   a plain nearest-neighbour walk from the highest-priority stop. */
+function driveOrder(stops,timeOf){
+  const mapped=stops.filter(geoOf), flat=stops.filter(a=>!geoOf(a));
+  if(mapped.length<2){const o=stops.slice();o.mapped=mapped.length;o.unmapped=flat.length;o.miles=0;return o}
+  const timed=mapped.filter(a=>timeOf&&timeOf(a)).sort((x,y)=>timeOf(x)<timeOf(y)?-1:1);
+  const loose=mapped.filter(a=>!(timeOf&&timeOf(a)));
+  let seq;
+  if(timed.length){
+    seq=timed.slice();
+    const fixed=new Set(timed.map(a=>a.id));
+    /* Shortest is not the same as possible: dropping in before a 9am meeting means
+       knocking on doors at 8. An early first commitment starts the day and nothing is
+       placed ahead of it; a late one leaves the morning free to work. */
+    const firstAt=timeOf(timed[0])||"";
+    const minIdx=(firstAt&&firstAt<"11:00")?1:0;
+    /* cheapest insertion: put each stop where it adds the least driving */
+    loose.sort((x,y)=>score(y)-score(x)).forEach(a=>{
+      let best=seq.length,cost=Infinity;
+      for(let i=minIdx;i<=seq.length;i++){
+        const prev=seq[i-1],next=seq[i];
+        const add=(prev?legMiles(prev,a):0)+(next?legMiles(a,next):0)
+                 -((prev&&next)?legMiles(prev,next):0);
+        if(add<cost){cost=add;best=i}
+      }
+      seq.splice(best,0,a);
+    });
+    seq=twoOpt(seq,fixed,minIdx||1);
+  }else{
+    const pool=mapped.slice().sort((x,y)=>score(y)-score(x));
+    seq=[pool.shift()];
+    while(pool.length){
+      let bi=0,bd=Infinity;
+      pool.forEach((a,i)=>{const d=legMiles(seq[seq.length-1],a);if(d<bd){bd=d;bi=i}});
+      seq.push(pool.splice(bi,1)[0]);
+    }
+    seq=twoOpt(seq,null);
+  }
+  let miles=0;
+  for(let i=1;i<seq.length;i++)miles+=legMiles(seq[i-1],seq[i]);
+  const out=seq.concat(flat);
+  out.mapped=mapped.length;out.unmapped=flat.length;out.miles=miles;
+  return out;
+}
+/* Nominatim asks for no more than one request a second and no bulk hammering; this
+   walks the book slowly, saves as it goes, and can be stopped and resumed. An account
+   is looked up once and never again, so the cost is paid a single time. */
+let geoRun=null;
+const geoQueue=()=>A().filter(geoWanted);
+async function geoLookup(a){
+  const q=[a.addr,a.city||"",MAPSTATE()].filter(Boolean).join(", ");
+  const url="https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q="+encodeURIComponent(q);
+  const r=await fetch(url,{headers:{"Accept":"application/json"}});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const j=await r.json();
+  if(!j||!j.length)return null;
+  return {lat:+j[0].lat,lon:+j[0].lon,at:iso(today()),src:"nominatim"};
+}
+async function geocodeBook(){
+  if(geoRun){geoRun.stop=true;geoRun=null;toast("Stopped. Progress is saved.");renderSetup&&renderSetup();return}
+  const queue=geoQueue();
+  if(!queue.length){toast("Every account with a street address is already mapped.");return}
+  geoRun={stop:false,done:0,fail:0,total:queue.length};
+  renderSetup&&renderSetup();
+  for(const a of queue){
+    if(!geoRun||geoRun.stop)break;
+    try{
+      const g=await geoLookup(a);
+      if(g){a.geo=g;geoRun.done++}else{a.geoMiss=iso(today());geoRun.fail++}
+    }catch(e){geoRun.fail++;
+      /* a network that has stopped answering should not burn through 600 accounts */
+      if(geoRun.fail>8&&geoRun.done===0){toast("Lookups aren't getting through — stopped.");break}
+    }
+    if(geoRun.done%10===0)await save();
+    renderSetup&&renderSetup();
+    await new Promise(r=>setTimeout(r,1100));   /* their rate limit, respected */
+  }
+  const d=geoRun?geoRun.done:0,f=geoRun?geoRun.fail:0;
+  geoRun=null;
+  await save();render();
+  toast(d+" mapped"+(f?" · "+f+" not found":"")+". Drives now order by distance.");
+}
 function routeStops(ids){
   const picked=ids&&ids.length?allLists().filter(L=>ids.indexOf(L.id)>=0):null;
   const pool=A().filter(a=>{
@@ -6930,6 +7070,24 @@ function routeStops(ids){
     return picked?picked.some(L=>inList(a,L)):todayRows(activeD()).some(r=>r.a.id==a.id&&(r.block=="meet"||r.block=="visit"));
   });
   if(!pool.length)return [];
+  /* With coordinates on hand the drive is ordered by actual distance. Town-chaining
+     stays as the fallback for a book that hasn't been mapped yet — and for the stops
+     inside it that still have no coordinate. */
+  const rowsNow=todayRows(activeD());
+  const timeOf=a=>{const r=rowsNow.find(r2=>r2.a.id===a.id);return r?rowAt(r):""};
+  const mappedPool=pool.filter(geoOf);
+  if(mappedPool.length>=2){
+    /* The day's centre is its highest-priority stop, not whichever account happens to sit
+       first in storage — anchoring on storage order dropped legitimate stops at random.
+       A booked meeting is never filtered out by distance: it is a commitment. */
+    const anchor=geoOf(mappedPool.slice().sort((x,y)=>score(y)-score(x))[0]);
+    const rad=+D.cfg.dayRadius||25;
+    const inDay=pool.filter(a=>timeOf(a)||!geoOf(a)||milesBetween(anchor,geoOf(a))<=rad);
+    const out=driveOrder(inDay,timeOf);
+    out.elsewhere=pool.length-inDay.length;
+    out.hub=null;out.byMiles=true;
+    return out;
+  }
   const byTown={};
   pool.forEach(a=>{const t=String(a.city||"").trim().toLowerCase()||"—";(byTown[t]=byTown[t]||[]).push(a)});
   Object.keys(byTown).forEach(t=>byTown[t].sort((x,y)=>score(y)-score(x)));
@@ -8221,6 +8379,7 @@ document.addEventListener("click",async e=>{
       closeSheet();
       break;
     }
+    case"geocode":geocodeBook();break;
     case"routesheet":deckRouteSheet();break;
     case"routego":closeSheet();routeGo();break;
     case"addstop":closeSheet();addStopSheet();break;
