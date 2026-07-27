@@ -608,7 +608,14 @@ body.deckon #clock{margin:0 0 4px}
 #deckshell{margin:10px -6px 0}
 #deck{display:flex;flex-direction:column;gap:12px;padding:6px 4px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain}
 #deck::-webkit-scrollbar{display:none}
-#deck>.cc{flex:0 0 86%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:center;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:22px 20px;overflow:hidden}
+/* Centering with justify-content and clipping with overflow:hidden is the combination
+   that sliced text: overflow in a centred flex column is unreachable AND cut at both
+   ends. The safe pattern is flex-start plus auto margins — identical centring when the
+   content fits, and a real scroll when it doesn't. Nothing is ever cut mid-letter now. */
+#deck>.cc{flex:0 0 86%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:22px 20px;
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#deck>.cc>*:first-child{margin-top:auto}
+#deck>.cc>*:last-child{margin-bottom:auto}
 #deck .co{font-size:25px;font-weight:500;letter-spacing:-.6px;line-height:1.2}
 #deck .meta{margin-top:7px;font-size:13.5px;color:var(--ink2)}
 #deck .why{margin-top:14px;font-size:14px;color:var(--ink2);line-height:1.6;max-width:420px;margin-left:auto;margin-right:auto}
@@ -643,24 +650,27 @@ body.deckon #clock{margin:0 0 4px}
 .beye{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);background:var(--ambsoft);padding:3px 10px;border-radius:999px}
 /* the back's header is its own thing — borrowing the front's clamped .co sliced the
    name's descenders and tinted it. One line each, sized to always fit. */
-.bco{font-size:18.5px;font-weight:600;letter-spacing:-.2px;color:var(--ink);line-height:1.3;margin-top:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96%;margin-left:auto;margin-right:auto}
+.bco{font-size:18.5px;font-weight:600;letter-spacing:-.2px;color:var(--ink);line-height:1.3;margin-top:9px;
+  max-width:96%;margin-left:auto;margin-right:auto;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bmeta{font-size:12px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* five single-line rows fit every phone by arithmetic, not by clipping — a briefing row
    is a cue, and the full sentence lives behind Full account */
 /* the card is a fixed-height flex column: any child with overflow:hidden gets squeezed
    and sliced mid-line when content exceeds it. Nothing on the back shrinks except the
    row list, which takes the leftover space and scrolls inside it. */
+/* .11 stopped the BACK's children being squeezed but left the front alone — which is why
+   a call card's meta line was still being sliced through the middle. No child of any card
+   shrinks; text clamps or the list scrolls, but nothing is ever cut mid-letter. */
+#deck>.cc>*{flex:none}
 #deck>.cc.back>*{flex:none}
-#deck>.cc.back>.brows{flex:1 1 auto;min-height:0}
+#deck>.cc.back>.brows{flex:1 1 auto;min-height:0;max-height:none}
 .brows{margin:10px auto 0;max-width:340px;width:100%;max-height:100%;text-align:left;
   border-top:1px solid var(--rule);
   /* no mask here: iOS has a long history of breaking momentum scrolling on masked
      elements, and a scroll that works matters more than a soft edge */
   overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-/* the cue that there is more, painted on the card instead of on the scroller */
 #deck>.cc.back{position:relative}
-#deck>.cc.back.more::after{content:"";position:absolute;left:0;right:0;bottom:78px;height:16px;
-  background:linear-gradient(to bottom,transparent,var(--card));pointer-events:none}
 .brow{padding:6px 0 5px;border-bottom:1px solid var(--rule)}
 .brow:last-child{border-bottom:0}
 .brow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
@@ -1315,7 +1325,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.18 dayhand";
+const BUILD="2026-07-27.19 fit";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4793,14 +4803,7 @@ function briefFace(c){
 let deckFlipped=new Set();
 const MOTION_OK=()=>!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 function paintFlipped(){document.body.classList.toggle("flipped",deckFlipped.size>0)}
-/* mark backs whose briefing runs past the fold, so the fade only shows when it is true */
-function paintMore(){
-  deckCardEls().forEach(el=>{
-    if(!el.classList||!el.classList.contains("back"))return;
-    const rows=el.querySelector&&el.querySelector(".brows");
-    el.classList.toggle("more",!!rows&&rows.scrollHeight>rows.clientHeight+2);
-  });
-}
+
 function deckFlip(c){
   const el=deckCardEls().find(e=>e.getAttribute("data-key")===c.key);
   if(!el)return;
@@ -4810,7 +4813,6 @@ function deckFlip(c){
     el.insertAdjacentHTML("beforebegin",deckFace(c));
     const nu=el.previousElementSibling;el.remove();
     deckSize&&deckSize();
-    requestAnimationFrame(paintMore);
     if(nu&&MOTION_OK()){nu.classList.add("flipin");setTimeout(()=>nu.classList.remove("flipin"),200)}
   };
   if(MOTION_OK()){el.classList.add("flipout");setTimeout(swap,90)}else swap();
@@ -4940,7 +4942,6 @@ function deckSize(){
     const actH=act?act.offsetHeight:58;
     const h=Math.max(320,window.innerHeight-d.getBoundingClientRect().top-actH-((nav&&nav.offsetHeight)||92)-12);
     d.style.height=h+"px";
-    paintMore();
   });
 }
 function renderDeck(){
