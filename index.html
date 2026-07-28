@@ -1330,7 +1330,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.21 geo";
+const BUILD="2026-07-27.22 owe";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5133,8 +5133,12 @@ function deckDo(c,act){
    the few legacy references that still read them. */
 let queue=[],qi=0,speakT=null;
 function buildQueue(){
-  const due=todayRows(activeD()).filter(r=>r.block=="call").map(r=>r.a);
-  const have=new Set(due.map(a=>a.id));
+  const rowsNow=todayRows(activeD());
+  const due=rowsNow.filter(r=>r.block=="call").map(r=>r.a);
+  /* An account already carrying today's work — a stop, a meeting, a promise — must not
+     also be dealt as a cold call. Driving to a business and dialling it the same morning
+     is the day contradicting itself, and it was double-counting the target too. */
+  const have=new Set(rowsNow.map(r=>r.a.id));
   /* relationships are worked deliberately, on a date you chose — they join a run only when
      a call is actually due. Top-ups are prospecting, which is a volume game. */
   /* lastTouch is a real calendar date, so it stays compared against the real today —
@@ -5296,6 +5300,7 @@ function callOutcome(c){
       +(nxt?" — back to them "+fmt(parseD(nxt.date)):""),before);
     return;
   }
+  if(c=="oweit"){ oweSheet(a); return }
   if(c=="talked"){ debriefView(a,dbKind); return }
   if(c=="quickfollow"){
     logEvent(a,set.verb,"follow up");
@@ -5595,7 +5600,8 @@ function debriefView(a,kind){
     <div class="qout">
       <button class="b" data-c="noanswer">${set.miss[0]}</button>
       <button class="b" data-c="message">${set.note[0]}</button>
-      <button class="b" data-c="quickfollow">Follow up</button>
+      <button class="b" data-c="quickfollow">${dbKind=="call"?"Call back":dbKind=="follow"?"Chase it":"Go back"}</button>
+      <button class="b" data-c="oweit">I owe them&hellip;</button>
       <button class="b" data-c="notint">Not interested</button>
       <button class="b" data-c="quicksold">Sold</button>
       <button class="b" data-c="quickbad">${dbKind=="call"?"Wrong number":"Closed or moved"}</button>
@@ -7314,6 +7320,21 @@ function editNextSheet(nid){
   $("#enWhen_pick").value=n.date;seedDate("enWhen",n.date,n.at||"");
   chipVal.ek=n.kind||"call";
 }
+/* The moment a promise is made is the moment to capture it — walking out of the building,
+   not that evening from memory. This is the only door that files into Follow-ups
+   deliberately; everything else infers the kind from what you typed or said. */
+function oweSheet(a){
+  if(!a)return;
+  openSheet(`<h3>What do you owe ${esc(a.name)}?</h3>
+    <div class="sub">It lands in Follow-ups and rides with you until it's done.</div>
+    <label class="f">The promise<input class="t" id="owWhat" placeholder="Send the census template"></label>
+    <label class="f">By when</label>${dateField("owWhen","tomorrow, friday, 2 days")}
+    <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
+      <button class="b pri" data-act="saveowe" data-id="${a.id}">Add to follow-ups</button></div>`);
+  wireDate("owWhen");
+  const w=$("#owWhen");if(w&&!w.value)w.value=fmt(parseD(isoBiz(today(),2)));
+  setTimeout(()=>$("#owWhat").focus(),90);
+}
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
     <label class="f">What<input class="t" id="anWhy" placeholder="Send the proposal"></label>
@@ -8377,6 +8398,17 @@ document.addEventListener("click",async e=>{
       logEvent(a,"note",txt);
       commit("Note added.",()=>restoreAcct(was));
       closeSheet();
+      break;
+    }
+    case"saveowe":{
+      const acc=acct(t.dataset.id);if(!acc)break;
+      const what=(($("#owWhat")||{}).value||"").trim();
+      if(!what){toast("What did you promise them?");break}
+      const when=dateOf("owWhen")||isoBiz(today(),2);
+      const was=snapshot(acc);
+      acc.next.push({id:uid(),date:when,why:what,kind:"follow",done:false,made:activeISO()});
+      closeSheet();
+      commit("Owed: "+what+" by "+fmt(parseD(when)),()=>restoreAcct(was));
       break;
     }
     case"geocode":geocodeBook();break;
