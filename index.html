@@ -1362,7 +1362,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.33 room";
+const BUILD="2026-07-28.34 in flight";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -9230,8 +9230,20 @@ async function syncPull(){
      this pass are skipped by id rather than by timestamp. */
   if(D.cfg.syncPageFix!==2){D.cfg.syncPulledAt="";D.cfg.syncPageFix=2}
   let cursor=(D.cfg&&D.cfg.syncPulledAt)||"1970-01-01T00:00:00Z";
-  let down=0,changed=false;
+  let down=0,changed=false,requeued=false;
   const seen=new Set();
+  /* What this device believed the book looked like at the moment it asked. A row
+     coming back can only be trusted to be newer than a local account that has not
+     moved since — so the comparison has to be against a snapshot taken here, and
+     it has to be taken from the LIVE BOOK rather than from `hashes`. validate(),
+     repairAccount() and the migrations all mutate accounts during load without
+     going through save(), so `hashes` can already be stale before we ask, and
+     trusting it would make an untouched account look edited and suppress a real
+     change from the other device. Costs one pass over the book, ~10 ms at 3,000
+     accounts — the same work syncMark already does after every save burst. */
+  const seenAt={},mineById=new Map();
+  (D.accounts||[]).forEach(a=>{if(a&&a.id){mineById.set(a.id,a);
+    try{seenAt[a.id]=hashOf(JSON.stringify(a))}catch(e){}}});
   try{
     for(let guard=0;guard<80;guard++){
       const {data,error}=await sb.from("bw_accounts")
@@ -9249,6 +9261,17 @@ async function syncPull(){
         /* anything still queued here was changed on this phone since the last push —
            this device wins, and the push that follows carries it up */
         if(pend.has(r.id))return;
+        /* `pend` alone cannot protect an edit made while THIS request was in flight.
+           It is filled by syncMark 600 ms after a save, which is itself debounced
+           110 ms, and syncPush empties it the moment the upsert returns — so it is
+           empty both before an edit is marked and after it has been sent, and a
+           response computed before the edit can land in either gap. The account
+           itself is the honest witness: if it no longer matches the snapshot taken
+           when we asked, it changed here since, this device's copy is the newer one,
+           and it is re-queued so the push that follows carries it up. */
+        {const mine=mineById.get(r.id);
+         if(mine&&seenAt[r.id]!==undefined&&hashOf(JSON.stringify(mine))!==seenAt[r.id]){
+           pend.add(r.id);requeued=true;return}}
         const i=(D.accounts||[]).findIndex(a=>a&&a.id==r.id);
         if(r.deleted){if(i>=0){D.accounts.splice(i,1);changed=true}return}
         const inc=r.data&&typeof r.data=="object"?r.data:null;
@@ -9264,8 +9287,11 @@ async function syncPull(){
       if(!fresh)break;
     }
     D.cfg.syncPulledAt=cursor;
-    if(changed){await rawSet(KEY,JSON.stringify(D));await saveSyncState();calcRev++}
-    else await rawSet(KEY,JSON.stringify(D));
+    /* a row we declined to apply is now queued — that has to survive a reload even
+       if the push that normally follows never gets the chance to run */
+    if(changed||requeued)await saveSyncState();
+    if(changed)calcRev++;
+    await rawSet(KEY,JSON.stringify(D));
     syncNote="";
   }catch(e){syncNote=(e&&e.message)||"Sync failed"}
   return {down,changed};
