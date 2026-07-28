@@ -1376,7 +1376,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.39 wired";
+const BUILD="2026-07-28.40 two things";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5580,7 +5580,7 @@ function callOutcome(c){
       +(nxt?" — back to them "+fmt(parseD(nxt.date)):""),before);
     return;
   }
-  if(c=="oweit"){ oweSheet(a); return }
+  if(c=="oweit"){ oweSheet(a,dbKind); return }
   if(c=="talked"){ debriefView(a,dbKind); return }
   if(c=="quickfollow"){
     logEvent(a,set.verb,"follow up");
@@ -7723,18 +7723,51 @@ const whyChips=(kind,into)=>{
   return list.length?`<div class="chips whychips">${list.map(w=>
     `<button class="chip" data-usewhy="${esc(w)}" data-into="${into}">${esc(w)}</button>`).join("")}</div>`:"";
 };
-function oweSheet(a){
+/* One conversation, two commitments. A real call ends "send me that today and give me a
+   ring next week" far more often than it ends with a single promise, and filing those
+   separately meant two saves, two undo toasts, and a good conversation that counted as
+   nothing. The second date is optional: leave it blank and this behaves exactly as it
+   always did. */
+function oweSheet(a,kind){
   if(!a)return;
+  const k=DBSET[kind]?kind:"";
   openSheet(`<h3>What do you owe ${esc(a.name)}?</h3>
     <div class="sub">It lands in Follow-ups and rides with you until it's done.</div>
     <label class="f">The promise<input class="t" id="owWhat" placeholder="Send the census template"></label>
     ${whyChips("follow","owWhat")}
-    <label class="f">By when</label>${dateField("owWhen","tomorrow, friday, 2 days")}
+    <label class="f">By when</label>${dateField("owWhen","today, tomorrow, friday")}
+    <label class="f" style="margin-top:18px">And call them back
+      <s class="hint">optional &mdash; lands in that day's calls</s></label>${dateField("owCall","1 week, next tuesday, the 8th")}
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
-      <button class="b pri" data-act="saveowe" data-id="${a.id}">Add to follow-ups</button></div>`);
-  wireDate("owWhen");
+      <button class="b pri" data-act="saveowe" data-id="${a.id}" data-owekind="${k}">Save</button></div>`);
+  wireDate("owWhen");wireDate("owCall");
   presetDate("owWhen",isoBiz(today(),2));
   setTimeout(()=>$("#owWhat").focus(),90);
+}
+/* Lifted out of the act switch so it can be tested against the values the sheet actually
+   holds, rather than by trusting a branch nothing can call. */
+function saveOwe(id,kind){
+  const acc=acct(id);if(!acc)return;
+  const what=(($("#owWhat")||{}).value||"").trim();
+  if(!what){toast("What did you promise them?");return}
+  const when=dateOf("owWhen")||isoBiz(today(),2);
+  const back=dateOf("owCall");
+  const was=snapshot(acc);
+  acc.next.push({id:uid(),date:when,why:what,kind:"follow",done:false,made:activeISO()});
+  if(back)acc.next.push({id:uid(),date:back,why:"Call back",kind:"call",done:false,made:activeISO()});
+  const bits=["Owed: "+what+" by "+fmt(parseD(when))];
+  if(back)bits.push("call back "+fmt(parseD(back)));
+  closeSheet();
+  /* A promise is proof of a conversation. Filing one used to log nothing at all, so a ten
+     minute call that produced two commitments counted as zero against the day's target —
+     the one number he checks. Only from a debrief, where the app knows a touch really
+     happened; the same sheet opened from anywhere else still just files the work. */
+  const set=DBSET[kind];
+  if(set){
+    logEvent(acc,set.verb,"spoke \u2014 "+what);
+    dbA=acc;
+    outcomeDone(acc,bits.join(" \u00b7 "),was);
+  } else commit(bits.join(" \u00b7 "),()=>restoreAcct(was));
 }
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
@@ -8831,17 +8864,7 @@ document.addEventListener("click",async e=>{
       threadSheet(a.id);
       break;
     }
-    case"saveowe":{
-      const acc=acct(t.dataset.id);if(!acc)break;
-      const what=(($("#owWhat")||{}).value||"").trim();
-      if(!what){toast("What did you promise them?");break}
-      const when=dateOf("owWhen")||isoBiz(today(),2);
-      const was=snapshot(acc);
-      acc.next.push({id:uid(),date:when,why:what,kind:"follow",done:false,made:activeISO()});
-      closeSheet();
-      commit("Owed: "+what+" by "+fmt(parseD(when)),()=>restoreAcct(was));
-      break;
-    }
+    case"saveowe":saveOwe(t.dataset.id,t.dataset.owekind||"");break;
     case"streakoff":D.cfg.hideStreak=!D.cfg.hideStreak;save();renderHistory();
       toast(D.cfg.hideStreak?"Streak hidden. The work still counts.":"Streak shown.");break;
     case"clearold":{
