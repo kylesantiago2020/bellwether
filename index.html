@@ -1355,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.29 idb";
+const BUILD="2026-07-27.31 consistent";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1623,7 +1623,15 @@ function idbDo(mode,fn){
   });
 }
 const idbGet=k=>idbDo("readonly",st=>st.get(k)).then(r=>r.ok?(r.value??null):null);
-const idbSet=(k,v)=>idbDo("readwrite",st=>st.put(v,k)).then(r=>r.ok);
+/* iOS aborts IndexedDB transactions for reasons that have nothing to do with the data —
+   backgrounding, memory pressure, a long-running loop. One retry turns most of those from
+   a divergence into a hiccup. */
+const idbSetOnce=(k,v)=>idbDo("readwrite",st=>st.put(v,k)).then(r=>r.ok);
+async function idbSet(k,v){
+  if(await idbSetOnce(k,v))return true;
+  await new Promise(r=>setTimeout(r,120));
+  return idbSetOnce(k,v);
+}
 const idbDel=k=>idbDo("readwrite",st=>st.delete(k)).then(r=>r.ok);
 
 async function rawGet(key){
@@ -1640,9 +1648,16 @@ function probeStorage(){
 async function rawSet(key,val){
   if(idbOn&&!window.storage){
     /* IndexedDB is the primary store: no 5 MB ceiling, and a failure here falls through
-       to the old engine rather than losing the write */
+       to the old engine rather than losing the write. But falling back while STILL READING
+       from IndexedDB would leave the newest work in one store and every read coming from
+       the other. So a refused write demotes the engine: from here on both reads and writes
+       use browser storage, and they can't disagree. */
     if(await idbSet(key,val))return true;
-    storeWarn="IndexedDB refused a write — falling back to browser storage.";
+    if(key===KEY){
+      idbOn=false;
+      storeReport.engine="browser storage (IndexedDB refused a write)";
+      storeWarn="IndexedDB refused a write — moved back to browser storage. Reopen the app to retry.";
+    }else storeWarn="IndexedDB refused a write.";
   }
   try{ if(window.storage)await window.storage.set(key,val); else localStorage.setItem(key,val); return true }
   catch(e){
@@ -1967,9 +1982,29 @@ async function initStorage(){
   }
   let mine=null;
   try{mine=await idbGet(KEY)}catch(e){}
-  if(mine!=null){idbOn=true;storeReport.engine="IndexedDB";return}
   let old=null;
   try{old=localStorage.getItem(KEY)}catch(e){}
+  if(mine!=null){
+    /* Both stores can hold a book — a refused write means the newest work may be in the
+       fallback. Preferring IndexedDB by position would silently load the older one, so
+       the two are compared by the timestamp the app writes on every save. */
+    const when=s=>{try{const p=JSON.parse(s);return (p&&p.cfg&&p.cfg.lastSave)||""}catch(e){return ""}};
+    const a=when(mine),b=old?when(old):"";
+    if(old&&b&&(!a||b>a)){
+      const wrote=await idbSet(KEY,old);
+      const back=wrote?await idbGet(KEY):null;
+      if(back!=null&&back.length===old.length){
+        idbOn=true;storeReport.engine="IndexedDB";
+        storeReport.note="Browser storage held newer work (saved "+fmtWhen(b)+") — carried across and now current.";
+        return;
+      }
+      idbOn=false;
+      storeReport.engine="browser storage (newer copy)";
+      storeReport.note="Browser storage holds the newest work and IndexedDB wouldn't take it. Staying on the newer copy.";
+      return;
+    }
+    idbOn=true;storeReport.engine="IndexedDB";return;
+  }
   if(old==null){idbOn=true;storeReport.engine="IndexedDB";return}   /* nothing to carry */
   const wrote=await idbSet(KEY,old);
   if(!wrote){storeReport.note="Copy to IndexedDB failed — staying on browser storage";return}
@@ -2061,7 +2096,14 @@ function save(){
 /* anything that must not be lost calls this directly */
 function saveSoon(){if(saveT){clearTimeout(saveT);saveT=null;const ws=saveWait;saveWait=[];
   return saveNow().then(ok=>{ws.forEach(w=>w(ok));return ok})} return saveNow()}
+/* Claude kept asserting that rewriting the whole book on every save would start to hurt.
+   That belongs in the diagnostics, not in an argument: this records what a save actually
+   costs on his phone, split into the two halves (serialising the book, and the write
+   itself), so phase 2 is decided on evidence. Kept in memory only — persisting it would
+   grow the very thing being measured, on every save. */
+const saveStats={n:0,lastStr:0,lastWrite:0,worst:0,total:0,bytes:0};
 async function saveNow(){
+  const t0=(window.performance&&performance.now)?performance.now():Date.now();
   D.v=SCHEMA;
   /* every action gets a made-on date the first time it's saved. Doing it here instead of
      at each push site means a new scheduler can never forget to stamp. */
@@ -2069,7 +2111,11 @@ async function saveNow(){
   (D.accounts||[]).forEach(a=>(a.next||[]).forEach(n=>{if(n.made===undefined)n.made=st}));
   D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
   const body=JSON.stringify(D);
+  const t1=(window.performance&&performance.now)?performance.now():Date.now();
   const ok=await rawSet(KEY,body);
+  const t2=(window.performance&&performance.now)?performance.now():Date.now();
+  saveStats.n++;saveStats.lastStr=t1-t0;saveStats.lastWrite=t2-t1;saveStats.bytes=body.length;
+  saveStats.total+=(t2-t0);saveStats.worst=Math.max(saveStats.worst,t2-t0);
   /* read it back — a save that didn't land is worse than one that failed loudly. The
      check has to interrogate whichever engine the write went to, or it verifies the
      wrong copy and reports success on a lost write. */
@@ -7241,13 +7287,16 @@ async function geocodeBook(){
       /* a network that has stopped answering should not burn through 600 accounts */
       if(geoRun.fail>8&&geoRun.done===0){toast("Lookups aren't getting through — stopped.");break}
     }
-    if(geoRun.done%10===0)await save();
+    /* saving every ten lookups rewrote the whole book ~170 times across a full run, which
+       is the kind of sustained pressure that gets a transaction refused. Progress is still
+       never more than 25 lookups from being safe, and the run always saves when it ends. */
+    if(geoRun.done%25===0)await save();
     renderSetup&&renderSetup();
     await new Promise(r=>setTimeout(r,1100));   /* their rate limit, respected */
   }
   const d=geoRun?geoRun.done:0,f=geoRun?geoRun.fail:0;
   geoRun=null;
-  await save();render();
+  await saveNow();render();
   toast(d+" mapped"+(f?" · "+f+" not found":"")+". Drives now order by distance.");
 }
 function routeStops(ids){
@@ -8983,6 +9032,8 @@ async function diagnostics(){
       ${row("last backup",ix.length?fmtWhen(ix[0].on):"none")}
       ${row("last migration",D.lastMigration?D.lastMigration.steps+" · "+fmtWhen(D.lastMigration.on):"none")}
       ${storeStale?`<div class="row" style="display:block;color:var(--red)"><b>This is not your current book.</b></div>`:""}
+      ${saveStats.n?row("save cost",Math.round(saveStats.lastStr+saveStats.lastWrite)+" ms · worst "+Math.round(saveStats.worst)+" ms"):""}
+      ${saveStats.n?`<div class="row" style="display:block"><s style="color:var(--ink3)">${Math.round(saveStats.lastStr)} ms building the file, ${Math.round(saveStats.lastWrite)} ms writing it · ${saveStats.n} saves this session, average ${Math.round(saveStats.total/saveStats.n)} ms</s></div>`:""}
       ${row("storage engine",storeReport.engine)}
       ${storeReport.note?`<div class="row" style="display:block"><s style="color:var(--ink3)">${esc(storeReport.note)}</s></div>`:""}
       ${row("loaded from",loadReport.source||"—")}
