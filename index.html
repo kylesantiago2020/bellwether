@@ -889,6 +889,29 @@ body.deckon #clock{margin:0 0 4px}
 .qstub{padding:10px 2px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink3);cursor:pointer}
 .qstub:before{content:"+ ";color:var(--ac)}
 /* ---- end of day ---- */
+/* The roll call. End of Day says HOW MANY; this says WHO — because by seven o'clock the
+   cards are gone and "who did I just speak to" is a real question with no answer in the
+   app. Read-only until something comes to mind, and then exactly one action per row. */
+#recapwrap{position:fixed;inset:0;z-index:82;display:none;background:var(--paper);overflow-y:auto;overscroll-behavior:contain}
+#recapwrap.on{display:block;animation:f .22s ease both}
+.rcinner{max-width:520px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+.rchead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}
+.rchead h2{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;margin:0;line-height:1.15}
+.rchead s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);margin-top:5px;letter-spacing:.03em}
+.rcx{flex:none;width:36px;height:36px;border-radius:18px;border:1px solid var(--rule2);background:var(--card);color:var(--ink2);font-size:18px;line-height:0;font-family:inherit}
+.rcrow{background:var(--card);border:1px solid var(--rule2);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.rcn{font-size:15px;font-weight:500;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rcn s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);flex:none}
+.rcg{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.45}
+.rcdet{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule)}
+.rcev{font-size:12.5px;color:var(--ink2);line-height:1.5;margin-bottom:5px}
+.rcev b{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);font-weight:400;margin-right:7px}
+.rcnext{font-size:11.5px;color:var(--grn);margin-top:9px;font-family:'IBM Plex Mono',monospace}
+.rcowe{display:inline-block;margin-top:12px;padding:9px 14px;border-radius:16px;border:1px solid var(--rule2);background:var(--paper);color:var(--ink);font-family:inherit;font-size:12.5px;cursor:pointer}
+.rcempty{text-align:center;color:var(--ink2);font-size:13.5px;padding:44px 12px;line-height:1.65}
+/* The recap is a LENS on the day, not a stage of it, so it carries no progress ring and
+   sits behind a hairline — the four circles still have to read as the timeline. */
+.bub.rcbub{flex:none;width:52px;margin-left:6px;padding-left:10px;border-left:1px solid var(--rule)}
 #endday{position:fixed;inset:0;z-index:80;display:none;background:var(--paper);overflow-y:auto;overscroll-behavior:contain}
 #endday.on{display:block;animation:f .22s ease both}
 .edwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 22px 34px}
@@ -1357,6 +1380,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <button class="nb" data-go="play"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4.5A1.5 1.5 0 015.5 3H10a3 3 0 013 3v13a2.5 2.5 0 00-2.5-2.5H4z"/><path d="M20 4.5A1.5 1.5 0 0018.5 3H14a3 3 0 00-3 3v13a2.5 2.5 0 012.5-2.5H20z"/></svg><span>Playbooks</span></button>
   <button class="nb" data-go="set"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Setup</span></button>
 </nav>
+<div id="recapwrap"></div>
 <div id="endday"></div>
 <div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
@@ -1376,7 +1400,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.40 two things";
+const BUILD="2026-07-28.41 roll call";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2256,6 +2280,10 @@ function logEvent(a,kind,text){
   const w=iso(today()),md=activeISO();
   const e={when:w,kind,text:text||""};
   if(md!=w)e.md=md;
+  /* Reading a day back needs an order, and without a clock on the event there is none
+     across accounts — only within one. Additive, ten bytes, and it makes "who did I just
+     speak to" answerable. Events logged before this build have no time and sort last. */
+  const nw=new Date();e.t=hhmm(nw.getHours(),nw.getMinutes());
   (a.events=a.events||[]).push(e);
 }
 const missionDay=e=>e.md||e.when;
@@ -2941,7 +2969,7 @@ function restoreAcct(snap){
    behind a fixed overlay and chain momentum through it, so the page is pinned at its
    current offset for as long as any layer is up, and put back exactly where it was. */
 let lockY=0,locked=false;
-const anyOverlay=()=>["#veil","#callwrap","#endday","#hudwrap"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
+const anyOverlay=()=>["#veil","#callwrap","#endday","#hudwrap","#recapwrap"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
 function syncScrollLock(){
   const want=anyOverlay();
   if(want==locked)return;
@@ -3648,6 +3676,7 @@ function showDebrief(s,animate){
             placeholder="Call Mike before 9" value="${esc(rec.tomorrow||"")}"></label>
           <div class="edhint">Both optional. Skip them and the day still closes.</div>
         </div>
+        <button class="threadchip" data-recap="1" style="margin-bottom:4px">Look back at today</button>
         <button class="edok" data-act="edclose">Done</button>
       </div>
     </div></div>`;
@@ -4788,7 +4817,8 @@ const DICON={
  calls:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.8 2Z"/>',
  follow:'<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>',
  end:'<path d="M20 13A8 8 0 1 1 11 4a6.5 6.5 0 0 0 9 9Z"/>',
- check:'<path d="m4 12.5 6 5.5L20 6"/>'};
+ check:'<path d="m4 12.5 6 5.5L20 6"/>',
+ recap:'<path d="M4 6h16M4 12h16M4 18h10"/>'};
 const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DICON[k]||DICON.calls}</svg>`;
 const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
 /* a field day is stops you can actually make — the rest waits its turn */
@@ -5080,6 +5110,7 @@ function deckFace(c){
       <div class="co">${got>=tgt?"That's the mission.":"The last card."}</div>
       <div class="why">${got} of ${tgt} touches logged.</div>
       <div class="last">Ending the day seals the journal — anything unfinished carries forward, nothing is lost.</div>
+      <button class="threadchip" data-recap="1">Look back at today</button>
     </div>`;
   }
   if(c.type==="call"){
@@ -5122,6 +5153,63 @@ function deckFace(c){
     ${tel_}
     ${go_}
   </div>`;
+}
+/* ---------- the recap ----------
+   One row per business touched on a given day, newest first. Everything here is derived
+   from the event log, so it can never disagree with what the day actually recorded, and
+   a past day costs nothing extra. */
+function recapRows(d){
+  const s=iso(d),out=[];
+  A().forEach(a=>{
+    const evs=(a.events||[]).filter(e=>missionDay(e)===s);
+    if(!evs.length)return;
+    out.push({a,evs,at:(evs[evs.length-1]||{}).t||""});
+  });
+  /* "who did I just speak to" is the question, so the most recent is at the top.
+     Events from before build .41 carry no clock and fall to the bottom rather than
+     pretending to a position in the order. */
+  out.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
+  return out;
+}
+let recapDay=null;const recapOpen=new Set();
+const recapIsOpen=()=>!!recapDay;
+function recapRow(r){
+  const a=r.a,open=recapOpen.has(a.id);
+  const gist=r.evs.map(e=>e.text||e.kind).filter(Boolean).join(" \u00b7 ");
+  const next=(a.next||[]).filter(x=>!x.done).sort((x,y)=>x.date<y.date?-1:1)[0];
+  return `<div class="rcrow" data-rcrow="${a.id}" role="button" tabindex="0">
+    <div class="rcn"><span>${esc(a.name)}</span><s>${esc(r.at?fmtTime(r.at):"")}</s></div>
+    <div class="rcg">${open?esc(a.city||TYPELABEL[a.type]||""):esc(gist.length>92?gist.slice(0,92)+"\u2026":gist)}</div>
+    ${open?`<div class="rcdet">
+      ${r.evs.map(e=>`<div class="rcev">${e.t?`<b>${esc(fmtTime(e.t))}</b>`:""}${esc(e.text||e.kind)}</div>`).join("")}
+      ${next?`<div class="rcnext">Already set &middot; ${esc(next.why)} &middot; ${esc(fmt(parseD(next.date)))}</div>`:""}
+      <span class="rcowe" data-rcowe="${a.id}">I owe them&hellip;</span>
+    </div>`:""}
+  </div>`;
+}
+function drawRecap(){
+  const el=$("#recapwrap");if(!el||!recapDay)return;
+  const rows=recapRows(parseD(recapDay));
+  const n=rows.length;
+  el.innerHTML=`<div class="rcinner">
+    <div class="rchead">
+      <div><h2>${n?`${n} business${n==1?"":"es"}`:"Nothing logged yet"}</h2>
+        <s>${esc(fmtFull(parseD(recapDay)))}</s></div>
+      <button class="rcx" data-recapx="1" aria-label="Close the recap">&times;</button></div>
+    ${n?rows.map(recapRow).join("")
+       :`<div class="rcempty">Every call and every stop you log lands here, newest first &mdash;
+          so you can look back at who you spoke to without hunting through the book.</div>`}
+  </div>`;
+}
+function recapView(dISO){
+  recapDay=dISO||activeISO();
+  recapOpen.clear();
+  drawRecap();
+  $("#recapwrap").classList.add("on");syncScrollLock();
+}
+function recapClose(){
+  const el=$("#recapwrap");if(el)el.classList.remove("on");
+  recapDay=null;recapOpen.clear();syncScrollLock();
 }
 function seamHtml(seg,n){
   const lists=runSource.map(id=>{const L=listById(id);return L?L.label:""}).filter(Boolean).join(" + ");
@@ -5176,7 +5264,11 @@ function renderBubbles(deck){
     const lab=(s in did)&&total?`${made}/${total}`:(have[s]&&have[s].at?fmtTime(have[s].at):SEGLABEL[s]);
     return `<button class="bub${done?" done":""}" data-bub="${s}"
       aria-label="${SEGLABEL[s]}${(s in did)&&total?`, ${made} of ${total} done`:done?", done":""}">
-      <i>${ring}${dSvg(done?"check":s)}</i><em>${lab}</em></button>`;}).join("");
+      <i>${ring}${dSvg(done?"check":s)}</i><em>${lab}</em></button>`;}).join("")
+    /* the one circle that is always there: once the cards are gone the day is otherwise
+       unreadable, and he should never have to end the day to see who he spoke to */
+    +`<button class="bub rcbub" data-recap="1" aria-label="Look back at the day">
+        <i>${dSvg("recap")}</i><em>Recap</em></button>`;
 }
 const paintBubbles=seg=>$$("#bubbles .bub").forEach(b=>b.classList.toggle("live",b.dataset.bub===seg));
 
@@ -7767,7 +7859,7 @@ function saveOwe(id,kind){
     logEvent(acc,set.verb,"spoke \u2014 "+what);
     dbA=acc;
     outcomeDone(acc,bits.join(" \u00b7 "),was);
-  } else commit(bits.join(" \u00b7 "),()=>restoreAcct(was));
+  } else {commit(bits.join(" \u00b7 "),()=>restoreAcct(was));if(recapIsOpen())drawRecap()}
 }
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
@@ -8118,6 +8210,14 @@ tap("dq",t=>{
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
 tap("decktop",()=>deckTop());
+tap("recap",()=>recapView(activeISO()));
+tap("recapx",()=>recapClose());
+tap("rcrow",t=>{const id=t.dataset.rcrow;
+  if(recapOpen.has(id))recapOpen.delete(id);else recapOpen.add(id);
+  drawRecap()});
+/* the whole point of reading the day back is the thing that comes to mind while reading
+   it — kind "" so filing it never invents a touch he did not make */
+tap("rcowe",t=>{const a=acct(t.dataset.rcowe);if(a)oweSheet(a,"")});
 /* "is the fix even on my phone?" cost a whole round of chasing a bug that was already
    fixed. Tap the sheep and it tells you which build it is. */
 tap("build",()=>toast("Build "+BUILD+" · "+A().length+" accounts"));
