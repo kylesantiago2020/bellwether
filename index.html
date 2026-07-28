@@ -267,6 +267,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
    Done or Debrief, and a full-width call button would argue with that. */
 .minidial{align-self:center;display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:7px 13px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:fit-content}
 .minidial svg{width:14px;height:14px;flex:none}
+/* Straight to a Google search for the name and the town. Not the website — a small
+   business's real site is the one thing a search can't be trusted to land on, and he
+   said himself he'll take it from there. */
+.minigo{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:inherit;font-size:12.5px}
+.minigo svg{width:14px;height:14px;flex:none}
+.ctools{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ctools .minidial{margin-top:0}
 /* the huddle layer reuses the call block's frame — same full-bleed sheet, same top bar —
    but it scrolls, because unlike a call card it is one whole screen rather than a stack */
 .hudwrap{--ac:#0C8C86;--acs:#E1F3F1}
@@ -1429,7 +1436,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.43 visible progress";
+const BUILD="2026-07-28.44 look them up";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4847,7 +4854,8 @@ const DICON={
  follow:'<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>',
  end:'<path d="M20 13A8 8 0 1 1 11 4a6.5 6.5 0 0 0 9 9Z"/>',
  check:'<path d="m4 12.5 6 5.5L20 6"/>',
- recap:'<path d="M4 6h16M4 12h16M4 18h10"/>'};
+ recap:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+ look:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/>'};
 const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DICON[k]||DICON.calls}</svg>`;
 const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
 /* a field day is stops you can actually make — the rest waits its turn */
@@ -5154,6 +5162,7 @@ function deckFace(c){
       ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
       ${deckChip(a)}
       ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
+      <div class="ctools">${googleLink(a)}</div>
       <button class="dqbtn${dqOK(a)?"":" on"}" data-dqopen="${a.id}">${dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
     </div>`;
   }
@@ -5179,7 +5188,7 @@ function deckFace(c){
     <div class="why">${esc(why)}${r.over?" · overdue":""}</div>
     ${deckCtx(a)}
     ${deckChip(a)}
-    ${tel_}
+    <div class="ctools">${tel_}${googleLink(a)}</div>
     ${go_}
   </div>`;
 }
@@ -5239,6 +5248,16 @@ function recapView(dISO){
 function recapClose(){
   const el=$("#recapwrap");if(el)el.classList.remove("on");
   recapDay=null;recapOpen.clear();syncScrollLock();
+}
+/* Leaving for Google is leaving the app, so it arms the return the same way dialling
+   does — kind "look", which keeps his place in the deck and opens no debrief, because
+   reading about a business is not a touch. */
+function googleLink(a){
+  if(!a||!a.name)return "";
+  const q=encodeURIComponent([a.name,a.city].filter(Boolean).join(" "));
+  return `<a class="minigo" data-dialid="${a.id}" data-dialkind="look" target="_blank" rel="noopener"
+    href="https://www.google.com/search?q=${q}"
+    aria-label="Look up ${esc(a.name)} on Google">${dSvg("look")}<em>Google</em></a>`;
 }
 function seamHtml(seg,n){
   const lists=runSource.map(id=>{const L=listById(id);return L?L.label:""}).filter(Boolean).join(" + ");
