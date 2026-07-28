@@ -1355,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.26 contrast";
+const BUILD="2026-07-27.27 dupes";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4020,7 +4020,10 @@ async function adoptBranch(raw){
 function huddleList(rows,d){
   const cards=[],seen=new Set();
   /* a meeting actually booked on a branch */
-  huddleRows(rows).forEach(r=>{cards.push({a:r.a,at:rowAt(r),over:r.over});seen.add(r.a.id)});
+  /* one seat per branch: the standing-line loop below already guards on `seen`, but this
+     one didn't, so any future source of two rows for a branch would have seated it twice */
+  huddleRows(rows).forEach(r=>{if(seen.has(r.a.id))return;seen.add(r.a.id);
+    cards.push({a:r.a,at:rowAt(r),over:r.over})});
   /* and the standing line for this weekday */
   recurHuddles(d).forEach(f=>{
     const a=matchBank(parseVenue(f.what));
@@ -4681,8 +4684,14 @@ function deckCards(){
   const followCards=()=>rows.filter(r=>r.block==="follow"&&r.a.skip!==iso(today())).sort(byTime).forEach(r=>push("follow","follow",r.a,r));
   if(office){callCards();followCards();fieldCards()}else{fieldCards();callCards();followCards()}
   push("end","end",null,null);
-  out.forEach(c=>deckSegSeen[c.seg]=1);   /* the timeline remembers finished segments */
-  return out;
+  /* Card keys drive focus, the flip registry, position memory and advance-after-verdict.
+     Two cards sharing a key means all four target the wrong one, so the deck is deduped
+     by key on the way out. Genuinely different work on one account keeps different keys
+     (type and lead action are both in the key), so nothing legitimate collapses. */
+  const byKey=new Set(),clean=[];
+  out.forEach(c=>{if(byKey.has(c.key))return;byKey.add(c.key);clean.push(c)});
+  clean.forEach(c=>deckSegSeen[c.seg]=1);   /* the timeline remembers finished segments */
+  return clean;
 }
 
 /* The deck's route delegates to the app's proven town-chain engine (routeStops/routeURL
@@ -8839,6 +8848,18 @@ async function diagnostics(){
       ${row("won",A().filter(isWon).length)}
       ${row("cpa firms",A().filter(a=>a.type=="cpa").length)}
       ${row("bank branches",A().filter(a=>a.type=="bank").length)}
+      ${(()=>{
+        /* Two cards with the same business name almost always means two records, not a
+           rendering fault — a Salesforce import, or a branch adopted twice. The app knew
+           this could happen (strayBranches cleans empty ones) but never said it out loud. */
+        const by={};A().forEach(a=>{const k=String(a.name||"").trim().toLowerCase();
+          if(k)(by[k]=by[k]||[]).push(a)});
+        const dups=Object.keys(by).filter(k=>by[k].length>1);
+        if(!dups.length)return row("duplicate names","none");
+        const list=dups.slice(0,8).map(k=>`${esc(by[k][0].name)} &times;${by[k].length}`).join(" &middot; ");
+        return row("duplicate names",dups.length)
+          +`<div class="row" style="display:block"><s style="color:var(--ink3)">${list}${dups.length>8?" &hellip;":""}</s></div>`;
+      })()}
       ${row("referral partners",A().filter(a=>a.type=="partner").length)}
       ${row("open actions",A().reduce((s,a)=>s+openActions(a).length,0))}
       ${row("events",A().reduce((s,a)=>s+(a.events||[]).length,0))}
