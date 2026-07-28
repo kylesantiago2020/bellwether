@@ -1355,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.28 idb";
+const BUILD="2026-07-27.29 idb";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1592,6 +1592,8 @@ let storeWarn="";
    as an untouched copy of the book. The migration COPIES — it never moves — so a failure
    at any point leaves the original exactly where it was.
    ============================================================ */
+const SUPKEY="bellwether-superseded";
+let storeStale=false;
 const IDBNAME="bellwether",IDBSTORE="kv";
 let idb=null,idbReady=null,idbOn=false;
 function idbOpen(){
@@ -1949,7 +1951,20 @@ async function initStorage(){
   if(window.storage)return;                       /* hosted storage owns this already */
   if(!("indexedDB" in window))return;
   const db=await idbOpen();
-  if(!db){storeReport.note="IndexedDB unavailable — still on browser storage";return}
+  if(!db){
+    /* The dangerous case. Once the book lives in IndexedDB, the copy still sitting in
+       browser storage is a frozen snapshot, not a mirror. Falling back to it silently
+       would show a stale book and quietly accept new work on top of it. If a marker says
+       it's been superseded, the app says so instead of pretending. */
+    let sup=null;try{sup=localStorage.getItem(SUPKEY)}catch(e){}
+    if(sup){
+      storeStale=true;
+      storeReport.engine="browser storage (superseded copy)";
+      storeReport.note="IndexedDB didn't open. This is the copy from "+fmtWhen(sup)
+        +" — work saved since then is not shown here and is not being saved. Reopen the app before entering anything.";
+    }else storeReport.note="IndexedDB unavailable — still on browser storage";
+    return;
+  }
   let mine=null;
   try{mine=await idbGet(KEY)}catch(e){}
   if(mine!=null){idbOn=true;storeReport.engine="IndexedDB";return}
@@ -1965,7 +1980,12 @@ async function initStorage(){
     return;
   }
   idbOn=true;storeReport.engine="IndexedDB";storeReport.migrated=true;
-  storeReport.note="Copied "+Math.round(old.length/1024)+" kB. The browser-storage copy is untouched.";
+  /* stamp the old copy as superseded, so a future fallback can recognise it. Browser
+     storage is full, so this small write may fail — mirror it into IndexedDB too. */
+  const stamp=new Date().toISOString();
+  try{localStorage.setItem(SUPKEY,stamp)}catch(e){}
+  try{await idbSet(SUPKEY,stamp)}catch(e){}
+  storeReport.note="Copied "+Math.round(old.length/1024)+" kB. The browser-storage copy is untouched, and marked superseded.";
 }
 async function load(){
   await initStorage();
@@ -2013,7 +2033,8 @@ async function load(){
 
   /* daily safety net: one automatic backup per day, regardless of migrations */
   const ix=await bakIndex();
-  if(D.accounts.length&&(!ix.length||ix[0].on.slice(0,10)!=iso(today())))await makeBackup("daily");
+  /* never let a superseded snapshot evict good backups under the byte budget */
+  if(!storeStale&&D.accounts.length&&(!ix.length||ix[0].on.slice(0,10)!=iso(today())))await makeBackup("daily");
 
   if(steps.length||loadReport.recovered)await save();
   return loadReport;
@@ -8634,6 +8655,16 @@ document.addEventListener("click",async e=>{
     }
     case"streakoff":D.cfg.hideStreak=!D.cfg.hideStreak;save();renderHistory();
       toast(D.cfg.hideStreak?"Streak hidden. The work still counts.":"Streak shown.");break;
+    case"clearold":{
+      if(!idbOn||storeStale){toast("Not while the old copy is what's loaded.");break}
+      const cur=await rawGet(KEY);
+      /* never clear the fallback without confirming the primary actually reads back */
+      if(!cur||!validShape(JSON.parse(cur||"null"))){toast("IndexedDB didn't read back cleanly — leaving the old copy alone.");break}
+      try{localStorage.removeItem(KEY)}catch(e){}
+      toast("Old copy cleared. IndexedDB is the only store now.");
+      diagnostics();
+      break;
+    }
     case"geocode":geocodeBook();break;
     case"routesheet":deckRouteSheet();break;
     case"routego":closeSheet();routeGo();break;
@@ -8777,7 +8808,13 @@ document.addEventListener("click",async e=>{
         <div class="chips" style="margin-top:6px">${SORTS.map(([v,l])=>
           `<button class="chip${(D.cfg.terrSort||"reco")==v?" on":""}" data-sort="${v}">${l}</button>`).join("")}</div>
         <div class="parse" style="margin-top:12px">Recommended puts the biggest opportunity and the coldest accounts first &mdash; the order Bellwether would work them in.</div>
-        <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
+        ${(idbOn&&!storeStale&&(()=>{try{return !!localStorage.getItem(KEY)}catch(e){return false}})())
+      ? `<div style="margin-top:14px"><button class="b" data-act="clearold">Clear the old browser-storage copy</button>
+         <p class="read" style="font-size:12px;margin-top:6px">Frees about
+         ${(()=>{try{return Math.round((localStorage.getItem(KEY)||"").length/1024)}catch(e){return 0}})()} kB.
+         Do this once IndexedDB has run clean for a few days &mdash; your exported backup is the real safety net.</p></div>`
+      : ""}
+    <div class="sa"><button class="b quiet" data-act="close">Close</button></div>`);break}
     /* the talk track lives in the Daily plan sheet, so these redraw the sheet, not the page */
     case"warmtoggle":{const w=warmState();w.open=!w.open;save();render();if(sheetOpen())anchorSheet();break}
     case"warmdone":{const w=warmState();w.open=false;w.done=true;save();render();if(sheetOpen())anchorSheet();toast("Go get it.");break}
@@ -8945,6 +8982,7 @@ async function diagnostics(){
       ${row("backups",ix.length)}
       ${row("last backup",ix.length?fmtWhen(ix[0].on):"none")}
       ${row("last migration",D.lastMigration?D.lastMigration.steps+" · "+fmtWhen(D.lastMigration.on):"none")}
+      ${storeStale?`<div class="row" style="display:block;color:var(--red)"><b>This is not your current book.</b></div>`:""}
       ${row("storage engine",storeReport.engine)}
       ${storeReport.note?`<div class="row" style="display:block"><s style="color:var(--ink3)">${esc(storeReport.note)}</s></div>`:""}
       ${row("loaded from",loadReport.source||"—")}
