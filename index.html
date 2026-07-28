@@ -632,15 +632,34 @@ body.flipped .dtop{opacity:0;pointer-events:none}
 /* the ring is the day getting shorter — it fills only on work that actually happened,
    and it animates, so completing a stop is visible in the timeline as well as the deck */
 .bub .ring{position:absolute;inset:-1.5px;width:calc(100% + 3px);height:calc(100% + 3px);transform:rotate(-90deg);pointer-events:none}
-.bub .ring .rfill{fill:none;stroke:var(--rule2);stroke-width:2.5;stroke-linecap:round;
+/* The arc used to be drawn in --rule2, the exact colour of the circle's own border, so on
+   every bubble except the live one progress was painted on top of a line identical to it —
+   1.00:1, invisible rather than faint. It also sat at 1.94:1 against the page, under the
+   3:1 floor for interface elements. It now carries its own colour at full strength and a
+   stroke thick enough to sit proud of the 1.5px border it rides on.
+   The gradient runs amber to green, so a segment visibly warms toward finished. That keeps
+   the palette's meaning — amber is read-before-you-act, green is this works — instead of
+   introducing the one colour in the app that would mean nothing. */
+.bub .ring .rfill{fill:none;stroke:url(#ringgrad);stroke-width:3.5;stroke-linecap:round;
   transition:stroke-dashoffset .55s cubic-bezier(.4,0,.2,1),stroke .3s}
-.bub.live .ring .rfill{stroke:var(--ac)}
 .bub.done .ring .rfill{stroke:var(--grn)}
+/* a finished segment was dimmed to 40%, which crushed its green to about 2.4:1 — it reads
+   as complete without being made illegible */
+.bub.done{opacity:.72}
+/* Closure, not celebration: the ring settles and a single sweep leaves the circle. It is
+   deterministic — it fires when a segment actually finishes and never otherwise. */
+@keyframes bubdone{0%{transform:scale(1)}34%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes bubsweep{0%{opacity:0;transform:scale(.85)}40%{opacity:.85}100%{opacity:0;transform:scale(1.55)}}
+.bub.just i{animation:bubdone .5s cubic-bezier(.34,1.4,.5,1) both}
+.bub.just i::after{content:"";position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid var(--grn);animation:bubsweep .62s ease-out both;pointer-events:none}
+@media (prefers-reduced-motion:reduce){
+  .bub.just i,.bub.just i::after{animation:none}
+}
 .bub i svg{width:17px;height:17px;display:block}
 .bub em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bub.live i{border:2px solid var(--ac);color:var(--ac)}
 .bub.live em{color:var(--ink);font-weight:500}
-.bub.done{opacity:.4}
 /* deck days run tight at the top — the deck gets the height back */
 body.deckon .daynav{margin-bottom:2px}
 body.deckon .greetrow{margin:0}
@@ -1130,6 +1149,13 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 </style>
 </head>
 <body>
+<!-- one shared paint server for every ring: amber where a segment starts, green as it
+     finishes. Kept out of the flow so it costs nothing but the definition. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><defs>
+  <linearGradient id="ringgrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="var(--amb)"/>
+    <stop offset="1" stop-color="var(--grn)"/>
+  </linearGradient></defs></svg>
 <div class="wrap">
 
 <header class="hdr"><div class="mark" role="img" aria-label="Bellwether" data-build="1"><svg class="sheep" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M26 36a8 8 0 0 1 16 0 8 8 0 0 1 16 0 8 8 0 0 1 16 0c10 1 14 10 12 20 -2 8 -8 14 -18 14H32c-10 0-14-6-14-16 0-9 4-17 8-18Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 50c-8-3-10 7-3 9 3 1 5-3 5-6" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 70v19M44 70v19M57 70v19M67 70v19" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><path d="M80 42c-8-5-14-1-11 5 3 5 9 2 11-2Z" fill="currentColor"/><path d="M77 45c6-9 20-9 25 1 3 7 0 14-5 19-3 3-7 5-10 3-5-3-9-11-10-18Z" fill="currentColor"/></svg></div></header>
@@ -1403,7 +1429,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.42 on top";
+const BUILD="2026-07-28.43 visible progress";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4797,7 +4823,7 @@ function moveAction(a,n,dt){
    pipeline. Full contract in deck-architecture.md. */
 const DECKWIN=16;
 let deckKey=null,dI=0,dSpeakT=null,deckBound=false,deckCallTotal=0;
-const segPos={},deckSegSeen={};
+const segPos={},deckSegSeen={},bubSeen={};
 let dbA=null,dbBefore=null,dbKind="call",dbLead=null;
 /* The debrief is no longer call-only: a drop-in that turned into a conversation deserves
    the same capture. One table drives the wording, which actions the outcome closes or
@@ -5265,7 +5291,12 @@ function renderBubbles(deck){
     const ring=`<svg class="ring" viewBox="0 0 42 42" aria-hidden="true"><circle class="rfill" cx="21" cy="21" r="20.25"
       style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${(C*(1-p)).toFixed(1)}"/></svg>`;
     const lab=(s in did)&&total?`${made}/${total}`:(have[s]&&have[s].at?fmtTime(have[s].at):SEGLABEL[s]);
-    return `<button class="bub${done?" done":""}" data-bub="${s}"
+    /* fires once, on the render where the segment actually reaches full — not on every
+       repaint afterwards, and never on a day that was already complete when it opened */
+    const full=(total>0&&made>=total)||done;
+    const fresh=full&&!bubSeen[s];
+    if(full)bubSeen[s]=1;
+    return `<button class="bub${done?" done":""}${fresh?" just":""}" data-bub="${s}"
       aria-label="${SEGLABEL[s]}${(s in did)&&total?`, ${made} of ${total} done`:done?", done":""}">
       <i>${ring}${dSvg(done?"check":s)}</i><em>${lab}</em></button>`;}).join("")
     /* the one circle that is always there: once the cards are gone the day is otherwise
@@ -5326,6 +5357,7 @@ function renderDeck(){
   /* a new active day starts with a clean timeline and no remembered positions */
   if(renderDeck._day!==activeISO()){renderDeck._day=activeISO();
     for(const k in deckSegSeen)delete deckSegSeen[k];
+    for(const k in bubSeen)delete bubSeen[k];
     for(const k in segPos)delete segPos[k];
     deckFlipped.clear();paintFlipped();
     deckKey=null;dI=0}
