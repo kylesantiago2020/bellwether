@@ -261,6 +261,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .ccard .last{margin-top:14px;font-size:12.5px;color:var(--ink3);line-height:1.6}
 .dial{display:block;margin:22px auto 0;max-width:280px;padding:15px;border-radius:12px;background:var(--grn);color:#fff;font-size:17px;font-weight:500;text-decoration:none;text-align:center;font-family:'IBM Plex Mono',monospace}
 .dial.off{background:var(--sunk);color:var(--ink3)}
+/* The number on a card that is not about the phone. A locked door, a "call for service"
+   sign, running late to a meeting — all of it wants the number to hand without a trip to
+   the account screen. Deliberately not the big green .dial block: this card's verdict is
+   Done or Debrief, and a full-width call button would argue with that. */
+.minidial{align-self:center;display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:7px 13px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:fit-content}
+.minidial svg{width:14px;height:14px;flex:none}
 /* the huddle layer reuses the call block's frame — same full-bleed sheet, same top bar —
    but it scrolls, because unlike a call card it is one whole screen rather than a stack */
 .hudwrap{--ac:#0C8C86;--acs:#E1F3F1}
@@ -1370,7 +1376,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.37 top of the day";
+const BUILD="2026-07-28.38 the number on the door";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5099,6 +5105,13 @@ function deckFace(c){
   /* navigation lives on the route card now — this card is the conversation:
      why you're here, who you're calling on, what happened last time */
   const go_=c.type==="follow"&&em?`<a class="dial" href="mailto:${esc(em)}">Email ${esc((a.contact||{}).name||a.name)}</a>`:"";
+  const ph_=(a.contact||{}).phone||"";
+  /* data-dialkind is what stops this from becoming a call: armReturn records the kind, so
+     coming back from the Phone app keeps his place in the deck without opening a call
+     debrief over a stop he has not made yet. */
+  const tel_=ph_?`<a class="minidial" data-dialid="${a.id}" data-dialkind="${c.type}"
+      href="tel:${esc(ph_.replace(/[^0-9+]/g,""))}"
+      aria-label="Call ${esc((a.contact||{}).name||a.name)} on ${esc(ph_)}">${dSvg("calls")}<em>${esc(ph_)}</em></a>`:"";
   return `<div class="cc" ${K} role="group" aria-label="${kind} — ${esc(a.name)}">
     <div class="cwhy">${chips.map(x=>`<span>${x}</span>`).join("")}</div>
     <div class="co">${esc(a.name)}</div>
@@ -5106,6 +5119,7 @@ function deckFace(c){
     <div class="why">${esc(why)}${r.over?" · overdue":""}</div>
     ${deckCtx(a)}
     ${deckChip(a)}
+    ${tel_}
     ${go_}
   </div>`;
 }
@@ -5198,7 +5212,7 @@ function deckTop(){
 /* Coming back from a dial is a continuation, not an opening: armReturn sent him to the
    Phone app and onBackFromCall owes him a debrief for THAT account. Same for a
    thirty-second step out to Maps mid-run. Anything else is opening the app. */
-const returnIsContinuation=()=>!!(D.cfg&&D.cfg.pendingCall);
+const returnIsContinuation=()=>{const p=D.cfg&&D.cfg.pendingCall;return !!(p&&Date.now()-p.at<RETURNWINDOW)};
 /* .10-.11 tried to fit the back by dropping rows, measuring the CARD for overflow — but
    .brows clips internally, so the card never reported any and a row was sliced instead.
    The row list scrolls now: every row stays reachable and nothing is ever cut. */
@@ -5241,7 +5255,7 @@ function renderDeck(){
     window.addEventListener("resize",()=>{if(deckOn())deckSize()});
     /* dialling arms the return-to-debrief loop from any surface, without blocking tel: */
     document.addEventListener("click",e=>{const t=e.target.closest("[data-dialid]");
-      if(t){const a=acct(t.dataset.dialid);if(a)armReturn(a)}});
+      if(t){const a=acct(t.dataset.dialid);if(a)armReturn(a,t.dataset.dialkind||"call")}});
   }
 }
 /* Right is always "logged", left is always "not now" — how far you push picks which one.
@@ -5844,10 +5858,15 @@ function paintSpeakBtn(){
    iOS gives a web app no way to know a call started or ended, so the app arms itself
    on the way out and watches for the tab coming back. The armed state is written to
    storage immediately, because iOS will happily kill this tab during a long call. */
-function armReturn(a){
-  D.cfg.pendingCall={id:a.id,at:Date.now()};
+function armReturn(a,kind){
+  /* kind is what he stepped out to DO. A dial from a call card owes him a debrief on the
+     way back; a dial from a stop card owes him nothing except his place in the deck. */
+  D.cfg.pendingCall={id:a.id,at:Date.now(),kind:kind||"call"};
   save();
 }
+/* a flag left armed by a misfire must not convince the app, an hour later, that he is
+   still mid-call — that would keep the deck parked wherever he abandoned it */
+const RETURNWINDOW=30*60*1000;
 function disarmReturn(){ if(D.cfg.pendingCall){delete D.cfg.pendingCall;save()} }
 
 function onBackFromCall(){
@@ -5855,9 +5874,14 @@ function onBackFromCall(){
   if(!p)return;
   const gone=Date.now()-p.at;
   if(gone<6000)return;                        /* misfire — he never actually dialled */
+  if(gone>RETURNWINDOW){disarmReturn();return}  /* too long ago to be this call */
   const a=acct(p.id);
+  const kind=p.kind||"call";
   disarmReturn();
   if(!a)return;
+  /* only a dial from a call card ends in a debrief. From a stop card he is still going
+     to walk in, and the card's own Done / Debrief verdict is the one that counts. */
+  if(kind!=="call")return;
   debriefView(a,"call");   /* the debrief takeover opens itself */
 }
 
