@@ -1355,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.31 consistent";
+const BUILD="2026-07-28.32 patient";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -6991,15 +6991,15 @@ function renderGeoLine(){
   const mapped=all.filter(geoOf).length;
   const wanted=all.filter(geoWanted).length;
   const noAddr=all.filter(a=>!a.addr&&!geoOf(a)).length;
-  const running=!!geoRun;
+  const running=!!geoRun, stopping=running&&geoRun.stop;
   el.innerHTML=`<h3 style="margin:0 0 4px">Drive order</h3>
     <p class="read" style="font-size:12px">${mapped?`<b>${mapped}</b> accounts mapped — their drives order by real distance.`
       :"Nothing mapped yet — drives are ordered by town, which wanders."}
       ${wanted?` <b>${wanted}</b> still to look up.`:""}
       ${noAddr?` ${noAddr} have no street address and can't be mapped until they do.`:""}</p>
-    ${running?`<p class="read" style="font-size:12px">Looking up ${geoRun.done+geoRun.fail} of ${geoRun.total}&hellip; about a second each, and it saves as it goes.</p>`:""}
+    ${running?`<p class="read" style="font-size:12px">Looking up ${geoRun.done+geoRun.miss+geoRun.err} of ${geoRun.total}&hellip; about a second each, and it saves as it goes.</p>`:""}
     <button class="b${running?" danger":""}" data-act="geocode"${!wanted&&!running?" disabled":""}>
-      ${running?"Stop":wanted?`Map ${wanted} address${wanted==1?"":"es"}`:"Everything mappable is mapped"}</button>`;
+      ${stopping?"Stopping&hellip;":running?"Stop":wanted?`Map ${wanted} address${wanted==1?"":"es"}`:"Everything mappable is mapped"}</button>`;
 }
 function renderSetup(){
   const c=D.cfg;
@@ -7272,32 +7272,50 @@ async function geoLookup(a){
   if(!j||!j.length)return null;
   return {lat:+j[0].lat,lon:+j[0].lon,at:iso(today()),src:"nominatim"};
 }
+const GEOSAVE=25;      /* accounts looked at between saves — counted on work, not on wins */
+const GEOSTREAK=8;     /* consecutive unreachable lookups before the run gives up */
 async function geocodeBook(){
-  if(geoRun){geoRun.stop=true;geoRun=null;toast("Stopped. Progress is saved.");renderSetup&&renderSetup();return}
+  /* Stop asks the loop to stop and lets it finish its own reporting. The earlier version
+     nulled geoRun here, so the tally below read zero and every stopped run announced it
+     had mapped nothing — the progress was saved, the message was simply a lie. */
+  if(geoRun){geoRun.stop=true;renderSetup&&renderSetup();return}
   const queue=geoQueue();
   if(!queue.length){toast("Every account with a street address is already mapped.");return}
-  geoRun={stop:false,done:0,fail:0,total:queue.length};
+  geoRun={stop:false,done:0,miss:0,err:0,streak:0,since:0,total:queue.length,halted:""};
   renderSetup&&renderSetup();
   for(const a of queue){
     if(!geoRun||geoRun.stop)break;
     try{
       const g=await geoLookup(a);
-      if(g){a.geo=g;geoRun.done++}else{a.geoMiss=iso(today());geoRun.fail++}
-    }catch(e){geoRun.fail++;
-      /* a network that has stopped answering should not burn through 600 accounts */
-      if(geoRun.fail>8&&geoRun.done===0){toast("Lookups aren't getting through — stopped.");break}
+      /* an address Nominatim simply doesn't know is a real answer, not a failure —
+         it says nothing about whether the network is working */
+      if(g){a.geo=g;geoRun.done++}else{a.geoMiss=iso(today());geoRun.miss++}
+      geoRun.streak=0;
+    }catch(e){
+      geoRun.err++;geoRun.streak++;
+      /* A network that has stopped answering should not burn through the rest of the book
+         at a second apiece. What matters is the STREAK, not the total: the old test also
+         required done===0, so a drop that happened after the first success was never
+         caught and the run ground on for however long the queue was. */
+      if(geoRun.streak>=GEOSTREAK){geoRun.halted="Lookups stopped getting through.";break}
     }
-    /* saving every ten lookups rewrote the whole book ~170 times across a full run, which
-       is the kind of sustained pressure that gets a transaction refused. Progress is still
-       never more than 25 lookups from being safe, and the run always saves when it ends. */
-    if(geoRun.done%25===0)await save();
+    /* Every account looked at counts toward the next save, whether or not it resolved.
+       Gating on done%25 meant a stretch of not-founds satisfied the modulo every time and
+       rewrote the whole book once a second — 271 saves in one run on July 28, roughly
+       600 MB written to flash for a single pass, which is exactly the sustained pressure
+       that gets an IndexedDB transaction refused. */
+    if(++geoRun.since>=GEOSAVE){geoRun.since=0;await save()}
     renderSetup&&renderSetup();
     await new Promise(r=>setTimeout(r,1100));   /* their rate limit, respected */
   }
-  const d=geoRun?geoRun.done:0,f=geoRun?geoRun.fail:0;
+  const d=geoRun?geoRun.done:0, m=geoRun?geoRun.miss:0, e=geoRun?geoRun.err:0,
+        halted=geoRun?geoRun.halted:"", stopped=geoRun?geoRun.stop:false;
   geoRun=null;
   await saveNow();render();
-  toast(d+" mapped"+(f?" · "+f+" not found":"")+". Drives now order by distance.");
+  toast([halted||(stopped?"Stopped, and saved.":""),
+         d+" mapped",
+         m?m+" not found":"",
+         e?e+" couldn't be reached":""].filter(Boolean).join(" · ")+".");
 }
 function routeStops(ids){
   const picked=ids&&ids.length?allLists().filter(L=>ids.indexOf(L.id)>=0):null;
