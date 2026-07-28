@@ -485,6 +485,13 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 body.deckon .fab{bottom:calc(160px + env(safe-area-inset-bottom))}
 /* a flipped card owns its own two doors — the global + has no business sitting on them */
 body.flipped .fab{opacity:0;pointer-events:none}
+/* Back to the top of the day. The deck is its own scroll container, so the page-level
+   toTop() never moved it, and swiping back up through twenty cards is not a gesture
+   anyone makes in a car. Mirrors the FAB's lane on the left so both are thumb-reachable,
+   and only appears once he has actually scrolled away from the top. */
+.dtop{position:fixed;left:18px;bottom:calc(160px + env(safe-area-inset-bottom));height:44px;padding:0 18px;border-radius:22px;background:var(--fill);color:#fff;border:none;font-size:13px;z-index:41;opacity:0;pointer-events:none;transition:opacity .16s ease}
+body.deckon .dtop.on{opacity:.94;pointer-events:auto}
+body.flipped .dtop{opacity:0;pointer-events:none}
 #gate{position:fixed;inset:0;z-index:95;background:var(--paper);display:none;flex-direction:column;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 26px calc(28px + env(safe-area-inset-bottom));overflow-y:auto}
 #gate.on{display:flex}
 #gate .sub{font-size:14px;color:var(--ink2);margin-top:22px;line-height:1.55;max-width:34ch}
@@ -1336,6 +1343,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 </section>
 
 <button class="fab" id="fab" aria-label="New account">+</button>
+<button class="dtop" id="dtop" data-act="decktop" aria-label="Back to the top of the day">&uarr; Top</button>
 <nav class="nav">
   <button class="nb on" data-go="today"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Today</span><span class="badge" id="bdg" style="display:none">0</span></button>
   <button class="nb" data-go="terr"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h7M8 11h7"/></svg><span>Territory</span></button>
@@ -1362,7 +1370,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.36 gap filler";
+const BUILD="2026-07-28.37 top of the day";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5173,6 +5181,24 @@ function deckFocus(i,jump){
   if(c.type==="call"&&dayBegun()){wakeOn();dSpeakT=setTimeout(()=>speakBrief(c.a),300)}
   else{wakeOff();hushBrief()}
 }
+const deckTopBtn=on=>{const b=$("#dtop");if(b)b.classList.toggle("on",!!on)};
+/* The installed PWA is never really reloaded when he switches away — the JS context
+   survives, so deckKey still points at the card he was on and renderDeck scrolls
+   straight back to it. Opening the app should open the DAY, not resume a scroll
+   position from an hour ago. segPos is deliberately left alone: the bubble row's
+   per-segment memory is a different promise and still holds. */
+function deckTop(){
+  deckKey=null;dI=0;
+  const d=$("#deck");
+  if(!d||!d._deck||!d._deck.length)return;
+  try{d.scrollTo({top:0,behavior:"smooth"})}catch(e){d.scrollTop=0}
+  deckFocus(0,false);
+  deckTopBtn(false);
+}
+/* Coming back from a dial is a continuation, not an opening: armReturn sent him to the
+   Phone app and onBackFromCall owes him a debrief for THAT account. Same for a
+   thirty-second step out to Maps mid-run. Anything else is opening the app. */
+const returnIsContinuation=()=>!!(D.cfg&&D.cfg.pendingCall);
 /* .10-.11 tried to fit the back by dropping rows, measuring the CARD for overflow — but
    .brows clips internally, so the card never reported any and a row was sliced instead.
    The row list scrolls now: every row stays reachable and nothing is ever cut. */
@@ -5209,6 +5235,7 @@ function renderDeck(){
   el._deck=deck;el._shownN=shownN;
   renderBubbles(deck);
   deckFocus(fi,true);
+  deckTopBtn(fi>0);
   deckSize();
   if(!deckBound){deckBound=true;wireDeck(el);
     window.addEventListener("resize",()=>{if(deckOn())deckSize()});
@@ -5304,6 +5331,7 @@ function wireDeck(t){
     if(queued)return;queued=true;
     requestAnimationFrame(()=>{
       queued=false;
+      deckTopBtn(t.scrollTop>80);
       const mid=t.scrollTop+t.clientHeight/2;
       let best=Infinity,idx=0;
       deckCardEls().forEach((c,k)=>{const d=Math.abs(c.offsetTop+c.offsetHeight/2-mid);if(d<best){best=d;idx=k}});
@@ -5557,7 +5585,21 @@ function callOutcome(c){
     setTimeout(()=>logSheet("won"),120);
     return;
   }
-  if(c=="quickbad"){ dqSheet(a.id); return }
+  /* The outcome he gets most often and the one he is least able to type, because he is
+     in the car. Every other button in this row logs the touch and moves the deck on;
+     this one used to open the flagging sheet — three more taps, and because it logged
+     nothing the card was still sitting there afterwards, which is why typing into the
+     box and hitting Log it was the only path that actually finished the touch.
+     Deliberately no reschedule(): a dead number must not book another call.
+     On a stop the sheet still opens — "closed or moved" is two different records, and
+     he is standing still when he taps it. */
+  if(c=="quickbad"){
+    if(dbKind!="call"){dqSheet(a.id);return}
+    logEvent(a,set.verb,"wrong number");
+    a.dataQuality="wrong_info";
+    outcomeDone(a,"Wrong number \u2014 flagged, and out of your day until you clear it.",before);
+    return;
+  }
   if(c=="dbparse"&&voiceOn()){
     const said=($("#dbtext")||{}).value||"";
     if(!said.trim()){toast("Say something first.");return}
@@ -5835,14 +5877,16 @@ function debriefView(a,kind){
     <div class="why" style="margin-bottom:12px">${set.head}</div>
     <!-- most touches end one of these ways, and he is usually in a parking lot. One tap,
          card gone, next stop. The voice note underneath is for the ones worth describing. -->
-    <div class="qout">
-      <button class="b" data-c="noanswer">${set.miss[0]}</button>
-      <button class="b" data-c="message">${set.note[0]}</button>
-      <button class="b" data-c="quickfollow">${dbKind=="call"?"Call back":dbKind=="follow"?"Chase it":"Go back"}</button>
-      <button class="b" data-c="oweit">I owe them&hellip;</button>
-      <button class="b" data-c="notint">Not interested</button>
-      <button class="b" data-c="quicksold">Sold</button>
-      <button class="b" data-c="quickbad">${dbKind=="call"?"Wrong number":"Closed or moved"}</button>
+    <div class="qout">${(dbKind=="call"
+      /* a wrong number is a one-tap outcome now, so it rides with the other one-tap
+         outcomes instead of sitting seventh, below the fold, on a phone in a cupholder */
+      ? [["noanswer",set.miss[0]],["message",set.note[0]],["quickbad","Wrong number"],
+         ["quickfollow","Call back"],["oweit","I owe them&hellip;"],
+         ["notint","Not interested"],["quicksold","Sold"]]
+      : [["noanswer",set.miss[0]],["message",set.note[0]],
+         ["quickfollow",dbKind=="follow"?"Chase it":"Go back"],["oweit","I owe them&hellip;"],
+         ["notint","Not interested"],["quicksold","Sold"],["quickbad","Closed or moved"]]
+      ).map(([k,l])=>`<button class="b" data-c="${k}">${l}</button>`).join("")}
     </div>
     <div class="qsplit">or say what happened</div>
     <textarea class="dbf" id="dbtext" rows="4" placeholder="Just say what happened."></textarea>
@@ -8016,6 +8060,7 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+tap("decktop",()=>deckTop());
 /* "is the fix even on my phone?" cost a whole round of chasing a bug that was already
    fixed. Tap the sheep and it tells you which build it is. */
 tap("build",()=>toast("Build "+BUILD+" · "+A().length+" accounts"));
@@ -9539,7 +9584,10 @@ viewDate=today();
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden)return;
     if(runOpen())wakeOn();          /* iOS released it while he was on the phone */
+    /* read before onBackFromCall, which disarms the flag on its way through */
+    const mid=returnIsContinuation();
     onBackFromCall();
+    if(!mid&&deckOn())deckTop();
   });
   onBackFromCall();
   $("#gbtn").addEventListener("click",gateSignIn);
