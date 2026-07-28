@@ -474,7 +474,10 @@ textarea.paste{width:100%;margin-top:8px;font-family:'IBM Plex Mono',monospace;f
 /* the veil owns every gesture while it is up: nothing behind it pans, nothing chains through it.
    the sheet itself opts back in to vertical panning only, so a horizontal drag can never
    reach the day-swipe handler underneath. */
-.veil{position:fixed;inset:0;background:rgba(23,25,29,.4);display:none;align-items:flex-end;justify-content:center;z-index:80;touch-action:none;overscroll-behavior:contain}
+/* A sheet always belongs above whatever opened it: the veil sits above every
+   full-screen layer (callwrap 70, endday 80, recapwrap 82) and below the toast, so an
+   undo is still reachable while a sheet is up. */
+.veil{position:fixed;inset:0;background:rgba(23,25,29,.4);display:none;align-items:flex-end;justify-content:center;z-index:88;touch-action:none;overscroll-behavior:contain}
 .veil.on{display:flex;animation:f .16s ease both}
 .sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;animation:up .26s cubic-bezier(.2,.8,.3,1) both}
 @keyframes up{from{transform:translateY(24px)}to{transform:none}}
@@ -1400,7 +1403,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.41 roll call";
+const BUILD="2026-07-28.42 on top";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
