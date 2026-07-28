@@ -578,10 +578,17 @@ body.flipped .fab{opacity:0;pointer-events:none}
 /* the voice switch sits where the voice happens, not three sheets away */
 .saychip{color:var(--ink3)}
 .saychip.on{border-color:var(--ac);color:var(--ac)}
+.saychip .son{display:none}
+.saychip.on .son{display:inline}
+.saychip.on .soff{display:none}
 .threadchip b{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink)}
 .thread{margin-top:6px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;text-align:left}
 .thread .tentry{padding:11px 0;border-bottom:1px solid var(--rule)}
 .thread .trow{display:flex;align-items:center;gap:8px}
+.thread .tentry.tin{animation:tin .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tin{from{opacity:0;transform:translateY(-8px);background:var(--acs)}to{opacity:1;transform:none;background:transparent}}
+.thread .tentry.tout{opacity:0;transform:translateX(-14px);max-height:0;padding:0;overflow:hidden;
+  transition:opacity .16s,transform .16s,max-height .16s,padding .16s}
 .thread .trow s{flex:1;min-width:0}
 .tdel{flex:none;background:none;border:0;font-family:inherit;font-size:19px;line-height:1;color:var(--ink3);
   padding:2px 6px;margin:-2px -4px -2px 0;border-radius:8px;cursor:pointer}
@@ -598,7 +605,14 @@ body.flipped .fab{opacity:0;pointer-events:none}
 #bubbles{display:flex;padding:6px 6px 8px;border-bottom:1px solid var(--rule)}
 #bubbles:empty{display:none;border:0;padding:0}
 .bub{flex:1;background:none;border:0;font-family:inherit;color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0;min-width:0}
-.bub i{box-sizing:border-box;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule2);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-style:normal}
+.bub i{position:relative;box-sizing:border-box;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule2);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-style:normal}
+/* the ring is the day getting shorter — it fills only on work that actually happened,
+   and it animates, so completing a stop is visible in the timeline as well as the deck */
+.bub .ring{position:absolute;inset:-1.5px;width:calc(100% + 3px);height:calc(100% + 3px);transform:rotate(-90deg);pointer-events:none}
+.bub .ring .rfill{fill:none;stroke:var(--rule2);stroke-width:2.5;stroke-linecap:round;
+  transition:stroke-dashoffset .55s cubic-bezier(.4,0,.2,1),stroke .3s}
+.bub.live .ring .rfill{stroke:var(--ac)}
+.bub.done .ring .rfill{stroke:var(--grn)}
 .bub i svg{width:17px;height:17px;display:block}
 .bub em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.03em;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bub.live i{border:2px solid var(--ac);color:var(--ac)}
@@ -618,6 +632,10 @@ body.deckon #clock{margin:0 0 4px}
    content fits, and a real scroll when it doesn't. Nothing is ever cut mid-letter now. */
 #deck>.cc{flex:0 0 86%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:22px 20px;
   overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#deck>.cc.flash{animation:cflash 1s ease}
+@keyframes cflash{0%{box-shadow:0 0 0 0 var(--acs);border-color:var(--ac)}
+  35%{box-shadow:0 0 0 6px var(--acs);border-color:var(--ac)}
+  100%{box-shadow:0 0 0 0 transparent}}
 #deck>.cc>*:first-child{margin-top:auto}
 #deck>.cc>*:last-child{margin-bottom:auto}
 #deck .co{font-size:25px;font-weight:500;letter-spacing:-.6px;line-height:1.2}
@@ -1330,7 +1348,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.22 owe";
+const BUILD="2026-07-27.23 feel";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2726,10 +2744,23 @@ function commit(msg,revert){
   save();render();
   if(revert)toastUndo(msg,()=>{revert();save();render()});else if(msg)toast(msg);
 }
+let flashId=null;
+/* Undo is the most trust-critical thing the app does and it used to happen invisibly:
+   the card reappeared somewhere off-screen behind a toast. Now it is scrolled to and
+   flashed, so you see the work come back rather than taking the toast's word for it. */
+function deckFlash(id){
+  const d=$("#deck");if(!d||!d._deck)return;
+  const i=d._deck.findIndex(c=>c.a&&c.a.id===id);
+  if(i<0)return;
+  deckFocus(i,true);
+  const el=deckCardEls()[i];
+  if(el&&el.classList){el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1000)}
+}
 function restoreAcct(snap){
   const i=D.accounts.findIndex(x=>x.id==snap.id);
   if(i>=0)D.accounts[i]=snap;else D.accounts.push(snap);
   save();render();toast("Undone.");
+  flashId=snap.id;requestAnimationFrame(()=>{deckFlash(snap.id);flashId=null});
 }
 /* ---------- scroll ownership ----------
    Any full-screen layer takes the page with it. iOS will happily scroll the document
@@ -4706,7 +4737,7 @@ function deckChip(a){
      is sometimes all you want. Green ring when Bellwether has a street address to send. */
   const say=`<button class="threadchip saychip${D.cfg.speakBriefs?" on":""}" data-sayauto="1"
     aria-label="${D.cfg.speakBriefs?"Briefs read aloud — tap to silence":"Briefs silent — tap to read aloud"}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/>${D.cfg.speakBriefs?'<path d="M15.5 8.5a5 5 0 0 1 0 7"/>':'<path d="M22 9l-6 6M16 9l6 6"/>'}</svg></button>`;
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path class="son" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="soff" d="M22 9l-6 6M16 9l6 6"/></svg></button>`;
   const pin=canMap(a)?`<a class="threadchip mapchip${mapSure(a)?" sure":""}" href="${mapURL(a)}" target="_blank" rel="noopener"
     aria-label="Directions to ${esc(a.name)}${mapSure(a)?"":" — no street address on file, Maps will search by name"}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg></a>`:"";
@@ -4910,15 +4941,37 @@ function renderDeckActions(c){
   /* work cards are swiped and flipped — no standing instructions under the deck */
   el.innerHTML="";
 }
+/* Which logged touches belong to which segment. Progress is counted from the event log,
+   so the ring can only ever fill on work that actually happened. */
+const SEGKIND={field:["visited","met"],calls:["called"],follow:["emailed","texted"]};
+function segProgress(d){
+  const s=iso(d),out={field:0,calls:0,follow:0};
+  A().forEach(a=>(a.events||[]).forEach(e=>{
+    if(missionDay(e)!==s)return;
+    for(const k in SEGKIND)if(SEGKIND[k].includes(e.kind))out[k]++;
+  }));
+  return out;
+}
 function renderBubbles(deck){
   const holder=$("#bubbles");if(!holder)return;
-  const have={};deck.forEach(c=>{if(!have[c.seg])have[c.seg]={n:0,at:null};have[c.seg].n++;
+  const have={};deck.forEach(c=>{if(!have[c.seg])have[c.seg]={n:0,work:0,at:null};have[c.seg].n++;
+    /* the route card is a briefing, not a stop — counting it would inflate the ring */
+    if(c.a)have[c.seg].work++;
     if(c.type==="huddle"&&c.c&&c.c.at&&!have[c.seg].at)have[c.seg].at=c.c.at});
   const order=["start","huddle","field","calls","follow","end"];
+  /* The deck holds what's left; the log holds what's done. Together they're the day. */
+  const did=segProgress(activeD());
+  const C=2*Math.PI*20.25;
   holder.innerHTML=order.filter(s=>deckSegSeen[s]||have[s]).map(s=>{
     const done=!have[s];
-    return `<button class="bub${done?" done":""}" data-bub="${s}" aria-label="${SEGLABEL[s]}${done?", done":""}">
-      <i>${dSvg(done?"check":s)}</i><em>${have[s]&&have[s].at?fmtTime(have[s].at):SEGLABEL[s]}</em></button>`;}).join("");
+    const left=have[s]?have[s].work:0, made=did[s]||0, total=made+left;
+    const p=(s in did)&&total?Math.min(1,made/total):(done?1:0);
+    const ring=`<svg class="ring" viewBox="0 0 42 42" aria-hidden="true"><circle class="rfill" cx="21" cy="21" r="20.25"
+      style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${(C*(1-p)).toFixed(1)}"/></svg>`;
+    const lab=(s in did)&&total?`${made}/${total}`:(have[s]&&have[s].at?fmtTime(have[s].at):SEGLABEL[s]);
+    return `<button class="bub${done?" done":""}" data-bub="${s}"
+      aria-label="${SEGLABEL[s]}${(s in did)&&total?`, ${made} of ${total} done`:done?", done":""}">
+      <i>${ring}${dSvg(done?"check":s)}</i><em>${lab}</em></button>`;}).join("");
 }
 const paintBubbles=seg=>$$("#bubbles .bub").forEach(b=>b.classList.toggle("live",b.dataset.bub===seg));
 
@@ -5243,8 +5296,10 @@ function endRun(){hushBrief();disarmReturn();$("#callwrap").classList.remove("on
    same sheet. Stamps are day-level because events store dates — clock times would be a
    schema change, and the date is what the fifteen-second read needs. */
 const EVLABEL={called:"Call",met:"Met",note:"Note",referral:"Referral",won:"Won",lost:"Lost"};
+let threadNew=false;
 function threadSheet(id){
   const a=acct(id);if(!a)return;
+  const fresh=threadNew;threadNew=false;
   /* keep the true index while showing newest first, so a delete removes the entry the
      finger is actually on — history you can add to but never correct is a liability */
   const ev=(a.events||[]).map((e,i)=>({e,i})).reverse();
@@ -5253,7 +5308,7 @@ function threadSheet(id){
     <div class="thread">${ev.map(({e,i})=>{
       const d=parseD(e.when);
       const stamp=iso(d)==iso(today())?"Today":(iso(d)==iso(addDays(today(),-1))?"Yesterday":fmt(d));
-      return `<div class="tentry"><div class="trow"><s>${stamp} · ${EVLABEL[e.kind]||esc(e.kind)}</s>
+      return `<div class="tentry${(fresh&&i===(a.events||[]).length-1)?" tin":""}"><div class="trow"><s>${stamp} · ${EVLABEL[e.kind]||esc(e.kind)}</s>
         <button class="tdel" data-delev="${i}" data-acct="${a.id}" aria-label="Delete this entry">&times;</button></div>${e.text?`<p>${esc(e.text)}</p>`:""}</div>`;
     }).join("")}</div>
     <textarea class="dbf" id="thnote" rows="3" placeholder="Add a note &mdash; what you noticed, who you saw, what to remember."></textarea>
@@ -7610,7 +7665,10 @@ tap("sayauto",()=>{
   ttsUnlock();
   D.cfg.speakBriefs=!D.cfg.speakBriefs;
   if(!D.cfg.speakBriefs)hushBrief();
-  save();render();
+  /* a chip changing colour used to rebuild the whole screen and re-deal the deck —
+     a visible jolt and real work with 700 accounts, to repaint one 28px control */
+  $$(".saychip").forEach(el=>el.classList.toggle("on",!!D.cfg.speakBriefs));
+  save();
   toast(D.cfg.speakBriefs?"Briefs read aloud as you move through the calls."
     :"Silent. Tap the speaker again when you're driving.");
 });
@@ -7689,6 +7747,20 @@ tap("delev",t=>{
   const acc=acct(t.dataset.acct);if(!acc)return;
   const i=+t.dataset.delev;
   if(!(acc.events||[])[i])return;
+  const row=t.closest&&t.closest(".tentry");
+  if(row&&row.classList&&!row.classList.contains("tout")){
+    /* collapse the row out before the list re-flows, so the delete reads as removal
+       rather than the whole thread jumping */
+    row.classList.add("tout");
+    setTimeout(()=>tap.delevGo(t),170);
+    return;
+  }
+  tap.delevGo(t);
+});
+tap.delevGo=t=>{
+  const acc=acct(t.dataset.acct);if(!acc)return;
+  const i=+t.dataset.delev;
+  if(!(acc.events||[])[i])return;
   const was=snapshot(acc);
   const gone=acc.events[i];
   acc.events.splice(i,1);
@@ -7696,7 +7768,7 @@ tap("delev",t=>{
      them all, with nothing to recompute and nothing left inconsistent */
   commit((EVLABEL[gone.kind]||"Entry")+" deleted.",()=>restoreAcct(was));
   threadSheet(acc.id);
-});
+};
 tap("coach",async t=>{
   const a=acct(t.dataset.coach);if(!a)return;
   toast("Asking\u2026");
@@ -8396,8 +8468,11 @@ document.addEventListener("click",async e=>{
       const was=snapshot(a);
       /* a note is not a touch: it never moves last-touch, attempts or cadence */
       logEvent(a,"note",txt);
+      /* the sheet stays open and the entry animates in — you watch it land instead of
+         reading a toast that claims it did */
+      threadNew=true;
       commit("Note added.",()=>restoreAcct(was));
-      closeSheet();
+      threadSheet(a.id);
       break;
     }
     case"saveowe":{
