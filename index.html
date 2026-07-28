@@ -1355,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.27 dupes";
+const BUILD="2026-07-27.28 idb";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1584,8 +1584,49 @@ function nlp(txt){
 
 /* ---------- storage ---------- */
 let storeWarn="";
+/* ============================================================
+   STORAGE ENGINE
+   Every read and write in the app already funnels through rawGet/rawSet/rawDel, so
+   swapping the engine is contained to this block. IndexedDB is the primary store when
+   it's available; localStorage remains as a fallback and, until Kyle clears it himself,
+   as an untouched copy of the book. The migration COPIES — it never moves — so a failure
+   at any point leaves the original exactly where it was.
+   ============================================================ */
+const IDBNAME="bellwether",IDBSTORE="kv";
+let idb=null,idbReady=null,idbOn=false;
+function idbOpen(){
+  if(idbReady)return idbReady;
+  idbReady=new Promise(res=>{
+    let req;
+    try{req=indexedDB.open(IDBNAME,1)}catch(e){return res(null)}
+    req.onupgradeneeded=()=>{const db=req.result;
+      if(!db.objectStoreNames.contains(IDBSTORE))db.createObjectStore(IDBSTORE)};
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>res(null);
+    /* a browser that never answers must not hang the boot */
+    setTimeout(()=>res(null),3000);
+  }).then(db=>{idb=db;return db});
+  return idbReady;
+}
+function idbDo(mode,fn){
+  return new Promise(async res=>{
+    const db=await idbOpen();
+    if(!db)return res({ok:false});
+    try{
+      const tx=db.transaction(IDBSTORE,mode),st=tx.objectStore(IDBSTORE);
+      const r=fn(st);
+      tx.oncomplete=()=>res({ok:true,value:r&&r.result});
+      tx.onerror=tx.onabort=()=>res({ok:false});
+    }catch(e){res({ok:false})}
+  });
+}
+const idbGet=k=>idbDo("readonly",st=>st.get(k)).then(r=>r.ok?(r.value??null):null);
+const idbSet=(k,v)=>idbDo("readwrite",st=>st.put(v,k)).then(r=>r.ok);
+const idbDel=k=>idbDo("readwrite",st=>st.delete(k)).then(r=>r.ok);
+
 async function rawGet(key){
   try{ if(window.storage){const r=await window.storage.get(key);return r&&r.value?r.value:null}
+       if(idbOn){const v=await idbGet(key);if(v!=null)return v}
        return localStorage.getItem(key) }catch(e){return null}
 }
 let storageOK=true;
@@ -1595,6 +1636,12 @@ function probeStorage(){
   return storageOK;
 }
 async function rawSet(key,val){
+  if(idbOn&&!window.storage){
+    /* IndexedDB is the primary store: no 5 MB ceiling, and a failure here falls through
+       to the old engine rather than losing the write */
+    if(await idbSet(key,val))return true;
+    storeWarn="IndexedDB refused a write — falling back to browser storage.";
+  }
   try{ if(window.storage)await window.storage.set(key,val); else localStorage.setItem(key,val); return true }
   catch(e){
     /* out of room: drop the oldest backup and try once more before ever failing a real save */
@@ -1606,6 +1653,7 @@ async function rawSet(key,val){
   }
 }
 async function rawDel(key){
+  try{ if(idbOn&&!window.storage)await idbDel(key) }catch(e){}
   try{ if(window.storage)await window.storage.delete(key); else localStorage.removeItem(key) }catch(e){}
 }
 
@@ -1891,7 +1939,36 @@ function migrateLegacy(old){
     }),v:2,batches:old.batches||[],migratedOn:iso(today())};
 }
 let loadReport={source:"",steps:"",recovered:false,warnings:0};
+/* Runs once before the first read. Copies the book into IndexedDB and verifies it by
+   reading it back and comparing byte length; only then does the app start reading from
+   IndexedDB. localStorage is left exactly as it was — this is a copy, not a move, so a
+   failure anywhere leaves the original book untouched and the app simply carries on
+   using it. Kyle clears the old copy himself when he's satisfied. */
+let storeReport={engine:"browser storage",migrated:false,note:""};
+async function initStorage(){
+  if(window.storage)return;                       /* hosted storage owns this already */
+  if(!("indexedDB" in window))return;
+  const db=await idbOpen();
+  if(!db){storeReport.note="IndexedDB unavailable — still on browser storage";return}
+  let mine=null;
+  try{mine=await idbGet(KEY)}catch(e){}
+  if(mine!=null){idbOn=true;storeReport.engine="IndexedDB";return}
+  let old=null;
+  try{old=localStorage.getItem(KEY)}catch(e){}
+  if(old==null){idbOn=true;storeReport.engine="IndexedDB";return}   /* nothing to carry */
+  const wrote=await idbSet(KEY,old);
+  if(!wrote){storeReport.note="Copy to IndexedDB failed — staying on browser storage";return}
+  const back=await idbGet(KEY);
+  if(back==null||back.length!==old.length){
+    await idbDel(KEY);
+    storeReport.note="Copy didn't verify — staying on browser storage, nothing changed";
+    return;
+  }
+  idbOn=true;storeReport.engine="IndexedDB";storeReport.migrated=true;
+  storeReport.note="Copied "+Math.round(old.length/1024)+" kB. The browser-storage copy is untouched.";
+}
 async function load(){
+  await initStorage();
   const raw=await rawGet(KEY);
   let parsed=null;
 
@@ -1972,9 +2049,11 @@ async function saveNow(){
   D.cfg.dirtySince=D.cfg.dirtySince||new Date().toISOString();
   const body=JSON.stringify(D);
   const ok=await rawSet(KEY,body);
-  /* read it back — a save that didn't land is worse than one that failed loudly */
+  /* read it back — a save that didn't land is worse than one that failed loudly. The
+     check has to interrogate whichever engine the write went to, or it verifies the
+     wrong copy and reports success on a lost write. */
   if(ok&&!window.storage){
-    const back=localStorage.getItem(KEY);
+    const back=idbOn?await idbGet(KEY):localStorage.getItem(KEY);
     if(!back||back.length!=body.length){storeWarn="A save didn't land. Export a backup now.";toast(storeWarn);return false}
   }
   if(!ok)toast(storeWarn||"Save failed — export a backup now.");
@@ -8866,6 +8945,8 @@ async function diagnostics(){
       ${row("backups",ix.length)}
       ${row("last backup",ix.length?fmtWhen(ix[0].on):"none")}
       ${row("last migration",D.lastMigration?D.lastMigration.steps+" · "+fmtWhen(D.lastMigration.on):"none")}
+      ${row("storage engine",storeReport.engine)}
+      ${storeReport.note?`<div class="row" style="display:block"><s style="color:var(--ink3)">${esc(storeReport.note)}</s></div>`:""}
       ${row("loaded from",loadReport.source||"—")}
       ${row("storage size",(size/1024).toFixed(1)+" kB")}
       ${row("repairs on load",loadReport.warnings)}
@@ -8893,7 +8974,13 @@ if(sysDark&&sysDark.addEventListener)sysDark.addEventListener("change",applyThem
 
 /* iOS suspends and kills tabs without warning — write once more on the way out */
 function flush(){
-  if(saveT){clearTimeout(saveT);saveT=null;saveWait=[];}try{if(!window.storage)localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+  /* localStorage could be written synchronously while the page was being torn down;
+     IndexedDB cannot. So the debounced save is fired immediately, and the synchronous
+     write is still attempted as a belt-and-braces measure — it fails harmlessly when
+     browser storage is full, which is the state that brought us here. */
+  if(saveT){clearTimeout(saveT);saveT=null;saveWait=[];}
+  if(idbOn&&!window.storage){try{saveNow()}catch(e){}}
+  try{if(!window.storage)localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
 window.addEventListener("pagehide",flush);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState=="hidden")flush()});
 
