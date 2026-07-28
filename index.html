@@ -937,6 +937,20 @@ body.deckon #clock{margin:0 0 4px}
 .rcev b{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);font-weight:400;margin-right:7px}
 .rcnext{font-size:11.5px;color:var(--grn);margin-top:9px;font-family:'IBM Plex Mono',monospace}
 .rcowe{display:inline-block;margin-top:12px;padding:9px 14px;border-radius:16px;border:1px solid var(--rule2);background:var(--paper);color:var(--ink);font-family:inherit;font-size:12.5px;cursor:pointer}
+/* Setup is a menu first. A row states what lives behind it, so he can find the thing he
+   came for without reading the whole page. */
+#setmenu{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+#setmenu.off{display:none}
+.setrow{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);border:1px solid var(--rule2);border-radius:12px;padding:14px 16px;font-family:inherit;color:var(--ink);font-size:15px;cursor:pointer}
+.setrow span{flex:1;min-width:0}
+.setrow s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:.02em;text-align:right;line-height:1.4;max-width:54%}
+.setrow::after{content:"\203A";color:var(--ink3);font-size:18px;line-height:1;flex:none}
+.setpage{display:none}
+.setpage.on{display:block}
+.setback{background:none;border:0;font-family:inherit;font-size:13px;color:var(--ink2);padding:8px 0;cursor:pointer}
+.seth{margin-top:2px}
+/* inside a page the screen title is noise — the back button already says where you are */
+#s-set.inpage>h1,#s-set.inpage>.note{display:none}
 .rcempty{text-align:center;color:var(--ink2);font-size:13.5px;padding:44px 12px;line-height:1.65}
 /* The recap is a LENS on the day, not a stage of it, so it carries no progress ring and
    sits behind a hairline — the four circles still have to read as the timeline. */
@@ -1262,6 +1276,23 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <h1>Setup</h1>
   <p class="note">How Bellwether runs your territory. Change anything here and today's plan follows.</p>
 
+  <!-- Sixteen blocks on one scroll meant everything was always on screen and nothing was
+       findable, and "Erase everything" sat in the same column as the daily touch goal.
+       Setup is a menu now: pick a page, change what you came for, come back. Every block
+       stays inside #s-set so the type-to-save debounce, which is bound to inputs within
+       this section, keeps working exactly as it did. -->
+  <div id="setmenu">
+    <button class="setrow" data-setpage="day"><span>Your day</span><s>rhythm · mission · working week</s></button>
+    <button class="setrow" data-setpage="year"><span>Your year</span><s>goals · track record · close rates</s></button>
+    <button class="setrow" data-setpage="you"><span>You</span><s>name, email and title used on emails</s></button>
+    <button class="setrow" data-setpage="price"><span>Pricing</span><s>pricebook · add-ons</s></button>
+    <button class="setrow" data-setpage="data"><span>Data</span><s>backups · import · drive order · sync</s></button>
+    <button class="setrow" data-setpage="look"><span>Look and voice</span><s>theme · spoken briefs</s></button>
+  </div>
+
+  <div class="setpage" data-page="day">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">Your day</h2>
   <h2>Your daily rhythm</h2>
   <div class="two">
     <label class="f">Daily touch goal<input class="t mono" id="touchTarget" type="number" min="1"></label>
@@ -1281,15 +1312,15 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
   <label class="f">Daily follow-up goal<input class="t mono" id="mFollow" type="number" min="0"></label>
 
-  <h2>Your track record</h2>
-  <div id="mhist"></div>
-
   <h2>Your working week &mdash; not every day serves the same purpose</h2>
   <p class="note">What each day normally is, and anything that's simply true every week. Bellwether plans around it &mdash; and any morning you decide differently, one tap on Today changes that day without changing this.</p>
   <div id="weekcfg"></div>
 
-  <div id="bakbanner"></div>
+  </div>
 
+  <div class="setpage" data-page="year">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">Your year</h2>
   <h2>Your year and your goals</h2>
   <div class="two">
     <label class="f">Sales year ends<input class="t" id="fy" type="date"></label>
@@ -1300,31 +1331,8 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <label class="f">Revenue for club<input class="t mono" id="rgoal" type="number" min="0"></label>
   </div>
 
-  <h2>How Bellwether looks</h2>
-  <div class="chips" id="themepick">
-    <button class="chip" data-th="light">Light</button>
-    <button class="chip" data-th="dark">Dark</button>
-    <button class="chip" data-th="system">System</button>
-  </div>
-
-  <h2>You &mdash; used on emails</h2>
-  <div class="two">
-    <label class="f">Your name <s class="hint">Bellwether greets you with it each morning</s><input class="t" id="meName" placeholder="Kyle"></label>
-    <label class="f">Your email<input class="t" id="meEmail" type="email" placeholder="you@adp.com"></label>
-  </div>
-  <div class="two">
-    <label class="f">Title<input class="t" id="meTitle" placeholder="ADP Small Business"></label>
-    <label class="f">Phone<input class="t" id="mePhone" placeholder="508&hellip;"></label>
-  </div>
-
-  <h2>Your pricing &mdash; RUN FY&rsquo;27, Zone 7</h2>
-  <p class="note">Per payroll run. Edit only if rates change.</p>
-  <div id="pbook"></div>
-
-  <h2>Add-ons &mdash; per payroll run</h2>
-  <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per ee / run</span></div>
-  <div id="addons"></div>
-  <button class="b quiet" id="adda" data-act="addaddon" style="margin-top:10px">+ add-on</button>
+  <h2>Your track record</h2>
+  <div id="mhist"></div>
 
   <h2>How often you close</h2>
   <p class="note">Learned from your own wins and losses once you have ten of each. Until then these are the estimates used.</p>
@@ -1335,12 +1343,69 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <label class="f">Just a callback %<input class="t mono" id="o3" type="number" min="0" max="100"></label>
   <p class="read" id="learned" style="font-size:12.5px"></p>
 
+  </div>
+
+  <div class="setpage" data-page="you">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">You</h2>
+  <h2>You &mdash; used on emails</h2>
+  <div class="two">
+    <label class="f">Your name <s class="hint">Bellwether greets you with it each morning</s><input class="t" id="meName" placeholder="Kyle"></label>
+    <label class="f">Your email<input class="t" id="meEmail" type="email" placeholder="you@adp.com"></label>
+  </div>
+  <div class="two">
+    <label class="f">Title<input class="t" id="meTitle" placeholder="ADP Small Business"></label>
+    <label class="f">Phone<input class="t" id="mePhone" placeholder="508&hellip;"></label>
+  </div>
+
+  </div>
+
+  <div class="setpage" data-page="price">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">Pricing</h2>
+  <h2>Your pricing &mdash; RUN FY&rsquo;27, Zone 7</h2>
+  <p class="note">Per payroll run. Edit only if rates change.</p>
+  <div id="pbook"></div>
+
+  <h2>Add-ons &mdash; per payroll run</h2>
+  <div class="ptabhead"><span>Add-on</span><span>Base / run</span><span>Per ee / run</span></div>
+  <div id="addons"></div>
+  <button class="b quiet" id="adda" data-act="addaddon" style="margin-top:10px">+ add-on</button>
+
+  </div>
+
+  <div class="setpage" data-page="data">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">Data</h2>
+  <div id="bakbanner"></div>
+
   <div class="sa" style="justify-content:flex-start;margin-top:24px">
     <button class="b pri" id="save">Save</button>
     <button class="b" id="exp">Export backup</button>
     <button class="b quiet" id="impj">Restore</button>
   </div>
   <p class="read" style="font-size:12px" id="storyline">Everything lives in this browser. Export before you clear it or switch phones.</p>
+
+  <div id="geoline" style="margin-top:18px"></div>
+  <h2 style="margin-top:26px">Sync</h2>
+  <p class="read" id="syncstat" style="font-size:12.5px">Checking…</p>
+  <div class="sa" style="justify-content:flex-start;margin-top:12px">
+    <button class="b" data-act="syncnow">Sync now</button>
+    <button class="b quiet" data-act="signout">Sign out</button>
+  </div>
+
+  <p class="read" style="font-size:12px" id="dangerzone"></p>
+  </div>
+
+  <div class="setpage" data-page="look">
+    <button class="setback" data-setback="1">&lsaquo; Setup</button>
+    <h2 class="seth">Look and voice</h2>
+  <h2>How Bellwether looks</h2>
+  <div class="chips" id="themepick">
+    <button class="chip" data-th="light">Light</button>
+    <button class="chip" data-th="dark">Dark</button>
+    <button class="chip" data-th="system">System</button>
+  </div>
 
   <h2 style="margin-top:26px">Voice debriefs</h2>
   <p class="note">Speak after a call instead of typing. Bellwether never holds the API keys &mdash; it talks to your own Cloudflare Worker, which holds them. Leave blank to keep using the keyboard mic.</p>
@@ -1351,15 +1416,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <button data-nv="1">Natural</button><button data-nv="0">Device</button>
   </div>
 
-  <h2 style="margin-top:26px">Sync</h2>
-  <p class="read" id="syncstat" style="font-size:12.5px">Checking…</p>
-  <div class="sa" style="justify-content:flex-start;margin-top:12px">
-    <button class="b" data-act="syncnow">Sync now</button>
-    <button class="b quiet" data-act="signout">Sign out</button>
   </div>
-
-  <div id="geoline" style="margin-top:18px"></div>
-  <p class="read" style="font-size:12px" id="dangerzone"></p>
 </section>
 
 </div>
@@ -1436,7 +1493,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.44 look them up";
+const BUILD="2026-07-28.45 setup, in pages";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3022,6 +3079,8 @@ function openSheet(html){$("#sheet").innerHTML=html;$("#veil").classList.add("on
 function closeSheet(){$("#veil").classList.remove("on");$("#sheet").innerHTML="";syncScrollLock()}
 let backTo="today";
 function go(s,id,from){
+  /* coming back to Setup should land on the menu, not wherever he was last */
+  if(s!=="set")setPage=null;
   /* A search belongs to the errand you were on. Coming back to Territory an hour later and
      finding it still filtered to "doyle" reads as broken. Opening an account from a result
      and pressing back is the same errand, so that path keeps it. */
@@ -7268,6 +7327,15 @@ function renderGeoLine(){
     <button class="b${running?" danger":""}" data-act="geocode"${!wanted&&!running?" disabled":""}>
       ${stopping?"Stopping&hellip;":running?"Stop":wanted?`Map ${wanted} address${wanted==1?"":"es"}`:"Everything mappable is mapped"}</button>`;
 }
+let setPage=null;
+/* All six pages stay in the DOM and only their visibility changes, so renderSetup can go
+   on filling fields it cannot see and nothing has to be re-wired when a page opens. */
+function paintSetPages(){
+  const sec=$("#s-set");if(!sec)return;
+  const m=$("#setmenu");if(m)m.classList.toggle("off",!!setPage);
+  $$(".setpage").forEach(el=>el.classList.toggle("on",el.dataset.page===setPage));
+  sec.classList.toggle("inpage",!!setPage);
+}
 function renderSetup(){
   const c=D.cfg;
   const set=(id,v)=>{const el=$("#"+id);if(el)el.value=v==null?"":v};
@@ -7298,6 +7366,7 @@ function renderSetup(){
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderGeoLine();
   renderSyncLine();
+  paintSetPages();
   $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
     <button class="b danger" data-act="wipe">Erase everything</button>`;
@@ -8265,6 +8334,8 @@ tap("dq",t=>{
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
 tap("decktop",()=>deckTop());
 tap("recap",()=>recapView(activeISO()));
+tap("setpage",t=>{setPage=t.dataset.setpage;paintSetPages();window.scrollTo(0,0)});
+tap("setback",()=>{setPage=null;paintSetPages();window.scrollTo(0,0)});
 tap("recapx",()=>recapClose());
 tap("rcrow",t=>{const id=t.dataset.rcrow;
   if(recapOpen.has(id))recapOpen.delete(id);else recapOpen.add(id);
