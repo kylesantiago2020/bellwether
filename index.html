@@ -1362,7 +1362,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.34 in flight";
+const BUILD="2026-07-28.36 gap filler";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -6855,8 +6855,30 @@ function doImport(txt,type,listName){
      paste, exactly as it did when every row rescanned the whole book */
   const dix=dupeIndex();
   const tag=String(listName||"").trim();
-  const locked={};
   let add=0,upd=0,noPhone=0;const fresh=[],maybe=[];
+  /* THE MERGE RULE. A file fills gaps; it does not correct him. Anything already
+     in the book predates this paste and is his work — a headcount he counted in a
+     meeting, a town Salesforce had wrong, a street he read off the door — so the
+     file's version is reported rather than applied. The one exception is a value
+     THIS import wrote a moment ago: that came from the file, so a later row in the
+     same file may still refine it, which is how a report carrying one row per
+     contact has always behaved. */
+  const filled={};
+  const own=(a,f)=>!!(filled[a.id]&&filled[a.id].has(f));
+  const mark=(a,f)=>{(filled[a.id]=filled[a.id]||new Set()).add(f)};
+  const clash=[],clashSeen=new Set();
+  /* A Salesforce report carries one row per contact, so an account with nine rows
+     would otherwise file the same disagreement nine times and bury the report. */
+  const flag=(a,f,mine,theirs)=>{
+    const k=a.id+"|"+f;if(clashSeen.has(k))return;
+    clashSeen.add(k);clash.push({a,f,mine,theirs});
+  };
+  const take=(a,f,val,get,set)=>{
+    if(val===""||val===0||val==null)return;
+    const cur=get();
+    if(!cur||own(a,f)){set(val);mark(a,f);return}
+    if(String(cur)!==String(val))flag(a,f,cur,val);
+  };
   rows.forEach(r=>{
     let a=by[mergeKey(r.name)];
     if(!a){
@@ -6866,46 +6888,59 @@ function doImport(txt,type,listName){
       if(near.length)maybe.push({name:r.name,hit:near[0]});
       a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
       D.accounts.push(a);by[mergeKey(r.name)]=a;add++;fresh.push(a);dix.push(dupeKey(a))}else upd++;
-    if(r.emps)a.emps=r.emps;
+    take(a,"emps",r.emps,()=>a.emps,v=>{a.emps=v});
     /* The LAR export says WHY a client left, and 273 of them say the business no longer
        exists. That is exactly what the Confirmed-closed flag means, so it is applied here —
        a closed business must not be scheduled for a first call. Any other reason (price,
        no-start) is a live LAR prospect and imports normally with the reason logged. */
-    if(r.termReason){
-      if(/out of business|catastrophe|deceased|bankrupt/i.test(r.termReason)){
-        if(dq(a)=="good"){a.dataQuality="closed";logEvent(a,"note","Termed: "+r.termReason)}
-      }else if(!(a.events||[]).some(e=>e.text&&e.text.indexOf("Termed: ")===0)){
-        logEvent(a,"note","Termed: "+r.termReason);
-      }
+    /* Applied once, on the first import that carries the reason. Re-applying it on
+       every later import would quietly undo a re-qualification he made by hand, and
+       stack up a duplicate note each time. */
+    if(r.termReason&&!(a.events||[]).some(e=>e.text&&e.text.indexOf("Termed: ")===0)){
+      if(/out of business|catastrophe|deceased|bankrupt/i.test(r.termReason)&&dq(a)=="good")
+        a.dataQuality="closed";
+      logEvent(a,"note","Termed: "+r.termReason);
     }
     if(r.medEmps)a.medEmps=r.medEmps;
     if(r.planAssets)a.planAssets=r.planAssets;
     if(r.sixMoPays)a.sixMoPays=r.sixMoPays;
     if(tag&&a.lists.indexOf(tag)<0)a.lists.push(tag);
-    if(r.city)a.city=r.city;
+    take(a,"city",r.city,()=>a.city,v=>{a.city=v});
     /* the street was being parsed and used for duplicate detection, then dropped on the
        floor — so every imported account had a blank address, which silently disqualified
        all of them from "add 5 near me" (that pool requires a.addr) and left Navigate
-       resolving to just the business name and town. */
-    if(r.addr)a.addr=r.addr;
-    if(r.industry)a.industry=r.industry;
+       resolving to just the business name and town.
+       Coordinates belong to an ADDRESS, not to an account. Changing the street without
+       dropping them leaves the drive ordered around a point the business is no longer at,
+       and geoWanted skips anything that already has coordinates, so it would never be
+       looked up again. Clearing the not-found marker too lets a street the account never
+       had before finally resolve. */
+    take(a,"addr",r.addr,()=>a.addr,v=>{
+      if(a.addr!==v){delete a.geo;delete a.geoMiss}
+      a.addr=v;});
+    take(a,"industry",r.industry,()=>a.industry,v=>{a.industry=v});
     /* The report is one row PER CONTACT, so an account with nine rows used to keep whichever
        landed last — which on a real record meant ADP's own WorkersComp service line replacing
        the owner. A row flagged Main Contact always wins and locks; otherwise the first row
        with a name fills the gap and later rows leave it alone. */
     a.contact=a.contact||{name:"",email:"",phone:""};
-    const takeContact=r.main||!locked[a.id]&&!a.contact.name;
-    if(takeContact){
-      if(r.contactName)a.contact.name=r.contactName;
-      if(r.phone)a.contact.phone=r.phone;
-      if(r.email)a.contact.email=r.email;
-      if(r.main)locked[a.id]=1;
-    }else{
-      if(!a.contact.phone&&r.phone)a.contact.phone=r.phone;
-      if(!a.contact.email&&r.email)a.contact.email=r.email;
-    }
+    /* A Main Contact row still beats the other rows in the same file — that is what
+       stops ADP's own service line landing as the owner. What it must not beat is a
+       name he typed himself, so it can only replace a value this import put there. */
+    const takeC=(f,key,val)=>{
+      if(!val)return;
+      const cur=a.contact[key];
+      if(!cur){a.contact[key]=val;mark(a,f);return}
+      if(own(a,f)&&r.main){a.contact[key]=val;mark(a,f);return}
+      if(!own(a,f)&&String(cur)!==String(val))flag(a,key,cur,val);
+    };
+    takeC("cname","name",r.contactName);
+    takeC("cphone","phone",r.phone);
+    takeC("cmail","email",r.email);
     if(!a.contact.phone)noPhone++;
-    if(type=="client"){a.today=a.today||{};if(r.bundle)a.today.bundle=r.bundle;if(r.freq)a.today.freq=r.freq}
+    if(type=="client"){a.today=a.today||{};
+      take(a,"bundle",r.bundle,()=>a.today.bundle,v=>{a.today.bundle=v});
+      take(a,"freq",r.freq,()=>a.today.freq,v=>{a.today.freq=v})}
   });
   /* an imported name with no next step isn't in your territory, it's a list.
      Every one gets a first touch, phased in at a pace you can keep. */
@@ -6925,11 +6960,22 @@ function doImport(txt,type,listName){
   save();$("#pastebox").value="";render();
   toast(`${add} added, ${upd} updated${noPhone?` · ${noPhone} without a phone`:""}${last?` · first touches through ${fmt(parseD(last))}`:""}`);
   /* silently creating near-duplicates is how a book rots — say it plainly, once */
-  $("#dupereport").innerHTML=maybe.length
+  const dupeHtml=maybe.length
     ? `<div class="dupe" style="margin-top:14px"><b>${maybe.length} may already be in your book.</b>
        ${maybe.slice(0,6).map(mm=>`<div class="drow" data-open="${mm.hit.a.id}"><span>${esc(mm.name)}</span><s>${mm.hit.why} as ${esc(mm.hit.a.name)}</s></div>`).join("")}
        <p>They were added &mdash; nothing was overwritten. Tap any to open the original and delete whichever you don't want.</p></div>`
     : "";
+  /* Withholding a value silently is the same failure as overwriting one — he would
+     never know the file disagreed. Say what was kept and let him decide. */
+  const FLBL={emps:"employees",city:"town",addr:"street",industry:"industry",
+    bundle:"bundle",freq:"pay frequency",name:"contact",phone:"phone",email:"email"};
+  const clashHtml=clash.length
+    ? `<div class="dupe" style="margin-top:14px"><b>${clash.length} value${clash.length==1?"":"s"} across ${new Set(clash.map(c=>c.a.id)).size} account${new Set(clash.map(c=>c.a.id)).size==1?"":"s"} disagreed with your book &mdash; kept your version.</b>
+       ${clash.slice(0,8).map(c=>`<div class="drow" data-open="${c.a.id}"><span>${esc(c.a.name)} &middot; ${esc(FLBL[c.f]||c.f)}</span><s>yours ${esc(c.mine)} &middot; file ${esc(c.theirs)}</s></div>`).join("")}
+       ${clash.length>8?`<p>&hellip;and ${clash.length-8} more.</p>`:""}
+       <p>Nothing was overwritten. Tap any to open it and change it yourself.</p></div>`
+    : "";
+  $("#dupereport").innerHTML=dupeHtml+clashHtml;
 }
 
 /* ---------- review ---------- */
