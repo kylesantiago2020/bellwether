@@ -26,13 +26,18 @@
    --ac is the accent you read (links, eyebrows, focus); --fill is the accent you press.
    Splitting them is what keeps gold an accent instead of wallpaper. Every text/background
    pair below clears WCAG AA at body size on its own surface. */
+/* Palette unchanged in character — only in legibility. Measured against WCAG AA on the
+   bone background: the eyebrow amber sat at 4.28, Territory at 3.76 and Review at 3.87,
+   all short of 4.5 for text. Each is darkened the minimum needed to clear it, so the
+   colour vocabulary (green = go, amber = read this first, per-screen accent = where you
+   are) survives intact. Borders deepened for sunlight; see the note on --rule2 below. */
 :root{--paper:#FAF8F4;--card:#FFF;--sunk:#F1EDE5;--ink:#14161A;--ink2:#5C6067;--ink3:#6E7178;
---rule:#E6E1D6;--rule2:#D2CCBE;--amb:#8A6D1E;--ambsoft:#F7EFDC;--grn:#40694E;--grnsoft:#E6EDE6;
+--rule:#DDD7C9;--rule2:#BDB4A0;--amb:#7E6318;--ambsoft:#F7EFDC;--grn:#40694E;--grnsoft:#E6EDE6;
 --red:#A34430;--redsoft:#F8E8E3;
---ac:#8A6D1E;--acs:#F3EEE2;--fill:#14161A;--navbg:rgba(250,248,244,.94)}
+--ac:#7E6318;--acs:#F3EEE2;--fill:#14161A;--navbg:rgba(250,248,244,.94)}
 body[data-s="today"]{--ac:#4B4FD6;--acs:#ECECFC}
-body[data-s="terr"]{--ac:#CD5F2C;--acs:#FCEBE1}
-body[data-s="review"]{--ac:#0C8C86;--acs:#E1F3F1}
+body[data-s="terr"]{--ac:#B24E22;--acs:#FCEBE1}
+body[data-s="review"]{--ac:#0A7F79;--acs:#E1F3F1}
 body[data-s="set"]{--ac:#4A5160;--acs:#EDEFF3}
 body[data-s="acct"]{--ac:#7141C8;--acs:#F1EAFC}
 body[data-s="play"]{--ac:#8A6224;--acs:#F6EEDF}
@@ -41,7 +46,7 @@ body.dark{--paper:#16181B;--card:#1E2125;--sunk:#212429;--ink:#EDEAE3;--ink2:#A5
 --red:#D87862;--redsoft:#331E19;--ac:#C9A24C;--acs:#2A2519;--fill:#EDEAE3;--navbg:rgba(22,24,27,.94)}
 body.dark .b.pri,body.dark .npri,body.dark .runbtn,body.dark .fab,body.dark .dmseg button.on,
 body.dark .cb.talked,body.dark .opt.on,body.dark .chip.on{color:#16181B}
-body.dark[data-s="today"]{--ac:#6F73E8;--acs:#252A50}
+body.dark[data-s="today"]{--ac:#7A7EEC;--acs:#252A50}
 body.dark[data-s="terr"]{--ac:#E08150;--acs:#3A2317}
 body.dark[data-s="review"]{--ac:#2BB0A9;--acs:#0F332F}
 body.dark[data-s="play"]{--ac:#C89A4E;--acs:#33291A}
@@ -1350,7 +1355,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.25 defaults";
+const BUILD="2026-07-27.26 contrast";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
