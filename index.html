@@ -857,6 +857,9 @@ body.deckon #clock{margin:0 0 4px}
 .dqbtn{display:block;margin:12px auto 0;max-width:280px;padding:10px;border-radius:10px;
   border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13px;color:var(--ink2)}
 .dqbtn.on{border-color:var(--amb);color:var(--amb)}
+.dncrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.dncrow b{font-size:14px;font-weight:500}
+.dncrow s{display:block;text-decoration:none;font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.45}
 .dqnote{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink3)}
 .vrow{display:flex;align-items:center;gap:12px;margin-top:10px}
 .vrec{font-family:inherit;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:999px;
@@ -1493,7 +1496,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.45 setup, in pages";
+const BUILD="2026-07-28.46 do not call";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1518,6 +1521,19 @@ const DQICON={good:"\u2713",wrong_info:"\u26A0",closed:"\u2715"};
 const dq=a=>{const v=a&&a.dataQuality;return DQK.includes(v)?v:"good"};
 /* workable: the only thing the flag actually gates */
 const dqOK=a=>dq(a)=="good";
+/* Do-not-call is a THIRD axis, and deliberately not part of dataQuality. The record is
+   fine and the business exists — they have simply told him to stop contacting them. That
+   is a different fact from "no sale", and it has to outlive one: a business can be rude
+   today and a real prospect in eighteen months, so the sales outcome stays reopenable
+   while the instruction keeps standing.
+   Until now `a.dnc` was written by the voice debrief and never read anywhere. The promise
+   the app made was kept only as a side effect of markLost dropping the account out of the
+   working set — so re-qualifying an account silently threw the instruction away. */
+const dnc=a=>!!(a&&a.dnc);
+/* One gate for everything that GENERATES work. Display is deliberately not routed through
+   this: the account screen still says what the record is, and says the do-not-call
+   separately, because they are two different things to know. */
+const workable=a=>dqOK(a)&&!dnc(a);
 const dqLabel=v=>(DQ.find(([k])=>k==v)||[])[1]||"Good";
 const isRel=a=>a&&a.type!="prospect";
 const ACCTTYPES=["prospect","client","cpa","bank","partner"];
@@ -3232,6 +3248,12 @@ function dqSheet(id){
   const a=acct(id);if(!a)return;
   openSheet(`<h3>Flag this record</h3><div class="sub">${esc(a.name)}</div>
     ${dqChips(a)}
+    <div class="dncrow">
+      <div><b>Do not contact</b><s>${dnc(a)
+        ? "They asked you to stop. Nothing here will put them in your day."
+        : "They told you not to come back or not to call again."}</s></div>
+      <button class="b${dnc(a)?" pri":""}" data-dnc="${a.id}|${dnc(a)?"0":"1"}">${dnc(a)?"On":"Set"}</button>
+    </div>
     <p class="dqnote">This is about the record, not the sale — the stage and everything you've
       logged stay exactly as they are. Flagged records stop taking up your day until you clear
       the flag, and then they come straight back.</p>
@@ -3395,7 +3417,7 @@ function todayRows(d){
     if(!isOpen(a))return;
     /* flagged records stop generating work until the data is fixed — nothing is moved or
        deleted, so clearing the flag brings the whole day back exactly as it was */
-    if(!dqOK(a))return;
+    if(!workable(a))return;
     const due=openActions(a).filter(n=>isNow?n.date<=iso(d):n.date==iso(d));
     if(!due.length)return;
     due.sort((x,y)=>x.date<y.date?-1:1);
@@ -4115,7 +4137,7 @@ function topUpHere(n){
   const have=new Set();
   A().forEach(a=>{if(openActions(a).some(x=>x.date==iso(today())))have.add(a.id)});
   /* branches are worked through the standing huddle, not topped up as cold drop-ins */
-  const pool=A().filter(a=>isOpen(a)&&dqOK(a)&&!have.has(a.id)&&a.type!="bank"&&anchorTier(a)<=1&&a.addr
+  const pool=A().filter(a=>isOpen(a)&&workable(a)&&!have.has(a.id)&&a.type!="bank"&&anchorTier(a)<=1&&a.addr
       &&a.skip!=iso(today())&&lastTouch(a)!=iso(today()))
     .sort((x,y)=>anchorTier(x)-anchorTier(y)||score(y)-score(x));
   const add=pool.slice(0,n);
@@ -4132,7 +4154,7 @@ function nearbyData(rows){
   const anchorTown=(rows.find(r=>(r.block=="meet"||r.block=="visit")&&r.a.city)||{}).a;
   const byTown={};
   /* "in play" for a trip means open, not un-won — a client you closed is the best stop on the street */
-  A().forEach(a=>{if(!isOpen(a)||!dqOK(a)||!a.city||inPlay.has(a.id))return;
+  A().forEach(a=>{if(!isOpen(a)||!workable(a)||!a.city||inPlay.has(a.id))return;
     (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
   const forced=anchorOn();
   let town=forced?forced.town:(anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null);
@@ -5222,7 +5244,7 @@ function deckFace(c){
       ${deckChip(a)}
       ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
       <div class="ctools">${googleLink(a)}</div>
-      <button class="dqbtn${dqOK(a)?"":" on"}" data-dqopen="${a.id}">${dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
+      <button class="dqbtn${workable(a)?"":" on"}" data-dqopen="${a.id}">${dnc(a)?"\u26D4 Do not contact":dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
     </div>`;
   }
   /* meet / visit / follow — a row from today's plan as a full card */
@@ -5629,7 +5651,7 @@ function buildQueue(){
   /* a town on the daily plan pulls its businesses to the front of the smart queue —
      that's what focusing a day on a town means, from the desk or from the car */
   const an=anchorOn();
-  const pool=A().filter(a=>isWorking(a)&&dqOK(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
+  const pool=A().filter(a=>isWorking(a)&&workable(a)&&!isRel(a)&&!have.has(a.id)&&(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today()))
     .sort(an?((x,y)=>anchorTier(x)-anchorTier(y)||score(y)-score(x)):((x,y)=>score(y)-score(x)));
   const need=Math.max(0,(+D.cfg.touchTarget||40)-touchesOn(activeD()));
   return due.concat(pool.slice(0,Math.max(10,need)));
@@ -6623,11 +6645,9 @@ function commitProposal(a,p){
   }
   if(p.outcome=="notint"){
     markLost(a,p.objection||"Not interested");
-    /* a.dnc is written and never read anywhere. The promise the card makes is still kept,
-       but by a different mechanism: markLost above drops the account out of isWorking, so
-       buildQueue can never surface it again. Left in place deliberately — it is the right
-       field to hang an explicit do-not-call rule on if that is ever wanted. */
-    if(p.dnc)a.dnc=true;
+    /* read for real since .46: workable() gates every generator on it, so the instruction
+       survives the sales outcome being reopened */
+    if(p.dnc&&!a.dnc){a.dnc=true;logEvent(a,"note","asked not to be contacted")}
     save();advance();return;
   }
 
@@ -6743,9 +6763,10 @@ function renderAccount(){
       <div class="sa left"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
     $("#acctbody").innerHTML=h;return;
   }
-  h+=`<div class="sect"><div class="h"><b>Record</b><span>${dqOK(a)?"good":esc(dqLabel(dq(a)))}</span></div>
+  h+=`<div class="sect"><div class="h"><b>Record</b><span>${dnc(a)?"do not contact":dqOK(a)?"good":esc(dqLabel(dq(a)))}</span></div>
     ${dqChips(a)}
-    ${dqOK(a)?"":`<div class="dqnote">Flagged records don't generate work. Set this back to Good and it returns to your day exactly where it was.</div>`}</div>`;
+    ${dqOK(a)?"":`<div class="dqnote">Flagged records don't generate work. Set this back to Good and it returns to your day exactly where it was.</div>`}
+    ${dnc(a)?`<div class="dqnote">They asked not to be contacted. The stage and everything you've logged stay as they are, and nothing will put them back in your day until you clear it.</div>`:""}</div>`;
 
   h+=`<div class="sect"><div class="h"><b>Walking out</b><span></span></div>
     <div class="sa left">
@@ -6969,7 +6990,7 @@ function renderTerritory(){
        beats a badge, because it is the line he will actually say out loud */
     const why=L&&L.note?`<div class="lwhy">${esc(L.note(a))}</div>`:"";
     return `<div class="bk" data-open="${a.id}">
-      <div><div class="nm">${esc(a.name)}${dqOK(a)?"":` <span class="tagm dq">${DQICON[dq(a)]} ${esc(dqLabel(dq(a)))}</span>`}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
+      <div><div class="nm">${esc(a.name)}${dqOK(a)?"":` <span class="tagm dq">${DQICON[dq(a)]} ${esc(dqLabel(dq(a)))}</span>`}${dnc(a)?' <span class="tagm dq">&#9940; do not contact</span>':""}${isWon(a)?' <span class="tagm w">won</span>':""}${TYPESHORT[a.type]?` <span class="tagm">${TYPESHORT[a.type]}${a.rel&&a.rel!="notmet"?" · "+(((REL.find(([c])=>c==a.rel)||[])[1]||"").toLowerCase()):""}</span>`:""}${a.handedOff?' <span class="tagm">handed off</span>':""}</div>
       <div class="s">${[a.emps?a.emps+" ee":"",a.industry,a.city,lt?days(parseD(lt),today())+"d since touch":"never touched"].filter(Boolean).join(" · ")}</div>${why}</div>
       <div class="rd">${worth(a)}</div></div>`}).join("")
     +(list.length>cap?`<div class="more"><button class="b quiet" data-act="moreterr">Show ${Math.min(60,list.length-cap)} more of ${list.length-cap}</button></div>`:"")
@@ -7313,7 +7334,7 @@ function countEvents(kind){return A().reduce((s,a)=>s+(a.events||[]).filter(e=>e
    done, what is left, and what can never be done without a street address. */
 function renderGeoLine(){
   const el=$("#geoline");if(!el)return;
-  const all=A().filter(a=>isOpen(a)&&dqOK(a));
+  const all=A().filter(a=>isOpen(a)&&workable(a));
   const mapped=all.filter(geoOf).length;
   const wanted=all.filter(geoWanted).length;
   const noAddr=all.filter(a=>!a.addr&&!geoOf(a)).length;
@@ -7519,7 +7540,7 @@ const ROUTEMAX=10;
    street address is never guessed at (the .05 lesson: a name is not a place).
    ============================================================ */
 const geoOf=a=>{const g=a&&a.geo;return (g&&isFinite(g.lat)&&isFinite(g.lon))?g:null};
-const geoWanted=a=>isOpen(a)&&dqOK(a)&&!!a.addr&&!geoOf(a);
+const geoWanted=a=>isOpen(a)&&workable(a)&&!!a.addr&&!geoOf(a);
 function milesBetween(p,q){
   const rad=d=>d*Math.PI/180, R=3958.8;
   const dLat=rad(q.lat-p.lat), dLon=rad(q.lon-p.lon);
@@ -7656,7 +7677,7 @@ async function geocodeBook(){
 function routeStops(ids){
   const picked=ids&&ids.length?allLists().filter(L=>ids.indexOf(L.id)>=0):null;
   const pool=A().filter(a=>{
-    if(!isOpen(a)||!dqOK(a)||!canMap(a))return false;
+    if(!isOpen(a)||!workable(a)||!canMap(a))return false;
     if(a.type=="bank")return false;              /* branches run through the huddle */
     if(lastTouch(a)==iso(today()))return false;
     /* rows carry meet/visit blocks — "field" was a block that never existed, so the
@@ -8332,6 +8353,19 @@ tap("dq",t=>{
     ()=>{a.dataQuality=was;if(sheetOpen())dqSheet(aid)});
 });
 tap("dqopen",t=>dqSheet(t.dataset.dqopen));
+/* the same shape as the data-quality flag: one tap, nothing else about the account
+   touched, and clearing it is a true undo rather than a restore */
+tap("dnc",t=>{
+  const [aid,v]=String(t.dataset.dnc).split("|");
+  const a=acct(aid);if(!a)return;
+  const on=v==="1";
+  if(dnc(a)===on)return;
+  if(on)a.dnc=true;else delete a.dnc;
+  logEvent(a,"note",on?"asked not to be contacted":"do-not-contact cleared");
+  if(sheetOpen())dqSheet(aid);
+  commit(on?"Do not contact — they'll stay out of your day.":"Back in the working list.",
+    ()=>{if(on)delete a.dnc;else a.dnc=true;if(sheetOpen())dqSheet(aid)});
+});
 tap("decktop",()=>deckTop());
 tap("recap",()=>recapView(activeISO()));
 tap("setpage",t=>{setPage=t.dataset.setpage;paintSetPages();window.scrollTo(0,0)});
@@ -8450,7 +8484,15 @@ tap("rel",t=>{const a=cur();if(!a)return;
   const was=a.rel;a.rel=t.dataset.rel;
   if(was!=a.rel)logEvent(a,"note","relationship \u2192 "+(relLabel(a.rel)||a.rel).toLowerCase());
   save();render()});
-tap("lost",t=>{if(!dbA)return;markLost(dbA,t.dataset.lost);save();advance()});
+tap("lost",t=>{
+  if(!dbA)return;
+  const r=t.dataset.lost;
+  markLost(dbA,r);
+  /* the chip says "do not call" — so it has to actually set the flag, not merely rely on
+     lost dropping the account out of the queue */
+  if(/do not call/i.test(r)){dbA.dnc=true;logEvent(dbA,"note","asked not to be contacted")}
+  save();advance();
+});
 tap("lostr",t=>{const a=cur();if(!a)return;
   const before=snapshot(a);markLost(a,t.dataset.lostr);closeSheet();
   commit("Logged as lost.",()=>restoreAcct(before))});
