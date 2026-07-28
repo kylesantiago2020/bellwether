@@ -578,6 +578,8 @@ body.flipped .fab{opacity:0;pointer-events:none}
 /* the voice switch sits where the voice happens, not three sheets away */
 .saychip{color:var(--ink3)}
 .saychip.on{border-color:var(--ac);color:var(--ac)}
+.whychips{margin:-4px 0 2px}
+.whychips .chip{font-size:12.5px;padding:6px 11px;color:var(--ink2)}
 .saychip .son{display:none}
 .saychip.on .son{display:inline}
 .saychip.on .soff{display:none}
@@ -1348,7 +1350,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
 const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-27.23 feel";
+const BUILD="2026-07-27.25 defaults";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3263,50 +3265,64 @@ function renderHistory(){
   const s=missionStats();
   if(!s){el.innerHTML=`<p class="mhempty">Nothing here yet. Tap <b>End my day</b> on the Today screen and this fills in &mdash; days completed, streaks, and how often you close all three rings.</p>`;return}
   const cell=(v,l)=>`<div class="mh"><strong>${v}</strong><em>${l}</em></div>`;
+  /* "perfect" quietly labels every other day imperfect. A count of three-ring days is
+     information; a percentage of perfection is a verdict. The streak is optional because
+     a number that can only be lost belongs to whoever chooses to keep it. */
+  const showStreak=!D.cfg.hideStreak;
   el.innerHTML=`<div class="mhgrid">
-      ${cell(s.streak,s.streak==1?"day streak":"day streak")}
-      ${cell(s.longest,"longest streak")}
-      ${cell(s.total,s.total==1?"mission day":"mission days")}
+      ${showStreak?cell(s.streak,"day streak"):""}
+      ${showStreak?cell(s.longest,"longest streak"):""}
+      ${cell(s.total,s.total==1?"day worked":"days worked")}
       ${cell(s.perfect,"all three rings")}
-      ${cell(s.rate+"%","of working days ended")}
-      ${cell(s.perfectRate+"%","were perfect")}
+      ${cell(s.rate+"%","of working days worked")}
+      ${cell(s.ended,s.ended==1?"day ended":"days ended")}
     </div>
     <div class="mhrow"><span>This week</span><b>${s.week}</b></div>
     <div class="mhrow"><span>This month</span><b>${s.month}</b></div>
     <div class="mhrow"><span>This year</span><b>${s.year}</b></div>
-    <p class="mhnote">Counting since ${fmt(parseD(s.first))}. Weekends don't break a streak.</p>`;
+    <p class="mhnote">Counting since ${fmt(parseD(s.first))}. A day counts when work was logged, whether or not you ended it here; weekends never break a streak.
+      <button class="b quiet" data-act="streakoff" style="margin-left:6px">${showStreak?"Hide streak":"Show streak"}</button></p>`;
+}
+/* Days on which work actually happened, whether or not he remembered to close the app.
+   A streak that breaks because he was too busy selling to tap "End my day" is measuring
+   obedience to the tool, not the job — and it would punish him hardest on his best days. */
+function workedDays(){
+  const w=new Set(Object.keys(D.days||{}));
+  A().forEach(a=>(a.events||[]).forEach(e=>{if(TOUCH.includes(e.kind))w.add(missionDay(e))}));
+  return w;
 }
 function missionStats(){
   const days=D.days||{},keys=Object.keys(days).sort();
-  if(!keys.length)return null;
+  const worked=workedDays();
+  const wkeys=[...worked].sort();
+  if(!wkeys.length)return null;
   const perfect=keys.filter(k=>ringsClosed(days[k])).length;
-  const first=parseD(keys[0]),t=today();
+  const first=parseD(wkeys[0]),t=today();
   /* how many working days have there been since you started? */
   let avail=0;
   for(let d=new Date(first.getTime());iso(d)<=iso(t);d=addDays(d,1))if(!isWeekend(d))avail++;
-  const onBiz=keys.filter(k=>!isWeekend(parseD(k))).length;
+  const onBiz=wkeys.filter(k=>!isWeekend(parseD(k))).length;
   /* a streak walks back through working days; a weekend is skipped, not failed */
   const walk=from=>{
     let n=0,d=new Date(from.getTime());
     for(let guard=0;guard<4000;guard++){
       const k=iso(d);
-      if(days[k]){n++;d=addDays(d,-1);continue}
+      if(worked.has(k)){n++;d=addDays(d,-1);continue}
       if(isWeekend(d)){d=addDays(d,-1);continue}
       break;
     }
     return n;
   };
   /* today still being open must not count against you */
-  const cur=walk(days[iso(t)]?t:addDays(t,-1));
+  const cur=walk(worked.has(iso(t))?t:addDays(t,-1));
   let longest=0;
-  keys.forEach(k=>{longest=Math.max(longest,walk(parseD(k)))});
-  const since=(from)=>keys.filter(k=>k>=iso(from)).length;
+  wkeys.forEach(k=>{longest=Math.max(longest,walk(parseD(k)))});
+  const since=(from)=>wkeys.filter(k=>k>=iso(from)).length;
   let wk=new Date(t.getTime());while(wk.getDay()!=1)wk=addDays(wk,-1);
   const mo=new Date(t.getFullYear(),t.getMonth(),1),yr=new Date(t.getFullYear(),0,1);
-  return {total:keys.length,perfect,
+  return {total:wkeys.length,ended:keys.length,perfect,
     rate:avail?Math.round(onBiz/avail*100):0,
-    perfectRate:keys.length?Math.round(perfect/keys.length*100):0,
-    streak:cur,longest,week:since(wk),month:since(mo),year:since(yr),first:keys[0]};
+    streak:cur,longest,week:since(wk),month:since(mo),year:since(yr),first:wkeys[0]};
 }
 
 /* ---------- ending the day ---------- */
@@ -7301,6 +7317,15 @@ function wireDate(id){
 }
 const dateOf=id=>dateVals[id]||"";
 const timeOf=id=>timeVals[id]||"";
+/* Setting a date field's text does NOT set the value the save reads — dateVals does, and
+   only the field's own input handler writes it. Preset by typing a form the parser knows
+   and letting the real code path resolve it, so what's shown and what's saved agree. */
+function presetDate(id,isoDate){
+  const t=$("#"+id);if(!t||!isoDate)return;
+  const d=parseD(isoDate);
+  t.value=(d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2);
+  t.dispatchEvent(new Event("input"));
+}
 function seedDate(id,date,at){
   dateVals[id]=date||"";timeVals[id]=at||"";
   const tw=$("#"+id+"_tw"),tl=$("#"+id+"_tl"),tin=$("#"+id+"_time");
@@ -7378,21 +7403,41 @@ function editNextSheet(nid){
 /* The moment a promise is made is the moment to capture it — walking out of the building,
    not that evening from memory. This is the only door that files into Follow-ups
    deliberately; everything else infers the kind from what you typed or said. */
+/* The words he actually uses, ranked by how often he has used them. Nothing invented:
+   an empty book shows no chips, and the row disappears rather than suggesting anything
+   Bellwether made up. Turns "type it out" into "scan and adjust". */
+function commonWhys(kind,n){
+  const seen={};
+  A().forEach(a=>(a.next||[]).forEach(x=>{
+    if(kind&&(x.kind||"call")!==kind)return;
+    const w=String(x.why||"").trim();
+    if(w.length<3||w.length>42)return;
+    seen[w]=(seen[w]||0)+1;
+  }));
+  return Object.keys(seen).sort((x,y)=>seen[y]-seen[x]||x.localeCompare(y)).slice(0,n||4);
+}
+const whyChips=(kind,into)=>{
+  const list=commonWhys(kind,4);
+  return list.length?`<div class="chips whychips">${list.map(w=>
+    `<button class="chip" data-usewhy="${esc(w)}" data-into="${into}">${esc(w)}</button>`).join("")}</div>`:"";
+};
 function oweSheet(a){
   if(!a)return;
   openSheet(`<h3>What do you owe ${esc(a.name)}?</h3>
     <div class="sub">It lands in Follow-ups and rides with you until it's done.</div>
     <label class="f">The promise<input class="t" id="owWhat" placeholder="Send the census template"></label>
+    ${whyChips("follow","owWhat")}
     <label class="f">By when</label>${dateField("owWhen","tomorrow, friday, 2 days")}
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button>
       <button class="b pri" data-act="saveowe" data-id="${a.id}">Add to follow-ups</button></div>`);
   wireDate("owWhen");
-  const w=$("#owWhen");if(w&&!w.value)w.value=fmt(parseD(isoBiz(today(),2)));
+  presetDate("owWhen",isoBiz(today(),2));
   setTimeout(()=>$("#owWhat").focus(),90);
 }
 function addNextSheet(){
   openSheet(`<h3>Next action</h3><div class="sub">Owned by this account. It cannot float away.</div>
     <label class="f">What<input class="t" id="anWhy" placeholder="Send the proposal"></label>
+    ${whyChips("","anWhy")}
     <label class="f">When</label>${dateField("anWhen","friday, the 28th, 3 weeks")}
     <div class="chips" id="anKind">${[["call","Call"],["visit","Drop-in"],["meet","Meeting"],["follow","Follow-up"]].map(([v,l],i)=>`<button class="chip${i==0?" on":""}" data-ak="${v}">${l}</button>`).join("")}</div>
     <div class="sa"><button class="b quiet" data-act="close">Cancel</button><button class="b pri" data-act="saveaction">Add</button></div>`);
@@ -7743,6 +7788,14 @@ tap("build",()=>toast("Build "+BUILD+" · "+A().length+" accounts"));
 tap("thread",t=>threadSheet(t.dataset.thread));
 /* dispatch is by attribute name: a control must carry a registered key (or data-act) or
    the delegated handler never sees it. This one shipped without either and did nothing. */
+/* filling the field through its own input event keeps the kind classifier and the
+   date parser working exactly as if he had typed it */
+tap("usewhy",t=>{
+  const el=$("#"+t.dataset.into);if(!el)return;
+  el.value=t.dataset.usewhy;
+  el.dispatchEvent(new Event("input"));
+  el.focus();
+});
 tap("delev",t=>{
   const acc=acct(t.dataset.acct);if(!acc)return;
   const i=+t.dataset.delev;
@@ -8486,6 +8539,8 @@ document.addEventListener("click",async e=>{
       commit("Owed: "+what+" by "+fmt(parseD(when)),()=>restoreAcct(was));
       break;
     }
+    case"streakoff":D.cfg.hideStreak=!D.cfg.hideStreak;save();renderHistory();
+      toast(D.cfg.hideStreak?"Streak hidden. The work still counts.":"Streak shown.");break;
     case"geocode":geocodeBook();break;
     case"routesheet":deckRouteSheet();break;
     case"routego":closeSheet();routeGo();break;
