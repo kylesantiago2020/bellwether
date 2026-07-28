@@ -1354,8 +1354,15 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    thousand. A flat lower number would waste space on a small book, so trim on total bytes
    instead: a small territory still keeps five, a large one keeps two. Never drops the last
    one — a single recent backup is the whole point. */
-const BAKBUDGET=2.2*1024*1024;
-const BUILD="2026-07-28.32 patient";
+/* 2.2 MB was chosen when backups shared the localStorage quota with the book, and by
+   July 2026 the book itself had grown past it — the trim only ever stops at one backup,
+   so the budget had quietly become a cap of exactly one restore point. IndexedDB has
+   room this doesn't need to fight over. 24 MB leaves MAXBAK (5) as the real limit even
+   after the master workbook lands, while still being a ceiling rather than no ceiling:
+   an unbounded pile could fill the origin quota and start refusing saves of the book,
+   which is the failure this whole layer exists to prevent. */
+const BAKBUDGET=24*1024*1024;
+const BUILD="2026-07-28.33 room";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
