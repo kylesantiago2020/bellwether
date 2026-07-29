@@ -1446,6 +1446,13 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <p class="note">Only as good as what you've captured &mdash; every prospect you tag makes this truer.</p>
   <div id="rivals"></div>
 
+  <h2 style="margin-top:26px">Your division</h2>
+  <p class="note">The headcount range you actually sell to. Anything outside it is filed under Major Accounts and stays out of your day unless you deliberately choose that play. Businesses with no headcount on file are treated as unknown, not oversized, so they stay in.</p>
+  <div class="two">
+    <label class="f">Smallest<input class="t" id="bandlo" inputmode="numeric" placeholder="1"></label>
+    <label class="f">Largest<input class="t" id="bandhi" inputmode="numeric" placeholder="50"></label>
+  </div>
+
   <h2 style="margin-top:26px">What a relationship is worth</h2>
   <p class="note">CPAs, banks and brokers never buy payroll, so their deal value is zero and always will be &mdash; they pay in referrals. This is the only place Bellwether guesses at that, and it uses the guess to decide whether a CPA visit beats a drop-in. Change it as you learn.</p>
   <label class="f">A good referral relationship, per year<input class="t" id="coiv" inputmode="numeric" placeholder="12000"></label>
@@ -1610,7 +1617,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.63 give the height back";
+const BUILD="2026-07-29.64 my division";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5082,7 +5089,13 @@ const PLAYS=[
  ["coi","Centers of Influence","CPAs, banks and brokers who refer",0.7],
  ["warm","Warm Follow-ups","conversations already started",0.7],
  ["cold","Cold Territory","businesses nobody has met yet",0.4],
- ["expand","Client Expansion","add-ons and referrals inside the base",0.4]];
+ ["expand","Client Expansion","add-ons and referrals inside the base",0.4],
+ /* Not a play so much as a place he does not work. His division is small business; an
+    account over the band belongs to Major Accounts, and a day spent hunting those is a day
+    spent on somebody else's quota. It is a play rather than a filter so that it stays
+    VISIBLE and reachable — he can raise it and get a deliberate big-fish day — but it is
+    weighted below everything and kept out of the fill unless it is the headline. */
+ ["major","Major Accounts","above your division's headcount band",0.2]];
 const PLAYNAME=id=>((PLAYS.find(p=>p[0]===id)||[])[1]||id);
 const PLAYWHO=id=>((PLAYS.find(p=>p[0]===id)||[])[2]||"");
 /* priorities, not quotas — his words. Editable, and the engine expresses them against
@@ -5109,12 +5122,27 @@ const listWeight=a=>{
    valuation, and it is his to change as he learns what a good relationship actually pays. */
 const COIDEF=12000;
 const coiValue=()=>{const v=D.cfg&&D.cfg.coiValue;return v===undefined||v===""?COIDEF:Math.max(0,+v||0)};
+/* His division, in employees. Anything outside it is somebody else's account. */
+const BANDLO=1,BANDHI=50;
+const bandLo=()=>{const v=D.cfg&&D.cfg.bandLo;return v===undefined||v===""?BANDLO:Math.max(0,+v||0)};
+const bandHi=()=>{const v=D.cfg&&D.cfg.bandHi;return v===undefined||v===""?BANDHI:Math.max(0,+v||0)};
+/* An account with no headcount on file is UNKNOWN, not oversized — exiling every business
+   nobody has counted yet would empty his day, and the 5500 import's numbers are plan
+   participants, which already run low. Unknown stays in. */
+const inBand=a=>{
+  const e=+((a&&a.emps)||0);if(!e)return true;
+  const hi=bandHi();
+  return e>=bandLo()&&(!hi||e<=hi);
+};
 const peoFit=a=>(+a.emps||0)>=10||(+a.medEmps||0)>0||(+a.planAssets||0)>0;
 const touchedEver=a=>(a.events||[]).some(e=>TOUCH.includes(e.kind));
 function playsRaw(a){
   if(!a)return [];
   if(a.type==="cpa"||a.type==="bank"||a.type==="partner")return ["coi"];
   if(a.type==="client")return ["expand"];
+  /* supersedes everything else, the way client and COI do — a 150-employee Paychex account
+     is not a competitor takeaway he should be shown, it is Major Accounts' */
+  if(!inBand(a))return ["major"];
   const out=[];
   /* a prospect recorded as already on ADP is not a takeaway — isRival, not merely known */
   if(isRival(providerOf(a)))out.push("takeaway");
@@ -5252,7 +5280,8 @@ const PLAYWIN={
  coi:["Introduce yourself to one CPA or branch","Leave one card with a name on it"],
  warm:["Advance one conversation to a next step","Close out one thing you owe"],
  cold:["Meet two owners you have never met","Get one decision-maker's name"],
- expand:["Ask one client for a referral","Surface one add-on that fits"]};
+ expand:["Ask one client for a referral","Surface one add-on that fits"],
+ major:["Confirm it is actually yours to work","Hand it over cleanly if it isn't"]};
 /* one set of reasons, written once, so tomorrow's card and today's panel can never
    disagree about why a play was chosen */
 function missionReasons(plan,m,when){
@@ -5316,7 +5345,12 @@ function missionPlanRaw(d){
   const held=new Set(promises.map(r=>r.a.id));
   const take=(kind,cap)=>{
     const out=[],want=m?m.id:null;
-    const pool=(kind==="call"?cands.calls:cands.stops).filter(c=>!held.has(c.a.id));
+    /* the low weight alone would not hold them back: an account with 150 employees carries
+       an enormous deal value, so it would still win the best-of-the-rest fill on nearly
+       every day. Out-of-band accounts appear only when Major Accounts IS the day. */
+    const pool=(kind==="call"?cands.calls:cands.stops)
+      .filter(c=>!held.has(c.a.id))
+      .filter(c=>want==="major"||c.main!=="major");
     pool.forEach(c=>{if(out.length<cap&&want&&c.plays.indexOf(want)>=0){out.push(c);held.add(c.a.id)}});
     pool.forEach(c=>{if(out.length<cap&&!held.has(c.a.id)){out.push(c);held.add(c.a.id)}});
     return out;
@@ -8153,6 +8187,8 @@ function renderSetup(){
   renderSyncLine();
   renderRivals();renderListW();
   set("coiv",(D.cfg.coiValue===undefined||D.cfg.coiValue==="")?"":D.cfg.coiValue);
+  set("bandlo",(D.cfg.bandLo===undefined||D.cfg.bandLo==="")?"":D.cfg.bandLo);
+  set("bandhi",(D.cfg.bandHi===undefined||D.cfg.bandHi==="")?"":D.cfg.bandHi);
   paintSetPages();
   $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
@@ -8189,6 +8225,8 @@ function saveSetup(quiet){
     fy:g("fy"),qEnd:g("qEnd"),goal:+g("goal")||0,rgoal:+g("rgoal")||0,
     /* blank means "use the default", not "a referral is worth nothing" */
     coiValue:String(g("coiv")).trim()===""?undefined:Math.max(0,+g("coiv")||0),
+    bandLo:String(g("bandlo")).trim()===""?undefined:Math.max(0,+g("bandlo")||0),
+    bandHi:String(g("bandhi")).trim()===""?undefined:Math.max(0,+g("bandhi")||0),
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
     me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
     voiceUrl:g("voiceUrl").trim().replace(/\/+$/,""),voiceKey:g("voiceKey").trim(),
