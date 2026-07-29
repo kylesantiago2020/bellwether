@@ -44,8 +44,8 @@ body[data-s="play"]{--ac:#8A6224;--acs:#F6EEDF}
 body.dark{--paper:#16181B;--card:#1E2125;--sunk:#212429;--ink:#EDEAE3;--ink2:#A5A69F;--ink3:#8A8B84;
 --rule:#2A2D31;--rule2:#3A3D42;--amb:#C9A24C;--ambsoft:#332A18;--grn:#7FA98A;--grnsoft:#1B2620;
 --red:#D87862;--redsoft:#331E19;--ac:#C9A24C;--acs:#2A2519;--fill:#EDEAE3;--navbg:rgba(22,24,27,.94)}
-body.dark .b.pri,body.dark .npri,body.dark .runbtn,body.dark .fab,body.dark .dmseg button.on,
-body.dark .cb.talked,body.dark .opt.on,body.dark .chip.on{color:#16181B}
+body.dark .b.pri,body.dark .npri,body.dark .runbtn,body.dark .fab,body.dark .dtop,body.dark .dmseg button.on,
+body.dark .mgpick button.on,body.dark .cb.talked,body.dark .opt.on,body.dark .chip.on{color:#16181B}
 body.dark[data-s="today"]{--ac:#7A7EEC;--acs:#252A50}
 body.dark[data-s="terr"]{--ac:#E08150;--acs:#3A2317}
 body.dark[data-s="review"]{--ac:#2BB0A9;--acs:#0F332F}
@@ -1610,7 +1610,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.61 arrows and a lid";
+const BUILD="2026-07-29.62 readable in the dark";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
