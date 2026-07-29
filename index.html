@@ -1310,6 +1310,9 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
       <input class="t" id="implist" autocomplete="off" placeholder="leave blank for none"></label>
     <div id="batches"></div>
   <div id="dupereport"></div>
+    <label class="f" style="margin-top:12px">Who do they run payroll with?
+      <s class="hint">optional &mdash; a competitor list knows this about every row</s></label>
+    <div class="chips" id="ipro"></div>
     <div class="chips" id="ityp"><button class="chip on" data-imptype="client">Clients</button><button class="chip" data-imptype="prospect">Competitor accts</button><button class="chip" data-imptype="cpa">CPAs</button><button class="chip" data-imptype="bank">Banks</button><button class="chip" data-imptype="partner">Partners</button></div>
     <textarea class="paste" id="pastebox" placeholder="Account Name	Contact	Phone	Email	Employees	Product	Pay Frequency	City"></textarea>
     <div class="sa" style="justify-content:flex-start;margin-top:12px">
@@ -1561,7 +1564,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.51 reachable";
+const BUILD="2026-07-29.52 tag the file";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -7428,6 +7431,16 @@ function terrList(){
   if(terrList_){const L=listById(terrList_);if(L&&L.sort)return out.sort(L.sort)}
   return out;
 }
+/* A competitor list knows one thing about every row that no column in it states: whose
+   payroll they are on. Recording that at paste time is the difference between 2,000 names
+   and 2,000 takeaways. Blank-fills like every other imported value — it never overwrites
+   an answer he gave himself, and a disagreement lands in the conflict report. */
+let impProv="";
+function renderImpProv(){
+  const el=$("#ipro");if(!el)return;
+  el.innerHTML=[["","Don't set"]].concat(PROVIDERS.filter(v=>v!=="Unknown").map(v=>[v,v]))
+    .map(([v,l])=>`<button class="chip${impProv===v?" on":""}" data-impprov="${esc(v)}">${esc(l)}</button>`).join("");
+}
 function renderTerritory(){
   const searching=!!(norm(terrQ)||digits(terrQ).length>=3);
   /* while searching, the filters are irrelevant — the rail goes away entirely rather than
@@ -7474,6 +7487,7 @@ function renderTerritory(){
     wrong:["Nothing flagged.","When a number rings dead or the details are wrong, flag it from the call card. It waits here until you fix it, then goes straight back to work."],
     closed:["Nothing marked closed.","Businesses you've confirmed are gone. They stop taking up your day but keep their history."],
     dormant:["Nothing parked, nothing lost.","A clean book. When something goes quiet, park it here — nothing is ever deleted."]};
+  renderImpProv();
   $("#terrlist").innerHTML=list.length?list.slice(0,cap).map(a=>{
     const lt=lastTouch(a);
     /* the reason this account is on this list, in its own words — "18 ee · 62% enrolled"
@@ -7631,7 +7645,7 @@ function bundleFrom(txt){
   if(/essential/.test(t))return "Essential";
   return "";
 }
-function doImport(txt,type,listName){
+function doImport(txt,type,listName,provider){
   const rows=parseRows(txt);
   if(!rows||!rows.length){toast("Couldn't read that — first row must be headers.");return}
   const by={};A().forEach(a=>{if(a.name)by[mergeKey(a.name)]=a});
@@ -7673,6 +7687,12 @@ function doImport(txt,type,listName){
       a=blankAcct({name:r.name,type});if(isRel(a))a.rel="notmet";
       D.accounts.push(a);by[mergeKey(r.name)]=a;add++;fresh.push(a);dix.push(dupeKey(a))}else upd++;
     take(a,"emps",r.emps,()=>a.emps,v=>{a.emps=v});
+    /* the file's own fact about every row in it */
+    if(provider){
+      if(!a.provider){a.provider=provider;
+        logEvent(a,"note","payroll provider: "+provider+" (from the "+(tag||"imported")+" file)")}
+      else if(a.provider!==provider)flag(a,"provider",a.provider,provider);
+    }
     /* The LAR export says WHY a client left, and 273 of them say the business no longer
        exists. That is exactly what the Confirmed-closed flag means, so it is applied here —
        a closed business must not be scheduled for a first call. Any other reason (price,
@@ -7751,7 +7771,7 @@ function doImport(txt,type,listName){
     : "";
   /* Withholding a value silently is the same failure as overwriting one — he would
      never know the file disagreed. Say what was kept and let him decide. */
-  const FLBL={emps:"employees",city:"town",addr:"street",industry:"industry",
+  const FLBL={emps:"employees",city:"town",addr:"street",industry:"industry",provider:"payroll provider",
     bundle:"bundle",freq:"pay frequency",name:"contact",phone:"phone",email:"email"};
   const clashHtml=clash.length
     ? `<div class="dupe" style="margin-top:14px"><b>${clash.length} value${clash.length==1?"":"s"} across ${new Set(clash.map(c=>c.a.id)).size} account${new Set(clash.map(c=>c.a.id)).size==1?"":"s"} disagreed with your book &mdash; kept your version.</b>
@@ -8905,6 +8925,7 @@ tap("mergego",()=>{
   if(mgQueue)mergeNext();else mergeClose();
 });
 tap("mergeq",()=>mergeQueueOpen());
+tap("impprov",t=>{impProv=t.dataset.impprov||"";renderImpProv()});
 tap("tmrw",()=>previewView());
 tap("previewx",()=>previewClose());
 tap("prov",t=>{
@@ -9909,7 +9930,7 @@ $("#doimp").addEventListener("click",async()=>{
      doImport has no undo and a thousand new accounts cannot be unpicked by hand. One
      restore point before the paste makes the whole import reversible from Diagnostics. */
   if(A().length)await makeBackup("before import");
-  doImport($("#pastebox").value,type,el?el.value:"");
+  doImport($("#pastebox").value,type,el?el.value:"",impProv);
 });
 $("#pickfile").addEventListener("click",()=>{
   const i=document.createElement("input");i.type="file";i.accept=".csv,.tsv,.txt";
