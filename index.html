@@ -1610,7 +1610,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.62 readable in the dark";
+const BUILD="2026-07-29.63 give the height back";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5973,14 +5973,21 @@ function deckCardEls(){const d=$("#deck");return d?[...d.querySelectorAll(".cc")
 function deckCur(){const d=$("#deck");return d&&d._deck?d._deck[Math.min(dI,d._deck.length-1)]:null}
 function renderDeckActions(c){
   const el=$("#deckact");if(!el)return;
+  /* The deck's height is computed by subtracting this row's height from the viewport, once,
+     in deckSize. #deckact:empty already collapses to nothing — but nobody remeasured, so
+     stepping off the huddle card left the deck still sized as though "Start the huddle"
+     were under it, and the freed strip stayed blank. */
+  const was=el.offsetHeight;
   const acts=(c&&DACT[c.type])||[];
   if(acts.length){
     el.style.gridTemplateColumns=`repeat(${acts.length},1fr)`;
     el.innerHTML=acts.map(([id,lab,pri])=>`<button class="cb${pri?" talked":""}" data-deckact="${id}">${lab}</button>`).join("");
+    if(el.offsetHeight!==was)deckSize();
     return;
   }
   /* work cards are swiped and flipped — no standing instructions under the deck */
   el.innerHTML="";
+  if(el.offsetHeight!==was)deckSize();
 }
 /* Which logged touches belong to which segment. Progress is counted from the event log,
    so the ring can only ever fill on work that actually happened. */
