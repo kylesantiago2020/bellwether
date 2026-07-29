@@ -1618,7 +1618,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.68 hold still";
+const BUILD="2026-07-30.69 the route is the day";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4169,6 +4169,13 @@ function anchorOn(){
   const an=D.cfg.anchor;
   return (an&&an.on===iso(today())&&an.town)?an:null;   /* expires by itself */
 }
+/* "Medfield" and "medfield" are the same town. Everything that COMPARED towns already
+   lowercased, but everything that GROUPED them keyed on the raw string — so one town became
+   two buckets. Visibly that duplicated a name on the route card; invisibly it split the
+   nearby-town counts and the anchor suggestions, so a town with nine open accounts could
+   look like two towns with four and five and lose to somewhere smaller. */
+const townKey=s=>String(s||"").trim().toLowerCase();
+const townLabel=s=>String(s||"").trim().toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
 function townTier(city,town){
   const a=String(city||"").trim().toLowerCase(),b=String(town||"").trim().toLowerCase();
   if(!a||!b)return 2;
@@ -4183,8 +4190,8 @@ function pastCutoff(at){
 /* towns worth offering: anywhere he actually has open accounts */
 function anchorTowns(){
   const c={};
-  A().forEach(a=>{if(isOpen(a)&&a.city)c[a.city.trim()]=(c[a.city.trim()]||0)+1});
-  return Object.keys(c).filter(t=>c[t]>=3).sort((x,y)=>c[y]-c[x]).slice(0,12);
+  A().forEach(a=>{if(isOpen(a)&&a.city)c[townKey(a.city)]=(c[townKey(a.city)]||0)+1});
+  return Object.keys(c).filter(t=>c[t]>=3).sort((x,y)=>c[y]-c[x]).slice(0,12).map(townLabel);
 }
 function anchorBar(){
   const an=anchorOn();
@@ -4288,9 +4295,9 @@ function nearbyData(rows){
   const byTown={};
   /* "in play" for a trip means open, not un-won — a client you closed is the best stop on the street */
   A().forEach(a=>{if(!isOpen(a)||!workable(a)||!a.city||inPlay.has(a.id))return;
-    (byTown[a.city.trim()]=byTown[a.city.trim()]||[]).push(a)});
+    (byTown[townKey(a.city)]=byTown[townKey(a.city)]||[]).push(a)});
   const forced=anchorOn();
-  let town=forced?forced.town:(anchorTown&&anchorTown.city&&byTown[anchorTown.city.trim()]?anchorTown.city.trim():null);
+  let town=forced?townKey(forced.town):(anchorTown&&anchorTown.city&&byTown[townKey(anchorTown.city)]?townKey(anchorTown.city):null);
   if(forced&&!byTown[town]){
     /* nothing left in the town itself — widen to the ring around it */
     const ring=Object.keys(byTown).filter(t=>townTier(t,town)===1)
@@ -5471,7 +5478,7 @@ function routeGo(){
 }
 function routeFace(c){
   const stops=routeStops(null);
-  const towns=[...new Set(stops.map(a=>a.city).filter(Boolean))];
+  const towns=[...new Set(stops.map(a=>townKey(a.city)).filter(Boolean))].map(townLabel);
   const timed=todayRows(activeD()).filter(r=>r.block==="meet"&&rowAt(r)).length;
   const shown=stops.slice(0,4);
   return `<div class="cc" data-key="${esc(c.key)}" role="group" aria-label="Today's route">
@@ -5487,7 +5494,7 @@ function routeFace(c){
 }
 function deckRouteSheet(){
   const stops=routeStops(null);
-  const towns=[...new Set(stops.map(a=>a.city).filter(Boolean))];
+  const towns=[...new Set(stops.map(a=>townKey(a.city)).filter(Boolean))].map(townLabel);
   openSheet(`<h3>${routeStarted()?"Route — live":"Today's route"}</h3>
     <div class="sub">${stops.length} remaining${towns.length?" · "+esc(towns.join(" · ")):""} · touches so far ${touchesOn(activeD())}</div>
     <div class="rstops" style="max-width:none;margin-top:14px">${stops.slice(0,8).map((a,i)=>`<div data-open="${a.id}"><s>${i+1}</s>${esc(a.name)}<em>${mapSure(a)?esc(a.city||""):"no address &rsaquo;"}</em></div>`).join("")||'<div style="color:var(--ink3)">Nothing left in the field — the day moved on.</div>'}
@@ -8528,15 +8535,29 @@ async function geocodeBook(){
          m?m+" not found":"",
          e?e+" couldn't be reached":""].filter(Boolean).join(" · ")+".");
 }
+/* The stops the engine actually dealt: what he booked himself, plus what the mission chose.
+   routeStops used to build its own pool from every account carrying a due meet/visit date,
+   which is the backlog — 144 of them against a day of 21, and 10 of those actually sent to
+   Maps. Three numbers for one day. The route card was the last place in the app still
+   presenting the backlog as a plan. */
+function dayStopIds(){
+  const plan=missionPlan(activeD()),out=new Set();
+  plan.promises.forEach(r=>{if(r.block=="meet"||r.block=="visit")out.add(r.a.id)});
+  plan.stops.forEach(c=>out.add(c.a.id));
+  return out;
+}
 function routeStops(ids){
   const picked=ids&&ids.length?allLists().filter(L=>ids.indexOf(L.id)>=0):null;
+  const dayIds=picked?null:dayStopIds();
   const pool=A().filter(a=>{
     if(!isOpen(a)||!workable(a)||!canMap(a))return false;
     if(a.type=="bank")return false;              /* branches run through the huddle */
     if(lastTouch(a)==iso(today()))return false;
     /* rows carry meet/visit blocks — "field" was a block that never existed, so the
        day route silently returned empty. Real bug, fixed while unifying with the deck. */
-    return picked?picked.some(L=>inList(a,L)):todayRows(activeD()).some(r=>r.a.id==a.id&&(r.block=="meet"||r.block=="visit"));
+    /* a chosen list still overrides the day — that is what working a list means */
+    if(picked)return picked.some(L=>inList(a,L));
+    return dayIds.has(a.id);
   });
   if(!pool.length)return [];
   /* With coordinates on hand the drive is ordered by actual distance. Town-chaining
