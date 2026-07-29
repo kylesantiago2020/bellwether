@@ -1580,7 +1580,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.57 once, not twelve times";
+const BUILD="2026-07-29.58 which way";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -6064,6 +6064,24 @@ const SWIPE={
  follow:{r:[["done","Done"],["debrief","Debrief"]],  l:[["later","Later"],["skip","Skip today"]]},
  start :{r:[["begin","Begin the day"]],              l:null}};
 /* which verdict a given drag distance would land */
+/* THE AXIS LOCK. It is decided once per gesture and then obeyed until the finger lifts,
+   so deciding it too early is a decision you cannot take back. At an 8px threshold with a
+   plain bigger-of-the-two test, a thumb arcing up the screen very often registers a few
+   pixels of sideways drift FIRST — the gesture locks to horizontal, and every remaining
+   move is preventDefault()ed. The deck then refuses to page for the rest of that swipe and
+   the card feels like it is fighting you, which is exactly what he kept reporting while I
+   went looking in the stylesheet.
+   Horizontal now has to be both far enough AND clearly dominant before it takes a gesture.
+   Vertical only has to be bigger, because vertical is what the deck does by default — the
+   burden of proof belongs on the gesture that steals from it. Until either is satisfied the
+   gesture stays unlocked and untouched, so the browser scrolls natively in the meantime. */
+const SWIPEMIN=14,SWIPEBIAS=1.4,SWIPEMINV=8;
+function swipeAxis(dx,dy){
+  const ax=Math.abs(dx),ay=Math.abs(dy);
+  if(ax>=SWIPEMIN&&ax>ay*SWIPEBIAS)return "h";
+  if(ay>=SWIPEMINV&&ay>=ax)return "v";
+  return null;
+}
 function swipeTier(type,side,f){
   const lane=(SWIPE[type]||{})[side];
   if(!lane||f<TIER1)return null;
@@ -6098,7 +6116,7 @@ function wireSwipe(t){
     if(!el)return;
     const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
     if(Math.abs(dx)>8||Math.abs(dy)>8)movedAt=Date.now();   /* scrolling the briefing counts */
-    if(lock===null&&(Math.abs(dx)>8||Math.abs(dy)>8))lock=Math.abs(dx)>Math.abs(dy)?"h":"v";
+    if(lock===null)lock=swipeAxis(dx,dy);
     if(lock!=="h")return;
     e.preventDefault();swipedAt=Date.now();
     const side=dx>0?"r":"l",f=Math.abs(dx)/Math.max(1,t.clientWidth);
