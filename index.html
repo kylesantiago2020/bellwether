@@ -1618,7 +1618,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.66 unflip";
+const BUILD="2026-07-29.67 log from anywhere";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -7431,6 +7431,15 @@ function commitProposal(a,p){
 }
 
 /* ---------- account ---------- */
+/* What kind of touch a debrief opened from the account screen should assume: whatever the
+   account's soonest open action is, so logging a voicemail here completes the call it was
+   waiting on rather than leaving it open. Falls back to a call, which is what he is almost
+   always catching up on. */
+function logTarget(a){
+  const nx=openActions(a).slice().sort((x,y)=>String(x.date).localeCompare(String(y.date)))[0];
+  const k=nx&&DBSET[nx.kind]?nx.kind:"call";
+  return {kind:k,lead:nx?nx.id:""};
+}
 function renderAccount(){
   const a=acct(curId);if(!a){go("today");return}
   const ph=(a.contact||{}).phone||"",em=(a.contact||{}).email||"";
@@ -7445,6 +7454,8 @@ function renderAccount(){
     ${em?`<a class="b" href="mailto:${esc(em)}">Email</a>`:""}
     ${canMap(a)?`<a class="b" href="${mapURL(a)}" target="_blank" rel="noopener">Navigate</a>`:""}
     <button class="b" id="saybtn" data-say="${a.id}">Listen</button>
+    ${(()=>{const t=logTarget(a);return `<button class="b pri" data-logwhat="${a.id}"
+      data-kind="${t.kind}" data-lead="${esc(t.lead)}">Log what happened</button>`})()}
     ${(!ph&&!em)?`<button class="b pri" data-act="editacct">Add contact info</button>`:`<button class="b quiet" data-act="editacct">Edit</button>`}
   </div>`;
 
