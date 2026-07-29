@@ -505,6 +505,18 @@ body.flipped .fab{opacity:0;pointer-events:none}
    toTop() never moved it, and swiping back up through twenty cards is not a gesture
    anyone makes in a car. Mirrors the FAB's lane on the left so both are thumb-reachable,
    and only appears once he has actually scrolled away from the top. */
+/* Three builds of gesture work later, his own suggestion is the right one: give the deck
+   a control that cannot be misread. A swipe has to guess what a thumb meant; a button does
+   not. The gesture still works and is still the fast path — this is the one that always
+   works, including with a phone in one hand and a folder in the other. */
+.dstep{position:fixed;right:18px;bottom:calc(212px + env(safe-area-inset-bottom));display:none;
+  flex-direction:column;gap:8px;z-index:41}
+body.deckon .dstep{display:flex}
+body.flipped .dstep{opacity:0;pointer-events:none}
+.dstep button{width:42px;height:42px;border-radius:21px;border:1px solid var(--rule2);
+  background:var(--card);color:var(--ink);font-size:17px;line-height:0;font-family:inherit;
+  opacity:.94;cursor:pointer}
+.dstep button:disabled{opacity:.3}
 .dtop{position:fixed;left:18px;bottom:calc(160px + env(safe-area-inset-bottom));height:44px;padding:0 18px;border-radius:22px;background:var(--fill);color:#fff;border:none;font-size:13px;z-index:41;opacity:0;pointer-events:none;transition:opacity .16s ease}
 body.deckon .dtop.on{opacity:.94;pointer-events:auto}
 body.flipped .dtop{opacity:0;pointer-events:none}
@@ -888,6 +900,16 @@ body.deckon #clock{margin:0 0 4px}
    "what should I do today" rather than "what is due". */
 #mission{margin:14px 0 6px}
 #mission.off{display:none}
+.msnbar{display:flex;align-items:center;gap:10px;width:100%;background:var(--card);
+  border:1px solid var(--rule2);border-radius:13px;padding:11px 14px;font-family:inherit;
+  text-align:left;color:var(--ink);cursor:pointer}
+.msnbar .eyeb{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink3);flex:none}
+.msnbar b{font-weight:500;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msnbar s{text-decoration:none;color:var(--ink3);font-size:15px;line-height:1;flex:none}
+.msn .lid{position:absolute;top:12px;right:13px;background:none;border:0;color:var(--ink3);
+  font-size:15px;line-height:1;padding:4px 6px;font-family:inherit;cursor:pointer}
+.msn{position:relative}
 .msn{background:var(--card);border:1px solid var(--rule2);border-radius:13px;padding:14px 15px}
 .msn .eyeb{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
 .msn h3{font-family:'Instrument Serif',serif;font-size:23px;font-weight:400;margin:3px 0 2px;line-height:1.15}
@@ -1555,6 +1577,10 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 
 <button class="fab" id="fab" aria-label="New account">+</button>
 <button class="dtop" id="dtop" data-decktop="1" aria-label="Back to the top of the day">&uarr; Top</button>
+<div class="dstep" id="dstep">
+  <button data-deckstep="-1" aria-label="Previous card">&uarr;</button>
+  <button data-deckstep="1" aria-label="Next card">&darr;</button>
+</div>
 <nav class="nav">
   <button class="nb on" data-go="today"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Today</span><span class="badge" id="bdg" style="display:none">0</span></button>
   <button class="nb" data-go="terr"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h7M8 11h7"/></svg><span>Territory</span></button>
@@ -1584,7 +1610,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.60 not a superset";
+const BUILD="2026-07-29.61 arrows and a lid";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5256,10 +5282,20 @@ function missionHtml(d){
   const el=$("#mission");if(!el)return;
   const plan=missionPlan(d),m=plan.mission;
   if(!m||!isActive(d)){el.className="off";el.innerHTML="";return}
+  /* It is the first thing on the screen every morning and he only needs the whole of it
+     once. Collapsed it keeps the answer and gives the deck back its height; the choice
+     persists, because a lid you have to close every day is not a lid. */
+  if(D.cfg.msnFold){
+    el.className="";
+    el.innerHTML=`<button class="msnbar" data-msnlid="1">
+      <span class="eyeb">mission</span><b>${esc(PLAYNAME(m.id))}</b><s>&#9662;</s></button>`;
+    return;
+  }
   const why=missionReasons(plan,m,"today");
   const win=PLAYWIN[m.id]||[];
   el.className="";
   el.innerHTML=`<div class="msn">
+    <button class="lid" data-msnlid="1" aria-label="Collapse">&#9652;</button>
     <div class="eyeb">today's mission</div>
     <h3>${esc(PLAYNAME(m.id))}</h3>
     <div class="who">${esc(PLAYWHO(m.id))}</div>
@@ -6010,6 +6046,28 @@ const deckTopBtn=on=>{const b=$("#dtop");if(b)b.classList.toggle("on",!!on)};
    straight back to it. Opening the app should open the DAY, not resume a scroll
    position from an hour ago. segPos is deliberately left alone: the bubble row's
    per-segment memory is a different promise and still holds. */
+/* one card at a time, from wherever the deck actually is — not from a remembered index
+   that a scroll may have left behind */
+function deckStep(dir){
+  const d=$("#deck");if(!d||!d._deck||!d._deck.length)return;
+  const els=deckCardEls(),mid=d.scrollTop+d.clientHeight/2;
+  let at=dI;
+  for(let i=0;i<els.length;i++){
+    const e=els[i];if(!e)continue;
+    if(e.offsetTop<=mid&&e.offsetTop+e.offsetHeight>mid){at=i;break}
+  }
+  const nx=Math.max(0,Math.min(d._deck.length-1,at+dir));
+  if(nx===at&&at===dI)return;
+  if(nx>=d._shownN){deckKey=d._deck[nx].key;renderDeck();return}
+  deckFocus(nx,true);
+  paintStep();
+}
+function paintStep(){
+  const d=$("#deck"),box=$("#dstep");if(!box||!d||!d._deck)return;
+  const bs=box.querySelectorAll("button");
+  if(bs[0])bs[0].disabled=dI<=0;
+  if(bs[1])bs[1].disabled=dI>=d._deck.length-1;
+}
 function deckTop(){
   deckKey=null;dI=0;
   const d=$("#deck");
@@ -6075,6 +6133,7 @@ function renderDeck(){
   renderBubbles(deck);
   deckFocus(fi,true);
   deckTopBtn(fi>0);
+  paintStep();
   deckSize();
   if(!deckBound){deckBound=true;wireDeck(el);
     window.addEventListener("resize",()=>{if(deckOn())deckSize()});
@@ -9069,7 +9128,9 @@ tap("dnc",t=>{
     ()=>{if(on)delete a.dnc;else a.dnc=true;if(sheetOpen())dqSheet(aid)});
 });
 tap("decktop",()=>deckTop());
+tap("deckstep",t=>deckStep(+t.dataset.deckstep||1));
 tap("recap",()=>recapView(activeISO()));
+tap("msnlid",()=>{D.cfg.msnFold=!D.cfg.msnFold;save();missionHtml(activeD());deckSize()});
 tap("setpage",t=>{setPage=t.dataset.setpage;paintSetPages();window.scrollTo(0,0)});
 tap("setback",()=>{setPage=null;paintSetPages();window.scrollTo(0,0)});
 tap("recapx",()=>recapClose());
