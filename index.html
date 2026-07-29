@@ -1561,7 +1561,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.50 tomorrow";
+const BUILD="2026-07-28.51 reachable";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3859,6 +3859,7 @@ function showDebrief(s,animate){
           <div class="edhint">Both optional. Skip them and the day still closes.</div>
         </div>
         <button class="threadchip" data-recap="1" style="margin-bottom:4px">Look back at today</button>
+        <button class="threadchip" data-tmrw="1" style="margin-bottom:4px">Preview tomorrow</button>
         <button class="edok" data-act="edclose">Done</button>
       </div>
     </div></div>`;
@@ -5155,6 +5156,7 @@ function missionHtml(d){
     <b>Why today</b><ul>${why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
     <b>What counts as a win</b><ul>${win.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
     <button class="swap" data-msnswap="1">Not today &mdash; try a different play</button>
+    <button class="swap" data-tmrw="1" style="margin-left:14px">Tomorrow &rsaquo;</button>
   </div>`;
 }
 function missionPlan(d){
@@ -5481,18 +5483,22 @@ function deckFace(c){
     const nx=nextWorkday(activeD());
     const plan=missionPlan(nx),m=plan.mission;
     const late=new Date().getHours()>=PREPHOUR;
-    const why=m?missionReasons(plan,m,"tomorrow").slice(0,3):[];
-    return `<div class="cc" ${K} role="group" aria-label="Tomorrow">
+    /* Two reasons and four lines of shape. The card is one viewport like every other card,
+       and the first version stacked enough into it that the button fell below its own fold —
+       a control you have to scroll a card to find is a control that does not exist. */
+    const why=m?missionReasons(plan,m,"tomorrow").slice(0,2):[];
+    return `<div class="cc" ${K} data-tmrw="1" role="group" aria-label="Tomorrow">
       <div class="cwhy"><span>${esc(fmtFull(nx))}</span></div>
       <div class="co" style="font-size:20px">${late?"Ready for tomorrow?":"Tomorrow"}</div>
       ${m?`<div class="tmmission">${esc(PLAYNAME(m.id))}</div>
+        <button class="threadchip" data-tmrw="1" style="margin:6px 0 2px">Preview tomorrow &rsaquo;</button>
         <div class="tmsec">Why tomorrow</div>
         <ul class="tmlist">${why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
         <div class="tmsec">The plan</div>
-        <ul class="tmlist plain">${missionShape(plan).map(([ic,t])=>
+        <ul class="tmlist plain">${missionShape(plan).slice(0,4).map(([ic,t])=>
           `<li><i>${ic}</i>${esc(t)}</li>`).join("")}</ul>`
-       :`<div class="why">Nothing lined up yet &mdash; tomorrow builds itself overnight.</div>`}
-      <button class="threadchip" data-tmrw="1">Preview &rsaquo;</button>
+       :`<div class="why">Nothing lined up yet &mdash; tomorrow builds itself overnight.</div>
+         <button class="threadchip" data-tmrw="1">Preview tomorrow &rsaquo;</button>`}
     </div>`;
   }
   if(c.type==="end"){
