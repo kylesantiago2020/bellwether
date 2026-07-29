@@ -916,6 +916,11 @@ body.deckon #clock{margin:0 0 4px}
 .pvr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
 .pvr s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);flex:none;max-width:52%;text-align:right}
 .pvfoot{margin-top:22px;font-size:12px;line-height:1.6;color:var(--ink3)}
+.lwrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 0;border-bottom:1px solid var(--rule)}
+.lwrow>span{font-size:14px}
+.lwrow s{display:block;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);margin-top:2px}
+.lwrow .chips{gap:5px;flex-wrap:nowrap}
+.lwrow .chip{font-size:12px;padding:6px 11px}
 .dncrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
 .dncrow b{font-size:14px;font-weight:500}
 .dncrow s{display:block;text-decoration:none;font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.45}
@@ -1412,6 +1417,14 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <p class="note">Only as good as what you've captured &mdash; every prospect you tag makes this truer.</p>
   <div id="rivals"></div>
 
+  <h2 style="margin-top:26px">What a relationship is worth</h2>
+  <p class="note">CPAs, banks and brokers never buy payroll, so their deal value is zero and always will be &mdash; they pay in referrals. This is the only place Bellwether guesses at that, and it uses the guess to decide whether a CPA visit beats a drop-in. Change it as you learn.</p>
+  <label class="f">A good referral relationship, per year<input class="t" id="coiv" inputmode="numeric" placeholder="12000"></label>
+
+  <h2 style="margin-top:26px">List priorities</h2>
+  <p class="note">A list is how you say &ldquo;these matter more&rdquo;. Raising one lifts every account in it when Bellwether picks the day.</p>
+  <div id="listw"></div>
+
   </div>
 
   <div class="setpage" data-page="you">
@@ -1564,7 +1577,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.53 millions";
+const BUILD="2026-07-29.54 a day of it";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3197,7 +3210,10 @@ function render(){
   else if(screen=="review")renderReview();
   else if(screen=="play")renderPlay();
   else if(screen=="set")renderSetup();
-  const n=todayRows(today()).length;
+  /* This counted every account carrying a date on or before today — 343 of them, and about
+     to be a thousand after an import. A backlog is not a plan and it certainly is not a
+     notification. The badge now means what he owes: meetings, and promises he made. */
+  const n=todayRows(today()).filter(r=>r.block==="meet"||r.due.some(isPromise)).length;
   const b=$("#bdg");b.style.display=n?"flex":"none";b.textContent=n;
 }
 
@@ -5043,6 +5059,21 @@ const playWeight=id=>{
 /* The profile from his own TotalSource playbook: enough employees to matter, and any sign
    they carry benefits. Deliberately generous — this decides what gets LOOKED at, not what
    gets pitched. */
+/* A list is how he says "these matter more" — the 142 accounts whose DOL filing shows
+   corrective distributions are not the same prospect as the other 692, and the only place
+   that difference survives the import is the tag. Any list he creates becomes a lever. */
+const LISTW=[["1","Normal"],["1.4","High"],["1.9","Highest"]];
+const listWeight=a=>{
+  const w=(D.cfg&&D.cfg.listW)||{};let m=1;
+  (a&&a.lists||[]).forEach(t=>{const v=+w[t]||1;if(v>m)m=v});
+  return m;
+};
+/* What a referral relationship is worth in a year. dealValue deliberately returns 0 for a
+   CPA or a bank — they never buy payroll, and letting a guess into that number would put a
+   fiction on every pipeline screen. This assumption lives only inside the mission's own
+   valuation, and it is his to change as he learns what a good relationship actually pays. */
+const COIDEF=12000;
+const coiValue=()=>{const v=D.cfg&&D.cfg.coiValue;return v===undefined||v===""?COIDEF:Math.max(0,+v||0)};
 const peoFit=a=>(+a.emps||0)>=10||(+a.medEmps||0)>0||(+a.planAssets||0)>0;
 const touchedEver=a=>(a.events||[]).some(e=>TOUCH.includes(e.kind));
 function playsOf(a){
@@ -5074,7 +5105,8 @@ function readiness(a){
 function missionValue(a){
   const ps=playsOf(a);
   const w=ps.length?Math.max.apply(null,ps.map(playWeight)):0.3;
-  return w*Math.max(1,dealValue(a)||1)*readiness(a);
+  const base=ps.indexOf("coi")>=0?coiValue():Math.max(1,dealValue(a)||1);
+  return w*base*readiness(a)*listWeight(a);
 }
 const missionScore=(a,kind)=>missionValue(a)/missionCost(kind);
 /* eligible for a kind of work at all — an address for a stop, a number for a call */
@@ -5103,14 +5135,21 @@ function playStale(id){
    real inventory behind it beats one he worked yesterday. */
 function missionFor(d){
   const office=dayMode(d)==="office";
-  const pool=missionCands(d,"call").concat(office?[]:missionCands(d,"stop"));
-  const by={};
-  pool.slice(0,400).forEach(c=>c.plays.forEach(id=>{
-    const b=by[id]||(by[id]={id,val:0,n:0});b.val+=c.s;b.n++;}));
-  const ranked=Object.keys(by).map(id=>{
+  const calls=missionCands(d,"call"),stops=office?[]:missionCands(d,"stop");
+  const stopCap=office?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
+  const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+  /* THE RANKING RULE. A play is worth what ONE DAY of it is worth — its best few stops and
+     its best few calls — not what its whole pool is worth. Summed over the pool, whichever
+     play simply has the most accounts wins every day forever, which is how 834 imported
+     competitor records would have turned a strategy into a rut. Sixty excellent CPAs can
+     now beat eight hundred mediocre takeaways, because a day is a day either way. */
+  const ranked=PLAYS.map(([id])=>{
+    const c=calls.filter(x=>x.plays.indexOf(id)>=0),s=stops.filter(x=>x.plays.indexOf(id)>=0);
+    const day=c.slice(0,callCap).concat(s.slice(0,stopCap));
+    const val=day.reduce((t,x)=>t+x.s,0);
     const st=playStale(id);
-    return Object.assign({},by[id],{stale:st,rank:by[id].val*(1+Math.min(st,21)/14)});
-  }).sort((x,y)=>y.rank-x.rank);
+    return {id,val,n:c.length+s.length,stale:st,rank:val*(1+Math.min(st,21)/14)};
+  }).filter(r=>r.n>0).sort((x,y)=>y.rank-x.rank);
   if(!ranked.length)return null;
   const pickId=(D.cfg.missionPick&&D.cfg.missionPick.on===iso(d)&&D.cfg.missionPick.id)||ranked[0].id;
   const pick=ranked.find(r=>r.id===pickId)||ranked[0];
@@ -7874,6 +7913,18 @@ function paintSetPages(){
 }
 /* The four questions he asked for, answered from one field: how many of each, how many
    he has actually met this month, how many he has taken, and what that rate is. */
+function renderListW(){
+  const el=$("#listw");if(!el)return;
+  const ls=tagLists();
+  if(!ls.length){el.innerHTML=`<p class="note">No lists yet &mdash; tag an import and it shows up here.</p>`;return}
+  const w=(D.cfg.listW)||{};
+  el.innerHTML=ls.map(L=>{
+    const cur=String(+w[L.tag]||1);
+    return `<div class="lwrow"><span>${esc(L.label)}<s>${listCount(L)} accounts</s></span>
+      <div class="chips">${LISTW.map(([v,lab])=>
+        `<button class="chip${cur===v||(cur==="1"&&v==="1")?" on":""}" data-listw="${esc(L.tag)}|${v}">${lab}</button>`).join("")}</div></div>`;
+  }).join("");
+}
 function renderRivals(){
   const el=$("#rivals");if(!el)return;
   const mo=iso(today()).slice(0,7),by={};
@@ -7923,7 +7974,8 @@ function renderSetup(){
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderGeoLine();
   renderSyncLine();
-  renderRivals();
+  renderRivals();renderListW();
+  set("coiv",(D.cfg.coiValue===undefined||D.cfg.coiValue==="")?"":D.cfg.coiValue);
   paintSetPages();
   $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
@@ -7958,6 +8010,8 @@ function saveSetup(quiet){
   const g=id=>{const e=$("#"+id);return e?e.value:""};
   Object.assign(D.cfg,{touchTarget:+g("touchTarget")||40,pageSize:+g("pageSize")||10,cadence:g("cadence")||"3, 4, 7, 14, 21",
     fy:g("fy"),qEnd:g("qEnd"),goal:+g("goal")||0,rgoal:+g("rgoal")||0,
+    /* blank means "use the default", not "a referral is worth nothing" */
+    coiValue:String(g("coiv")).trim()===""?undefined:Math.max(0,+g("coiv")||0),
     o1:+g("o1")||40,o2:+g("o2")||20,o3:+g("o3")||8,
     me:{name:g("meName"),email:g("meEmail"),title:g("meTitle"),phone:g("mePhone")},
     voiceUrl:g("voiceUrl").trim().replace(/\/+$/,""),voiceKey:g("voiceKey").trim(),
@@ -8931,6 +8985,13 @@ tap("mergego",()=>{
 });
 tap("mergeq",()=>mergeQueueOpen());
 tap("impprov",t=>{impProv=t.dataset.impprov||"";renderImpProv()});
+tap("listw",t=>{
+  const [tag,v]=String(t.dataset.listw).split("|");
+  D.cfg.listW=D.cfg.listW||{};
+  if(+v===1)delete D.cfg.listW[tag];else D.cfg.listW[tag]=+v;
+  save();renderListW();calcRev++;
+  toast(esc(tag)+": "+((LISTW.find(x=>x[0]===v)||[])[1]||"Normal").toLowerCase()+" priority.");
+});
 tap("tmrw",()=>previewView());
 tap("previewx",()=>previewClose());
 tap("prov",t=>{
