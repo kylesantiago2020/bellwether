@@ -1277,7 +1277,6 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <!-- the clock never filled its row, so the day-mode switch moves into the gap beside it
          and runs top-down. Warm-up and huddle become tiles that open in place. All of it
          exists to get the stack of businesses above the fold. -->
-    <div id="mission"></div>
     <div class="shape" id="shape"></div>
     <div id="pace"></div>
     <div id="huddles"></div>
@@ -1286,6 +1285,11 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   <div id="catchup"></div>
   <!-- the deck: the active day's one surface. Bubbles above, action row below.
        On preview and sealed days these stay empty and the legacy renderers run. -->
+  <!-- The mission is the deck's own headline, not part of the widget layer above it.
+       It used to sit inside #setupblock, which renderToday FOLDS the moment the deck goes
+       live — so the one screen it was written for was the one screen it never appeared on,
+       and it showed up only on sealed days, where the fold is lifted. -->
+  <div id="mission"></div>
   <div id="bubbles"></div>
   <div id="deckshell"><div id="deck"></div></div>
   <div id="deckact"></div>
@@ -1580,7 +1584,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.58 which way";
+const BUILD="2026-07-29.59 in the right box";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5159,13 +5163,27 @@ function playStaleAll(){
 /* Which play deserves today: the one with the most available value behind it, weighted by
    how long it has been since he worked it at all. A play he has ignored for two weeks with
    real inventory behind it beats one he worked yesterday. */
+/* The day is the size HE set it. Setup says in as many words that the plan on Today is
+   built from these numbers, and until now it wasn't — the deck dealt DROPCAP (20) stops and
+   capped calls at the touch goal (40), so a man who had asked for 14 stops and 20 calls got
+   20 and 40. The old constants stay as fallbacks for a mission that has never been filled in. */
+function missionCaps(d){
+  const m=Object.assign({},DEF.mission,D.cfg.mission||{}),got=missionDone(d);
+  const field=(+m.visits||0)+(+m.clients||0)+(+m.partners||0);
+  const fieldDone=(got.visits||0)+(got.clients||0)+(got.partners||0);
+  return {
+    stop:field>0?Math.max(1,field-fieldDone):Math.max(1,+D.cfg.dropCap||DROPCAP),
+    call:(+m.calls||0)>0?Math.max(1,(+m.calls||0)-(got.calls||0))
+                        :Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d))
+  };
+}
 function missionFor(d,pre){
   const office=dayMode(d)==="office";
   /* the caller may already hold these — rebuilding them is a full scan and sort of the book */
   const calls=(pre&&pre.calls)||missionCands(d,"call"),
         stops=(pre&&pre.stops)||(office?[]:missionCands(d,"stop"));
-  const stopCap=office?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
-  const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+  const caps=missionCaps(d);
+  const stopCap=office?0:caps.stop,callCap=caps.call;
   const stale=playStaleAll();
   /* THE RANKING RULE. A play is worth what ONE DAY of it is worth — its best few stops and
      its best few calls — not what its whole pool is worth. Summed over the pool, whichever
@@ -5252,9 +5270,8 @@ function missionPlanRaw(d){
     return out;
   };
   const off=m&&m.office;
-  const stopCap=off?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
-  const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
-  return {mission:m,promises,stops:take("stop",stopCap),calls:take("call",callCap)};
+  const caps=missionCaps(d);
+  return {mission:m,promises,stops:take("stop",off?0:caps.stop),calls:take("call",caps.call)};
 }
 /* The deck, the mission panel and the Tomorrow card each asked for the plan, so one repaint
    built the whole day three times over. It is the same answer all three times — and it can
@@ -5309,7 +5326,7 @@ function deckCards(){
     const picked=plan.stops.map(c=>({a:c.a,due:[],lead:{id:"m:"+c.a.id,kind:"visit",why:PLAYNAME(c.plays[0])},block:"visit",over:false,play:c.plays[0]}));
     const drops=owed.concat(picked);
     deckDropTotal=drops.length;
-    const cap=Math.max(1,+D.cfg.dropCap||DROPCAP);
+    const cap=missionCaps(d).stop;
     const hand=drops.slice(0,cap);
     deckDropShown=hand.length;
     [...meets,...hand].sort((x,y)=>fieldAll.indexOf(x)-fieldAll.indexOf(y))
@@ -5325,7 +5342,7 @@ function deckCards(){
     deckCallTotal=pool.length;
     /* the cap used to apply only when a list was chosen, so Bellwether's own pick dealt
        every eligible account — 190 dials announced as a day. A day-sized hand either way. */
-    const cap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+    const cap=missionCaps(d).call;
     pool=pool.slice(0,cap);
     deckCallShown=pool.length;
     pool.forEach(a=>push("call","calls",a,null));
