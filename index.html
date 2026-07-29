@@ -881,6 +881,26 @@ body.deckon #clock{margin:0 0 4px}
 .mgpick button.on{border-color:var(--fill);background:var(--fill);color:#fff}
 .mgflag{color:var(--amb);font-size:12px;margin-top:4px}
 .mgsa{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+/* A coach names the play and defends it. This is the one part of the screen that answers
+   "what should I do today" rather than "what is due". */
+#mission{margin:14px 0 6px}
+#mission.off{display:none}
+.msn{background:var(--card);border:1px solid var(--rule2);border-radius:13px;padding:14px 15px}
+.msn .eyeb{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+.msn h3{font-family:'Instrument Serif',serif;font-size:23px;font-weight:400;margin:3px 0 2px;line-height:1.15}
+.msn .who{font-size:12.5px;color:var(--ink2);margin-bottom:10px}
+.msn b{display:block;font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.02em;margin:11px 0 5px;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.msn li{font-size:13px;line-height:1.55;color:var(--ink);margin-left:16px}
+.msn .swap{margin-top:13px;background:none;border:0;font-family:inherit;font-size:12.5px;color:var(--ac);padding:4px 0;cursor:pointer}
+.provask{margin:0 0 12px;padding:11px 12px;border:1px dashed var(--rule2);border-radius:11px}
+.provask b{display:block;font-size:12.5px;font-weight:500;margin-bottom:7px;color:var(--ink2)}
+.chips.prov{gap:5px}
+.chips.prov .chip{font-size:12px;padding:6px 10px}
+.rivtab{margin-top:10px;border-top:1px solid var(--rule)}
+.rivr{display:grid;grid-template-columns:1fr 66px 96px 78px;gap:6px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px;align-items:baseline}
+.rivr s{text-decoration:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink2)}
+.rivr.rivh{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.rivr.rivh s{color:var(--ink3);font-size:10px}
 .dncrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
 .dncrow b{font-size:14px;font-weight:500}
 .dncrow s{display:block;text-decoration:none;font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.45}
@@ -1234,6 +1254,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
     <!-- the clock never filled its row, so the day-mode switch moves into the gap beside it
          and runs top-down. Warm-up and huddle become tiles that open in place. All of it
          exists to get the stack of businesses above the fold. -->
+    <div id="mission"></div>
     <div class="shape" id="shape"></div>
     <div id="pace"></div>
     <div id="huddles"></div>
@@ -1369,6 +1390,9 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
   </div>
   <label class="f">Just a callback %<input class="t mono" id="o3" type="number" min="0" max="100"></label>
   <p class="read" id="learned" style="font-size:12.5px"></p>
+  <h2 style="margin-top:26px">Against the competition</h2>
+  <p class="note">Only as good as what you've captured &mdash; every prospect you tag makes this truer.</p>
+  <div id="rivals"></div>
 
   </div>
 
@@ -1521,7 +1545,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.47 two into one";
+const BUILD="2026-07-28.49 who they use";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -4840,6 +4864,7 @@ function renderToday(){
   $("#hd").innerHTML=isNow?(rows.length?greeting():A().length?"Nothing owed today.":"Start here.")
     :(d>today()?(rows.length?rows.length+" planned":"Nothing planned")
                :(rows.length?rows.length+" still open":"Clear"));
+  missionHtml(d);
   $("#shape").innerHTML=rows.length?dayShape(rows,d):"";
   renderHuddles(rows,isNow,d);
   const cn=isNow?carryNote():null;
@@ -4966,6 +4991,154 @@ const dSvg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const SEGLABEL={start:"Start",huddle:"Huddle",field:"Field",calls:"Calls",follow:"Follow-ups",end:"End"};
 /* a field day is stops you can actually make — the rest waits its turn */
 const DROPCAP=20;
+/* ================= THE MISSION ENGINE =================
+   Until now the two halves of the day were chosen by different logic. Calls were PICKED —
+   buildQueue scored the book and dealt a hand. Stops were INHERITED — todayRows surfaced
+   whatever already carried a dated action and sorted it, and most of those dates were put
+   there by the importer, not by him. So a field day was a replay of a spreadsheet while a
+   call day was a strategy, which is exactly how it felt to use.
+   One engine now chooses both, and it chooses in terms of PLAYS rather than accounts. An
+   imported due date is a candidate, never an obligation: only something he booked himself
+   is a promise. */
+const PLAYS=[
+ ["takeaway","Competitor Takeaway","businesses running someone else's payroll",1.0],
+ ["peo","PEO / TotalSource","the headcount and benefits profile",1.0],
+ ["coi","Centers of Influence","CPAs, banks and brokers who refer",0.7],
+ ["warm","Warm Follow-ups","conversations already started",0.7],
+ ["cold","Cold Territory","businesses nobody has met yet",0.4],
+ ["expand","Client Expansion","add-ons and referrals inside the base",0.4]];
+const PLAYNAME=id=>((PLAYS.find(p=>p[0]===id)||[])[1]||id);
+const PLAYWHO=id=>((PLAYS.find(p=>p[0]===id)||[])[2]||"");
+/* priorities, not quotas — his words. Editable, and the engine expresses them against
+   whatever the territory and the calendar actually allow today. */
+const playWeight=id=>{
+  const w=(D.cfg&&D.cfg.playW)||{};
+  return w[id]!==undefined?+w[id]:((PLAYS.find(p=>p[0]===id)||[])[3]||0.4);
+};
+/* The profile from his own TotalSource playbook: enough employees to matter, and any sign
+   they carry benefits. Deliberately generous — this decides what gets LOOKED at, not what
+   gets pitched. */
+const peoFit=a=>(+a.emps||0)>=10||(+a.medEmps||0)>0||(+a.planAssets||0)>0;
+const touchedEver=a=>(a.events||[]).some(e=>TOUCH.includes(e.kind));
+function playsOf(a){
+  if(!a)return [];
+  if(a.type==="cpa"||a.type==="bank"||a.type==="partner")return ["coi"];
+  if(a.type==="client")return ["expand"];
+  const out=[];
+  /* a prospect recorded as already on ADP is not a takeaway — isRival, not merely known */
+  if(isRival(providerOf(a)))out.push("takeaway");
+  if(peoFit(a))out.push("peo");
+  out.push(touchedEver(a)?"warm":"cold");
+  return out;
+}
+/* the whole of "never surface imported due dates as if they are a plan" lives in this line:
+   doImport stamps made:"" precisely so its own scheduling could never be mistaken for
+   something he committed to */
+const isPromise=nx=>!!(nx&&nx.made);
+/* minutes. A stop costs a stop plus the driving to reach it; that is the entire reason a
+   call day and a field day are not interchangeable. */
+const MIN_CALL=4,MIN_STOP=12,MIN_DRIVE=8;
+const missionCost=kind=>kind==="call"?MIN_CALL:MIN_STOP+MIN_DRIVE;
+/* attempts 2-6 on a live thread beat attempt 1 on a fresh name, and past 6 the evidence
+   turns against you */
+function readiness(a){
+  if(!touchedEver(a))return 1;
+  const n=attemptsOn(a);
+  return n>5?0.5:1.6;
+}
+function missionValue(a){
+  const ps=playsOf(a);
+  const w=ps.length?Math.max.apply(null,ps.map(playWeight)):0.3;
+  return w*Math.max(1,dealValue(a)||1)*readiness(a);
+}
+const missionScore=(a,kind)=>missionValue(a)/missionCost(kind);
+/* eligible for a kind of work at all — an address for a stop, a number for a call */
+function missionCands(d,kind){
+  const day=iso(d);
+  return A().filter(a=>{
+    if(!isOpen(a)||!workable(a))return false;
+    if(a.skip===day)return false;
+    if(kind==="stop")return !!a.addr;
+    return !!(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today());
+  }).map(a=>({a,s:missionScore(a,kind),kind,plays:playsOf(a)}))
+   .sort((x,y)=>y.s-x.s);
+}
+/* days since he last logged a touch on any account belonging to a play */
+function playStale(id){
+  let best=null;
+  A().forEach(a=>{
+    if(playsOf(a).indexOf(id)<0)return;
+    (a.events||[]).forEach(e=>{if(TOUCH.includes(e.kind)&&(!best||e.when>best))best=e.when});
+  });
+  if(!best)return 99;
+  return Math.max(0,Math.round((today()-parseD(best))/864e5));
+}
+/* Which play deserves today: the one with the most available value behind it, weighted by
+   how long it has been since he worked it at all. A play he has ignored for two weeks with
+   real inventory behind it beats one he worked yesterday. */
+function missionFor(d){
+  const office=dayMode(d)==="office";
+  const pool=missionCands(d,"call").concat(office?[]:missionCands(d,"stop"));
+  const by={};
+  pool.slice(0,400).forEach(c=>c.plays.forEach(id=>{
+    const b=by[id]||(by[id]={id,val:0,n:0});b.val+=c.s;b.n++;}));
+  const ranked=Object.keys(by).map(id=>{
+    const st=playStale(id);
+    return Object.assign({},by[id],{stale:st,rank:by[id].val*(1+Math.min(st,21)/14)});
+  }).sort((x,y)=>y.rank-x.rank);
+  if(!ranked.length)return null;
+  const pickId=(D.cfg.missionPick&&D.cfg.missionPick.on===iso(d)&&D.cfg.missionPick.id)||ranked[0].id;
+  const pick=ranked.find(r=>r.id===pickId)||ranked[0];
+  return {id:pick.id,stale:pick.stale,n:pick.n,ranked,office};
+}
+/* The plan: commitments first because they are commitments, then the headline play, then
+   the best of the rest so a good stop two doors down is never skipped on principle. */
+const PLAYWIN={
+ takeaway:["Find two businesses running someone else's payroll","Get one renewal date"],
+ peo:["Profile two on headcount and benefits","Ask the three questions once"],
+ coi:["Introduce yourself to one CPA or branch","Leave one card with a name on it"],
+ warm:["Advance one conversation to a next step","Close out one thing you owe"],
+ cold:["Meet two owners you have never met","Get one decision-maker's name"],
+ expand:["Ask one client for a referral","Surface one add-on that fits"]};
+function missionHtml(d){
+  const el=$("#mission");if(!el)return;
+  const plan=missionPlan(d),m=plan.mission;
+  if(!m||!isActive(d)){el.className="off";el.innerHTML="";return}
+  const why=[];
+  if(m.stale>=3)why.push(`You haven't worked ${PLAYNAME(m.id).toLowerCase()} in ${m.stale>=99?"a while":m.stale+" days"}.`);
+  why.push(`${m.n} account${m.n==1?"":"s"} in the book fit it today.`);
+  const seconds=plan.calls.filter(c=>attemptsOn(c.a)>0&&attemptsOn(c.a)<=5).length;
+  if(seconds)why.push(`${seconds} of today's calls are second attempts, where the odds are best.`);
+  if(plan.promises.length)why.push(`${plan.promises.length} thing${plan.promises.length==1?"":"s"} you booked yourself come first.`);
+  if(m.office)why.push("It's an office day, so this runs on the phone.");
+  const win=PLAYWIN[m.id]||[];
+  el.className="";
+  el.innerHTML=`<div class="msn">
+    <div class="eyeb">today's mission</div>
+    <h3>${esc(PLAYNAME(m.id))}</h3>
+    <div class="who">${esc(PLAYWHO(m.id))}</div>
+    <b>Why today</b><ul>${why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+    <b>What counts as a win</b><ul>${win.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+    <button class="swap" data-msnswap="1">Not today &mdash; try a different play</button>
+  </div>`;
+}
+function missionPlan(d){
+  const m=missionFor(d);
+  const rows=todayRows(d);
+  const promises=rows.filter(r=>r.block==="meet"||r.due.some(isPromise));
+  const held=new Set(promises.map(r=>r.a.id));
+  const take=(kind,cap)=>{
+    const out=[],want=m?m.id:null;
+    const pool=missionCands(d,kind).filter(c=>!held.has(c.a.id));
+    pool.forEach(c=>{if(out.length<cap&&want&&c.plays.indexOf(want)>=0){out.push(c);held.add(c.a.id)}});
+    pool.forEach(c=>{if(out.length<cap&&!held.has(c.a.id)){out.push(c);held.add(c.a.id)}});
+    return out;
+  };
+  const office=m&&m.office;
+  const stopCap=office?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
+  const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+  return {mission:m,promises,stops:take("stop",stopCap),calls:take("call",callCap)};
+}
 let deckDropTotal=0,deckDropShown=0,deckCallShown=0;
 DICON.route='<path d="M5 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M7 18h8a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h8"/>';
 /* Cards whose entire purpose is one decision keep a button. The work cards — calls,
@@ -4988,12 +5161,16 @@ function deckCards(){
   huds.forEach(c=>push("huddle","huddle",c.a,null,{c}));
   const pinned=new Set(huds.map(c=>c.a.id));
   const rank={meet:0,visit:1};
+  const plan=deckCards._plan=missionPlan(d);
+  /* Only meetings and things he actually booked earn a place on the strength of their date.
+     Everything else the importer scheduled is a candidate the engine may or may not pick. */
   const fieldAll=rows.filter(r=>(r.block==="meet"||r.block==="visit")&&!(pinned.has(r.a.id)&&r.block==="meet"))
+    .filter(r=>r.block==="meet"||r.due.some(isPromise))
     .filter(r=>r.a.skip!==iso(today()))
     .sort((x,y)=>(x.block==="meet"||y.block==="meet"?0:anchorTier(x.a)-anchorTier(y.a))
       ||byTime(x,y)||rank[x.block]-rank[y.block]||score(y.a)-score(x.a));
   const fieldCards=()=>{
-    if(!fieldAll.length)return;
+    if(!fieldAll.length&&!plan.stops.length)return;
     /* A backlog is not a plan. Every overdue drop-in lands on today, so the field segment
        used to deal 139 stops — a number no one can work and everyone stops believing.
        It deals a day-sized hand instead, highest-priority first, and the seam says how
@@ -5001,7 +5178,10 @@ function deckCards(){
     if(!routeStarted())push("route","field",null,null);
     const live=fieldAll.filter(r=>!isParked(r)),parked=fieldAll.filter(isParked);
     const meets=live.filter(r=>r.block==="meet");
-    const drops=live.filter(r=>r.block!=="meet");
+    /* commitments he made, then the stops the mission chose */
+    const owed=live.filter(r=>r.block!=="meet");
+    const picked=plan.stops.map(c=>({a:c.a,due:[],lead:{id:"m:"+c.a.id,kind:"visit",why:PLAYNAME(c.plays[0])},block:"visit",over:false,play:c.plays[0]}));
+    const drops=owed.concat(picked);
     deckDropTotal=drops.length;
     const cap=Math.max(1,+D.cfg.dropCap||DROPCAP);
     const hand=drops.slice(0,cap);
@@ -5012,7 +5192,10 @@ function deckCards(){
   const callCards=()=>{
     /* the deck is TODAY, not the list: a 766-account list deals a day-sized hand and
        keeps re-dealing from the remainder as calls complete. buildQueue self-caps. */
-    let pool=(runSource.length?listQueue(runSource).q:buildQueue()).filter(a=>a.skip!==iso(today()));
+    /* one engine: a chosen list still wins, but Bellwether's own pick is now the mission's
+       pick rather than a separate scorer that could only ever see prospects */
+    let pool=(runSource.length?listQueue(runSource).q
+             :plan.calls.map(c=>c.a)).filter(a=>a.skip!==iso(today()));
     deckCallTotal=pool.length;
     /* the cap used to apply only when a list was chosen, so Bellwether's own pick dealt
        every eligible account — 190 dials announced as a day. A day-sized hand either way. */
@@ -6300,6 +6483,10 @@ function debriefView(a,kind){
     <div class="why" style="margin-bottom:12px">${set.head}</div>
     <!-- most touches end one of these ways, and he is usually in a parking lot. One tap,
          card gone, next stop. The voice note underneath is for the ones worth describing. -->
+    ${(!providerSet(a)&&a.type!=="cpa"&&a.type!=="bank"&&a.type!=="partner")
+      /* asked once, at the only moment he actually knows the answer — and never again
+         once it has been answered */
+      ? `<div class="provask"><b>Who do they use?</b>${provChips(a,"db")}</div>`:""}
     <div class="qout">${(dbKind=="call"
       /* a wrong number is a one-tap outcome now, so it rides with the other one-tap
          outcomes instead of sitting seventh, below the fold, on a phone in a cupholder */
@@ -6568,9 +6755,24 @@ function learnedOutcome(text){
 /* 2 — objections, remembered against who the account is running today, because
       "happy with incumbent" from a Paychex shop is a different conversation from
       the same words out of a bookkeeper-run shop. */
+/* Who they run payroll with, as a FIELD. It was previously a sentence in the notes blob
+   recovered by regex — real enough to read once, but not something you can query, count,
+   or build a play on, and one edit to the notes erased it. The list is fixed so that
+   "all Paychex accounts" is a question with an answer; Other keeps the long tail without
+   letting free text back in. Unknown is a real answer and the honest default. */
+const PROVIDERS=["Unknown","ADP","Paychex","Paylocity","Gusto","Paycom","UKG","Rippling","Paycor","Other"];
+const isRival=v=>!!v&&v!=="Unknown"&&v!=="ADP";
+/* the stored field wins; the old notes scrape stays as a fallback so nothing he already
+   captured is lost, and the first time he taps a chip it becomes real */
 function providerOf(a){
+  if(a&&a.provider&&a.provider!=="Unknown")return a.provider;
   const m=(a&&a.notes||"").match(/(?:On|Confirmed on) ([A-Za-z0-9&.\- ]+?)(?: today)?\./);
   return m?m[1].trim():"";
+}
+const providerSet=a=>(a&&a.provider)||"";
+function provChips(a,ctx){
+  return `<div class="chips prov">${PROVIDERS.map(v=>
+    `<button class="chip${providerSet(a)===v||(!providerSet(a)&&v==="Unknown")?" on":""}" data-prov="${a.id}|${esc(v)}|${ctx||""}">${esc(v)}</button>`).join("")}</div>`;
 }
 function learnObjection(a,label){
   if(!label)return;
@@ -6935,6 +7137,10 @@ function renderAccount(){
       <div class="sa left"><button class="b pri" data-act="reopen">Reopen and work it</button></div></div>`;
     $("#acctbody").innerHTML=h;return;
   }
+  if(a.type!=="cpa"&&a.type!=="bank"&&a.type!=="partner")
+    h+=`<div class="sect"><div class="h"><b>Payroll provider</b><span>${esc(providerOf(a)||"unknown")}</span></div>
+      ${provChips(a,"acct")}
+      <div class="dqnote">Who they run payroll with today. It decides whether they are a takeaway, and it is the only way to ask what your conversion looks like against a given competitor.</div></div>`;
   h+=`<div class="sect"><div class="h"><b>Record</b><span>${dnc(a)?"do not contact":dqOK(a)?"good":esc(dqLabel(dq(a)))}</span></div>
     ${dqChips(a)}
     ${dqOK(a)?"":`<div class="dqnote">Flagged records don't generate work. Set this back to Good and it returns to your day exactly where it was.</div>`}
@@ -7048,7 +7254,7 @@ const listById=id=>allLists().find(L=>L.id==id)||null;
 const inList=(a,L)=>L?(L.tag?(a.lists||[]).indexOf(L.tag)>=0:!!L.rule(a)):false;
 const listCount=L=>A().filter(a=>isOpen(a)&&dqOK(a)&&inList(a,L)).length;
 let terrList_=null;   /* the list currently being worked, or null */
-const TFILTERS=[["all","All"],["open","Working"],["prospect","Prospects"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["wrong","Wrong info"],["closed","Confirmed closed"],["dormant","Dormant / lost"]];
+const TFILTERS=[["all","All"],["open","Working"],["prospect","Prospects"],["rival","On a rival"],["client","Clients"],["cpa","CPAs"],["bank","Banks"],["partner","Partners"],["never","Never met"],["wrong","Wrong info"],["closed","Confirmed closed"],["dormant","Dormant / lost"]];
 /* the two data-quality piles depend on the flag and nothing else — not on outcome, not on
    type — so an account is always findable under exactly the filter you flagged it into */
 const terrMatch=(a,f)=>{
@@ -7064,12 +7270,13 @@ const terrMatch=(a,f)=>{
      the flag is cleared. Nothing moved: clearing puts it straight back. */
   if(f=="open")return dqOK(a);
   if(f=="never")return !lastMet(a);
+  if(f=="rival")return isRival(providerOf(a));
   return a.type==f;
 };
 /* everything you might half-remember about an account, in one string */
 function haystack(a){
   const c=a.contact||{};
-  return norm([a.name,c.name,c.email,a.city,a.addr,a.source,a.industry,
+  return norm([a.name,c.name,c.email,a.city,a.addr,a.source,a.industry,providerOf(a),
     TYPELABEL[a.type]||"",TYPESHORT[a.type]||""].filter(Boolean).join(" "));
 }
 const digits=s=>String(s||"").replace(/\D/g,"");
@@ -7529,6 +7736,27 @@ function paintSetPages(){
   $$(".setpage").forEach(el=>el.classList.toggle("on",el.dataset.page===setPage));
   sec.classList.toggle("inpage",!!setPage);
 }
+/* The four questions he asked for, answered from one field: how many of each, how many
+   he has actually met this month, how many he has taken, and what that rate is. */
+function renderRivals(){
+  const el=$("#rivals");if(!el)return;
+  const mo=iso(today()).slice(0,7),by={};
+  A().forEach(a=>{
+    if(a.type==="cpa"||a.type==="bank"||a.type==="partner")return;
+    const v=providerOf(a)||"Unknown";
+    const b=by[v]||(by[v]={v,n:0,met:0,won:0});
+    b.n++;
+    if((a.events||[]).some(e=>TOUCH.includes(e.kind)&&String(missionDay(e)).slice(0,7)===mo))b.met++;
+    if(isWon(a))b.won++;
+  });
+  const rows=Object.keys(by).map(k=>by[k]).sort((x,y)=>y.n-x.n);
+  if(!rows.length){el.innerHTML="";return}
+  el.innerHTML=`<div class="rivtab">
+    <div class="rivr rivh"><span>provider</span><s>accounts</s><s>met this month</s><s>won</s></div>
+    ${rows.map(r=>`<div class="rivr"><span>${esc(r.v)}</span><s>${r.n}</s><s>${r.met}</s>
+      <s>${r.won}${r.n&&r.won?` &middot; ${Math.round(r.won/r.n*100)}%`:""}</s></div>`).join("")}
+  </div>`;
+}
 function renderSetup(){
   const c=D.cfg;
   const set=(id,v)=>{const el=$("#"+id);if(el)el.value=v==null?"":v};
@@ -7559,6 +7787,7 @@ function renderSetup(){
   $("#learned").innerHTML=(l1!=null||l3!=null)?`Learned from your data: quoted ${l1!=null?Math.round(l1*100)+"%":"—"}, callback ${l3!=null?Math.round(l3*100)+"%":"—"}.`:"Not enough wins and losses yet — still using your estimates.";
   renderGeoLine();
   renderSyncLine();
+  renderRivals();
   paintSetPages();
   $("#dangerzone").innerHTML=`Accounts: ${A().length} · schema v${D.v||SCHEMA} · build ${BUILD}.
     <button class="b quiet" data-act="diag" style="margin-left:6px">Diagnostics</button>
@@ -8565,6 +8794,27 @@ tap("mergego",()=>{
   if(mgQueue)mergeNext();else mergeClose();
 });
 tap("mergeq",()=>mergeQueueOpen());
+tap("prov",t=>{
+  const [aid,v,ctx]=String(t.dataset.prov).split("|");
+  const a=acct(aid);if(!a)return;
+  if((a.provider||"")===v)return;
+  const was=snapshot(a);
+  a.provider=v;
+  logEvent(a,"note","payroll provider: "+v);
+  if(ctx==="db"&&dbA&&dbA.id===a.id){save();debriefView(dbA,dbKind);toast("Noted \u2014 "+v+".")}
+  else commit("Payroll provider: "+v+".",()=>restoreAcct(was));
+});
+/* Refusing the call is not failure, it is the only signal the engine gets about whether
+   its judgement is any good. It moves to the next-best play for today only. */
+tap("msnswap",()=>{
+  const d=activeD(),m=missionFor(d);
+  if(!m||m.ranked.length<2){toast("Nothing else to switch to today.");return}
+  const i=m.ranked.findIndex(r=>r.id===m.id);
+  const nx=m.ranked[(i+1)%m.ranked.length];
+  D.cfg.missionPick={on:iso(d),id:nx.id,swaps:((D.cfg.missionPick||{}).swaps||0)+1};
+  save();render();
+  toast("Today: "+PLAYNAME(nx.id)+".");
+});
 tap("rcrow",t=>{const id=t.dataset.rcrow;
   if(recapOpen.has(id))recapOpen.delete(id);else recapOpen.add(id);
   drawRecap()});
