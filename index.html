@@ -1584,7 +1584,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.59 in the right box";
+const BUILD="2026-07-29.60 not a superset";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5120,6 +5120,21 @@ function readiness(a){
   const n=attemptsOn(a);
   return n>5?0.5:1.6;
 }
+/* An account belongs to every play it qualifies for, and it must — today's headline play
+   should be able to claim a Paychex prospect whether it is running Takeaways or PEO. But
+   RANKING the plays against each other on that same membership is a rigged contest: an
+   untouched Paychex prospect is ["takeaway","peo","cold"], and missionValue scores it on
+   the HIGHEST of those weights, so it carries its full takeaway value into the cold pool
+   too. Cold is then a strict superset of takeaway with the same scores — it can tie, it can
+   never lose, and the app told him to work Cold Territory every morning with 3,452 accounts
+   behind it while the play he actually cares about sat underneath.
+   So: each account is COUNTED ONCE, under its best play, when the plays compete. Membership
+   stays inclusive for everything else. */
+function primaryPlay(ps){
+  let best=null,bw=-1;
+  (ps||[]).forEach(id=>{const w=playWeight(id);if(w>bw){bw=w;best=id}});
+  return best;
+}
 function missionValue(a){
   const ps=playsOf(a);
   const w=ps.length?Math.max.apply(null,ps.map(playWeight)):0.3;
@@ -5135,7 +5150,7 @@ function missionCands(d,kind){
     if(a.skip===day)return false;
     if(kind==="stop")return !!a.addr;
     return !!(a.contact&&a.contact.phone)&&lastTouch(a)!=iso(today());
-  }).map(a=>({a,s:missionScore(a,kind),kind,plays:playsOf(a)}))
+  }).map(a=>{const ps=playsOf(a);return {a,s:missionScore(a,kind),kind,plays:ps,main:primaryPlay(ps)}})
    .sort((x,y)=>y.s-x.s);
 }
 /* Days since he last logged a touch on any account belonging to each play. This used to
@@ -5190,8 +5205,9 @@ function missionFor(d,pre){
      play simply has the most accounts wins every day forever, which is how 834 imported
      competitor records would have turned a strategy into a rut. Sixty excellent CPAs can
      now beat eight hundred mediocre takeaways, because a day is a day either way. */
+  /* counted once, under its best play — see primaryPlay */
   const ranked=PLAYS.map(([id])=>{
-    const c=calls.filter(x=>x.plays.indexOf(id)>=0),s=stops.filter(x=>x.plays.indexOf(id)>=0);
+    const c=calls.filter(x=>x.main===id),s=stops.filter(x=>x.main===id);
     const day=c.slice(0,callCap).concat(s.slice(0,stopCap));
     const val=day.reduce((t,x)=>t+x.s,0);
     const st=stale[id]===undefined?99:stale[id];
