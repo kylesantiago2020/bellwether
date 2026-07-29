@@ -1564,7 +1564,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.52 tag the file";
+const BUILD="2026-07-29.53 millions";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -1652,7 +1652,12 @@ const parseD=s=>{const[y,m,dd]=String(s).split("-").map(Number);return new Date(
 const fmt=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 const days=(a,b)=>Math.round((b-a)/DAY);
 const $$$=n=>"$"+Math.round(n).toLocaleString();
-const k=n=>n>=1000?"$"+(n/1000).toFixed(n>=10000?0:1)+"k":"$"+Math.round(n);
+/* Millions once it IS millions — $31,203,621 read as "$31204k", which is true and useless.
+   The whole-number branches FLOOR rather than round, so $999,999 cannot render as "$1000k"
+   and claim a milestone it has not reached. */
+const k=n=>n>=1e6?"$"+(n>=1e7?Math.floor(n/1e6):(n/1e6).toFixed(1))+"M"
+  :n>=1000?"$"+(n>=10000?Math.floor(n/1000):(n/1000).toFixed(1))+"k"
+  :"$"+Math.round(n);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s==null?"":s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
