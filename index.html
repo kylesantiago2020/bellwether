@@ -1618,7 +1618,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.67 log from anywhere";
+const BUILD="2026-07-29.68 hold still";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5377,7 +5377,12 @@ DICON.route='<path d="M5 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-9a2 2 0 1 0 0-4 2 2 
 const DACT={start:[["begin","Begin the day",1]],
  huddle:[["enterhud","Start the huddle",1]],
  route:[["addstop","Add stop"],["startroute","Start route",1]],
- end:[["endday","End my day",1]]};
+ end:[["endday","End my day",1]],
+ /* The Tomorrow card's action lived inside the card as a chip, so the row emptied between it
+    and the End card and the deck resized on every pass. Giving it the row entry it should
+    always have had removes the height change at that boundary entirely, and puts its primary
+    action where every other primary action lives. */
+ tmrw:[["tmrwprev","Preview tomorrow",1]]};
 const dayBegun=()=>D.cfg.begun===activeISO();
 const routeStarted=()=>D.cfg.routeStarted===activeISO();
 const deckOn=()=>screen==="today"&&isActive(viewDate||today())&&A().length>0&&!sealed(activeD());
@@ -5684,7 +5689,6 @@ function deckFace(c){
       <div class="cwhy"><span>${esc(fmtFull(nx))}</span></div>
       <div class="co" style="font-size:20px">${late?"Ready for tomorrow?":"Tomorrow"}</div>
       ${m?`<div class="tmmission">${esc(PLAYNAME(m.id))}</div>
-        <button class="threadchip" data-tmrw="1" style="margin:6px 0 2px">Preview tomorrow &rsaquo;</button>
         <div class="tmsec">Why tomorrow</div>
         <ul class="tmlist">${why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
         <div class="tmsec">The plan</div>
@@ -6017,12 +6021,12 @@ function renderDeckActions(c){
   if(acts.length){
     el.style.gridTemplateColumns=`repeat(${acts.length},1fr)`;
     el.innerHTML=acts.map(([id,lab,pri])=>`<button class="cb${pri?" talked":""}" data-deckact="${id}">${lab}</button>`).join("");
-    if(el.offsetHeight!==was)deckSize();
+    if(el.offsetHeight!==was)deckSizeSoon();
     return;
   }
   /* work cards are swiped and flipped — no standing instructions under the deck */
   el.innerHTML="";
-  if(el.offsetHeight!==was)deckSize();
+  if(el.offsetHeight!==was)deckSizeSoon();
 }
 /* Which logged touches belong to which segment. Progress is counted from the event log,
    so the ring can only ever fill on work that actually happened. */
@@ -6132,6 +6136,17 @@ const returnIsContinuation=()=>{const p=D.cfg&&D.cfg.pendingCall;return !!(p&&Da
 /* .10-.11 tried to fit the back by dropping rows, measuring the CARD for overflow — but
    .brows clips internally, so the card never reported any and a row was sliced instead.
    The row list scrolls now: every row stays reachable and nothing is ever cut. */
+let deckScrollAt=0,deckSizeT=null;
+/* Resizing a scroll container while a snap scroll is settling throws the position, so a
+   height change asked for mid-gesture is deferred until his thumb has stopped. Any other
+   boundary where the action row appears or disappears — the huddle card into the first work
+   card, for instance — had the same fault, not just the one he happened to be on. */
+function deckSizeSoon(){
+  clearTimeout(deckSizeT);
+  const quiet=Date.now()-deckScrollAt>220;
+  if(quiet){deckSize();return}
+  deckSizeT=setTimeout(deckSizeSoon,140);
+}
 function deckSize(){
   const d=$("#deck");if(!d)return;
   requestAnimationFrame(()=>{
@@ -6309,6 +6324,7 @@ function wireDeck(t){
     requestAnimationFrame(()=>{
       queued=false;
       deckTopBtn(t.scrollTop>80);
+      deckScrollAt=Date.now();
       const mid=t.scrollTop+t.clientHeight/2;
       let best=Infinity,idx=0;
       deckCardEls().forEach((c,k)=>{const d=Math.abs(c.offsetTop+c.offsetHeight/2-mid);if(d<best){best=d;idx=k}});
@@ -6338,6 +6354,7 @@ function deckDo(c,act){
     deckGone(c,()=>{save();toastUndo("Day begun — go get it.",()=>{delete D.cfg.begun;save();render()});render()});return}
   if(act==="enterhud"){startHuddle(a.id);return}
   if(act==="endday"){endDay();return}
+  if(act==="tmrwprev"){previewView();return}
   if(act==="startroute"||act==="routego"){routeGo();return}
   if(act==="addstop"){addStopSheet();return}
   /* a stop that turned into a conversation gets the same capture a call does */
