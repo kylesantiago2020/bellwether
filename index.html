@@ -259,7 +259,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 .ccard .meta{margin-top:8px;font-size:13.5px;color:var(--ink2)}
 .ccard .why{margin-top:16px;font-size:14px;color:var(--ink2);line-height:1.6;max-width:420px;margin-left:auto;margin-right:auto}
 .ccard .last{margin-top:14px;font-size:12.5px;color:var(--ink3);line-height:1.6}
-.dial{display:block;margin:22px auto 0;max-width:280px;padding:15px;border-radius:12px;background:var(--grn);color:#fff;font-size:17px;font-weight:500;text-decoration:none;text-align:center;font-family:'IBM Plex Mono',monospace}
+.dial{display:block;margin:14px auto 0;max-width:280px;padding:13px;border-radius:12px;background:var(--grn);color:#fff;font-size:17px;font-weight:500;text-decoration:none;text-align:center;font-family:'IBM Plex Mono',monospace}
 .dial.off{background:var(--sunk);color:var(--ink3)}
 /* The number on a card that is not about the phone. A locked door, a "call for service"
    sign, running late to a meeting — all of it wants the number to hand without a trip to
@@ -683,7 +683,7 @@ body.deckon #clock{margin:0 0 4px}
   overflow:hidden}
 /* Earned by measurement in deckSize, never by default: a card that fits has nothing to
    scroll and must not capture a swipe meant for the deck. */
-#deck>.cc.scrolls{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#deck>.cc.scrolls{overflow-y:auto;-webkit-overflow-scrolling:touch}
 #deck>.cc.flash{animation:cflash 1s ease}
 @keyframes cflash{0%{box-shadow:0 0 0 0 var(--acs);border-color:var(--ac)}
   35%{box-shadow:0 0 0 6px var(--acs);border-color:var(--ac)}
@@ -857,7 +857,7 @@ body.deckon #clock{margin:0 0 4px}
 .tagm.w{background:var(--grnsoft);color:var(--grn)}
 /* a flagged record reads as a caution, never as a category */
 .tagm.dq{background:var(--ambsoft);color:var(--amb)}
-.dqbtn{display:block;margin:12px auto 0;max-width:280px;padding:10px;border-radius:10px;
+.dqbtn{display:block;margin:8px auto 0;max-width:280px;padding:9px;border-radius:10px;
   border:1px solid var(--rule2);background:none;font-family:inherit;font-size:13px;color:var(--ink2)}
 .dqbtn.on{border-color:var(--amb);color:var(--amb)}
 /* the merge seam: the one place the deck volunteers something rather than asking for a
@@ -1580,7 +1580,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.55 one scroll at a time";
+const BUILD="2026-07-29.56 let it chain";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5573,7 +5573,7 @@ function deckFace(c){
       ${objectionMemo(a)?`<div class="last" style="opacity:.85">${objectionMemo(a)}</div>`:""}
       ${deckChip(a)}
       ${ph?`<a class="dial" data-dialid="${a.id}" href="tel:${esc(ph.replace(/[^0-9+]/g,""))}">${esc(ph)}</a>`:`<div class="dial off">No number on file</div>`}
-      <div class="ctools">${googleLink(a)}</div>
+      <div class="ctools" style="margin-top:8px">${googleLink(a)}</div>
       <button class="dqbtn${workable(a)?"":" on"}" data-dqopen="${a.id}">${dnc(a)?"\u26D4 Do not contact":dqOK(a)?"Wrong number or closed?":DQICON[dq(a)]+" "+esc(dqLabel(dq(a)))}</button>
     </div>`;
   }
