@@ -1580,7 +1580,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.56 let it chain";
+const BUILD="2026-07-29.57 once, not twelve times";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -2426,8 +2426,10 @@ function currentAnnual(a){
 }
 /* recomputing a quote for every comparison in a sort is what makes big lists feel slow */
 let calcRev=0;
-const _memo={v:-1,d:{},s:{}};
-function memoReady(){if(_memo.v!==calcRev){_memo.v=calcRev;_memo.d={};_memo.s={}}}
+/* d deal values · s priority scores · p plays · r provider · m the day's plan.
+   One counter invalidates all five, so a second cache can never disagree with the first. */
+const _memo={v:-1,d:{},s:{},p:{},r:{},m:{}};
+function memoReady(){if(_memo.v!==calcRev){_memo.v=calcRev;_memo.d={};_memo.s={};_memo.p={};_memo.r={};_memo.m={}}}
 function dealValue(a,over){
   if(over)return dealValueRaw(a,over);
   memoReady();
@@ -5079,7 +5081,7 @@ const COIDEF=12000;
 const coiValue=()=>{const v=D.cfg&&D.cfg.coiValue;return v===undefined||v===""?COIDEF:Math.max(0,+v||0)};
 const peoFit=a=>(+a.emps||0)>=10||(+a.medEmps||0)>0||(+a.planAssets||0)>0;
 const touchedEver=a=>(a.events||[]).some(e=>TOUCH.includes(e.kind));
-function playsOf(a){
+function playsRaw(a){
   if(!a)return [];
   if(a.type==="cpa"||a.type==="bank"||a.type==="partner")return ["coi"];
   if(a.type==="client")return ["expand"];
@@ -5089,6 +5091,15 @@ function playsOf(a){
   if(peoFit(a))out.push("peo");
   out.push(touchedEver(a)?"warm":"cold");
   return out;
+}
+/* Which plays an account belongs to cannot change while the book does not, and working it
+   out walks the account's whole event history. Cached on the same counter as everything
+   else, so it is impossible for this to go stale while deal values stay fresh. */
+function playsOf(a){
+  if(!a||!a.id)return playsRaw(a);
+  memoReady();
+  if(_memo.p[a.id]===undefined)_memo.p[a.id]=playsRaw(a);
+  return _memo.p[a.id];
 }
 /* the whole of "never surface imported due dates as if they are a plan" lives in this line:
    doImport stamps made:"" precisely so its own scheduling could never be mistaken for
@@ -5123,24 +5134,39 @@ function missionCands(d,kind){
   }).map(a=>({a,s:missionScore(a,kind),kind,plays:playsOf(a)}))
    .sort((x,y)=>y.s-x.s);
 }
-/* days since he last logged a touch on any account belonging to a play */
-function playStale(id){
-  let best=null;
+/* Days since he last logged a touch on any account belonging to each play. This used to
+   run once PER PLAY, walking every account and every event six times over; one pass answers
+   all six, because the same event tells you about every play its account belongs to. */
+function playStaleAll(){
+  const best={};
   A().forEach(a=>{
-    if(playsOf(a).indexOf(id)<0)return;
-    (a.events||[]).forEach(e=>{if(TOUCH.includes(e.kind)&&(!best||e.when>best))best=e.when});
+    const ps=playsOf(a);if(!ps.length)return;
+    const evs=a.events||[];
+    let latest=null;
+    for(let i=evs.length-1;i>=0;i--){
+      const e=evs[i];
+      if(TOUCH.includes(e.kind)&&(!latest||e.when>latest))latest=e.when;
+    }
+    if(!latest)return;
+    ps.forEach(id=>{if(!best[id]||latest>best[id])best[id]=latest});
   });
-  if(!best)return 99;
-  return Math.max(0,Math.round((today()-parseD(best))/864e5));
+  const out={};
+  PLAYS.forEach(([id])=>{
+    out[id]=best[id]?Math.max(0,Math.round((today()-parseD(best[id]))/864e5)):99;
+  });
+  return out;
 }
 /* Which play deserves today: the one with the most available value behind it, weighted by
    how long it has been since he worked it at all. A play he has ignored for two weeks with
    real inventory behind it beats one he worked yesterday. */
-function missionFor(d){
+function missionFor(d,pre){
   const office=dayMode(d)==="office";
-  const calls=missionCands(d,"call"),stops=office?[]:missionCands(d,"stop");
+  /* the caller may already hold these — rebuilding them is a full scan and sort of the book */
+  const calls=(pre&&pre.calls)||missionCands(d,"call"),
+        stops=(pre&&pre.stops)||(office?[]:missionCands(d,"stop"));
   const stopCap=office?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
   const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
+  const stale=playStaleAll();
   /* THE RANKING RULE. A play is worth what ONE DAY of it is worth — its best few stops and
      its best few calls — not what its whole pool is worth. Summed over the pool, whichever
      play simply has the most accounts wins every day forever, which is how 834 imported
@@ -5150,7 +5176,7 @@ function missionFor(d){
     const c=calls.filter(x=>x.plays.indexOf(id)>=0),s=stops.filter(x=>x.plays.indexOf(id)>=0);
     const day=c.slice(0,callCap).concat(s.slice(0,stopCap));
     const val=day.reduce((t,x)=>t+x.s,0);
-    const st=playStale(id);
+    const st=stale[id]===undefined?99:stale[id];
     return {id,val,n:c.length+s.length,stale:st,rank:val*(1+Math.min(st,21)/14)};
   }).filter(r=>r.n>0).sort((x,y)=>y.rank-x.rank);
   if(!ranked.length)return null;
@@ -5209,22 +5235,35 @@ function missionHtml(d){
     <button class="swap" data-tmrw="1" style="margin-left:14px">Tomorrow &rsaquo;</button>
   </div>`;
 }
-function missionPlan(d){
-  const m=missionFor(d);
+function missionPlanRaw(d){
+  const office=dayMode(d)==="office";
+  /* built ONCE and handed to everything below: missionFor used to build them, throw them
+     away, and let take() build them again — four scans and sorts of the book for two lists */
+  const cands={calls:missionCands(d,"call"),stops:office?[]:missionCands(d,"stop")};
+  const m=missionFor(d,cands);
   const rows=todayRows(d);
   const promises=rows.filter(r=>r.block==="meet"||r.due.some(isPromise));
   const held=new Set(promises.map(r=>r.a.id));
   const take=(kind,cap)=>{
     const out=[],want=m?m.id:null;
-    const pool=missionCands(d,kind).filter(c=>!held.has(c.a.id));
+    const pool=(kind==="call"?cands.calls:cands.stops).filter(c=>!held.has(c.a.id));
     pool.forEach(c=>{if(out.length<cap&&want&&c.plays.indexOf(want)>=0){out.push(c);held.add(c.a.id)}});
     pool.forEach(c=>{if(out.length<cap&&!held.has(c.a.id)){out.push(c);held.add(c.a.id)}});
     return out;
   };
-  const office=m&&m.office;
-  const stopCap=office?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
+  const off=m&&m.office;
+  const stopCap=off?0:Math.max(1,+D.cfg.dropCap||DROPCAP);
   const callCap=Math.max(15,(+D.cfg.touchTarget||40)-touchesOn(d));
   return {mission:m,promises,stops:take("stop",stopCap),calls:take("call",callCap)};
+}
+/* The deck, the mission panel and the Tomorrow card each asked for the plan, so one repaint
+   built the whole day three times over. It is the same answer all three times — and it can
+   only change when the book changes, which is exactly what calcRev already tracks. */
+function missionPlan(d){
+  memoReady();
+  const key=iso(d);
+  if(_memo.m[key]===undefined)_memo.m[key]=missionPlanRaw(d);
+  return _memo.m[key];
 }
 let deckDropTotal=0,deckDropShown=0,deckCallShown=0;
 DICON.route='<path d="M5 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M7 18h8a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h8"/>';
@@ -6935,10 +6974,18 @@ const PROVIDERS=["Unknown","ADP","Paychex","Paylocity","Gusto","Paycom","UKG","R
 const isRival=v=>!!v&&v!=="Unknown"&&v!=="ADP";
 /* the stored field wins; the old notes scrape stays as a fallback so nothing he already
    captured is lost, and the first time he taps a chip it becomes real */
-function providerOf(a){
+function providerRaw(a){
   if(a&&a.provider&&a.provider!=="Unknown")return a.provider;
   const m=(a&&a.notes||"").match(/(?:On|Confirmed on) ([A-Za-z0-9&.\- ]+?)(?: today)?\./);
   return m?m[1].trim():"";
+}
+/* This ran a regular expression over the notes blob for every account, on every pass of
+   every scoring loop — tens of thousands of times per repaint once the book passed 3,000. */
+function providerOf(a){
+  if(!a||!a.id)return providerRaw(a);
+  memoReady();
+  if(_memo.r[a.id]===undefined)_memo.r[a.id]=providerRaw(a);
+  return _memo.r[a.id];
 }
 const providerSet=a=>(a&&a.provider)||"";
 function provChips(a,ctx){
