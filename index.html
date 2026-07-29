@@ -265,14 +265,14 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
    sign, running late to a meeting — all of it wants the number to hand without a trip to
    the account screen. Deliberately not the big green .dial block: this card's verdict is
    Done or Debrief, and a full-width call button would argue with that. */
-.minidial{align-self:center;display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:7px 13px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:fit-content}
+.minidial{align-self:center;display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:6px 12px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:fit-content}
 .minidial svg{width:14px;height:14px;flex:none}
 /* Straight to a Google search for the name and the town. Not the website — a small
    business's real site is the one thing a search can't be trusted to land on, and he
    said himself he'll take it from there. */
-.minigo{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:inherit;font-size:12.5px}
+.minigo{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:16px;background:var(--sunk);color:var(--ink2);text-decoration:none;font-family:inherit;font-size:12.5px}
 .minigo svg{width:14px;height:14px;flex:none}
-.ctools{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ctools{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .ctools .minidial{margin-top:0}
 /* the huddle layer reuses the call block's frame — same full-bleed sheet, same top bar —
    but it scrolls, because unlike a call card it is one whole screen rather than a stack */
@@ -679,8 +679,11 @@ body.deckon #clock{margin:0 0 4px}
    that sliced text: overflow in a centred flex column is unreachable AND cut at both
    ends. The safe pattern is flex-start plus auto margins — identical centring when the
    content fits, and a real scroll when it doesn't. Nothing is ever cut mid-letter now. */
-#deck>.cc{flex:0 0 86%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:22px 20px;
-  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#deck>.cc{flex:0 0 90%;scroll-snap-align:center;scroll-snap-stop:always;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;background:var(--card);border:1px solid var(--rule2);border-radius:18px;padding:20px 20px;
+  overflow:hidden}
+/* Earned by measurement in deckSize, never by default: a card that fits has nothing to
+   scroll and must not capture a swipe meant for the deck. */
+#deck>.cc.scrolls{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #deck>.cc.flash{animation:cflash 1s ease}
 @keyframes cflash{0%{box-shadow:0 0 0 0 var(--acs);border-color:var(--ac)}
   35%{box-shadow:0 0 0 6px var(--acs);border-color:var(--ac)}
@@ -1577,7 +1580,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.54 a day of it";
+const BUILD="2026-07-29.55 one scroll at a time";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -5958,6 +5961,16 @@ function deckSize(){
     const actH=act?act.offsetHeight:58;
     const h=Math.max(320,window.innerHeight-d.getBoundingClientRect().top-actH-((nav&&nav.offsetHeight)||92)-12);
     d.style.height=h+"px";
+    /* Second frame, so the new height has actually been laid out before anything is
+       measured against it. A few pixels of tolerance keeps sub-pixel rounding from handing
+       a card a scrollbar it does not need. */
+    requestAnimationFrame(()=>{
+      const cards=d.querySelectorAll(".cc");
+      for(let i=0;i<cards.length;i++){
+        const el=cards[i];
+        el.classList.toggle("scrolls",el.scrollHeight-el.clientHeight>6);
+      }
+    });
   });
 }
 function renderDeck(){
