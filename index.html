@@ -516,7 +516,8 @@ body.flipped .dstep{opacity:0;pointer-events:none}
 .dstep button{width:42px;height:42px;border-radius:21px;border:1px solid var(--rule2);
   background:var(--card);color:var(--ink);font-size:17px;line-height:0;font-family:inherit;
   opacity:.94;cursor:pointer}
-.dstep button:disabled{opacity:.3}
+.dstep button:disabled{opacity:.45}
+.dstep.hide{display:none}
 .dtop{position:fixed;left:18px;bottom:calc(160px + env(safe-area-inset-bottom));height:44px;padding:0 18px;border-radius:22px;background:var(--fill);color:#fff;border:none;font-size:13px;z-index:41;opacity:0;pointer-events:none;transition:opacity .16s ease}
 body.deckon .dtop.on{opacity:.94;pointer-events:auto}
 body.flipped .dtop{opacity:0;pointer-events:none}
@@ -1617,7 +1618,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-29.64 my division";
+const BUILD="2026-07-29.66 unflip";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -6104,10 +6105,17 @@ function deckStep(dir){
   paintStep();
 }
 function paintStep(){
-  const d=$("#deck"),box=$("#dstep");if(!box||!d||!d._deck)return;
+  const box=$("#dstep");if(!box)return;
+  const d=$("#deck"),deck=d&&d._deck;
+  /* Nothing to step through is the one case where the control should not be there at all.
+     Leaving two circles at 45% and calling them disabled reads as a bug, and on a one-card
+     deck both ends ARE the same end, so both would dim at once. */
+  const usable=!!(deck&&deck.length>1);
+  box.classList.toggle("hide",!usable);
+  if(!usable)return;
   const bs=box.querySelectorAll("button");
   if(bs[0])bs[0].disabled=dI<=0;
-  if(bs[1])bs[1].disabled=dI>=d._deck.length-1;
+  if(bs[1])bs[1].disabled=dI>=deck.length-1;
 }
 function deckTop(){
   deckKey=null;dI=0;
@@ -6154,6 +6162,18 @@ function renderDeck(){
     deckFlipped.clear();paintFlipped();
     deckKey=null;dI=0}
   const deck=deckCards();
+  /* THE ONE THAT HID THE + AND THE ARROWS. deckFlipped holds card KEYS and was only ever
+     cleared when the day rolled over. A card that is flipped and then leaves the deck —
+     swiped away, completed, or simply re-dealt under a different key because the plan
+     changed — left its key behind forever. paintFlipped keys off the SET'S SIZE, so
+     body.flipped stayed on with no card flipped anywhere on screen, and every fixed
+     control that politely gets out of a flipped card's way (the +, Top, the step arrows)
+     hid permanently. The set may only ever contain keys the deck actually holds. */
+  if(deckFlipped.size){
+    const live=new Set(deck.map(c=>c.key));
+    [...deckFlipped].forEach(k=>{if(!live.has(k))deckFlipped.delete(k)});
+  }
+  paintFlipped();
   let fi=deck.findIndex(c=>c.key===deckKey);if(fi<0)fi=0;
   const shownN=Math.min(deck.length,Math.max(DECKWIN,fi+5));
   let html="",lastSeg=null;
