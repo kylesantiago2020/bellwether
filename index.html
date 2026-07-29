@@ -901,6 +901,21 @@ body.deckon #clock{margin:0 0 4px}
 .rivr s{text-decoration:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink2)}
 .rivr.rivh{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
 .rivr.rivh s{color:var(--ink3);font-size:10px}
+.tmmission{font-family:'Instrument Serif',serif;font-size:24px;line-height:1.15;margin:2px 0 4px}
+.tmsec{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:12px 0 5px}
+.tmlist li{font-size:13px;line-height:1.55;margin-left:16px;color:var(--ink2)}
+.tmlist.plain{list-style:none;margin-left:0}
+.tmlist.plain li{display:flex;gap:9px;align-items:baseline;margin-left:0;color:var(--ink)}
+.tmlist.plain i{font-style:normal;flex:none;width:19px}
+#previewwrap{position:fixed;inset:0;z-index:83;display:none;background:var(--paper);overflow-y:auto;overscroll-behavior:contain}
+#previewwrap.on{display:block;animation:f .22s ease both}
+.pvin{max-width:560px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+.pvban{background:var(--sunk);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:var(--ink2);margin-bottom:6px}
+.pvsec{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:20px 0 6px;border-bottom:1px solid var(--rule);padding-bottom:5px}
+.pvsec b{float:right;font-weight:400;color:var(--ink2)}
+.pvr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
+.pvr s{text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);flex:none;max-width:52%;text-align:right}
+.pvfoot{margin-top:22px;font-size:12px;line-height:1.6;color:var(--ink3)}
 .dncrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
 .dncrow b{font-size:14px;font-weight:500}
 .dncrow s{display:block;text-decoration:none;font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.45}
@@ -1526,6 +1541,7 @@ body[data-s="play"] h1{font-size:21px;letter-spacing:-.4px;margin-top:3px}
 </nav>
 <div id="recapwrap"></div>
 <div id="mergewrap"></div>
+<div id="previewwrap"></div>
 <div id="endday"></div>
 <div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
@@ -1545,7 +1561,7 @@ const BAKINDEX="bellwether-backup-index", BAKPREFIX="bellwether-backup-", MAXBAK
    an unbounded pile could fill the origin quota and start refusing saves of the book,
    which is the failure this whole layer exists to prevent. */
 const BAKBUDGET=24*1024*1024;
-const BUILD="2026-07-28.49 who they use";
+const BUILD="2026-07-28.50 tomorrow";
 const SCHEMA=11;                      /* bump this and add a step to MIGRATIONS */
 const FREQ={"Weekly":52,"Bi-weekly":26,"Semi-monthly":24,"Monthly":12,"Quarterly":4};
 const TOUCH=["met","visited","called","texted","emailed"];
@@ -3127,7 +3143,7 @@ function restoreAcct(snap){
    behind a fixed overlay and chain momentum through it, so the page is pinned at its
    current offset for as long as any layer is up, and put back exactly where it was. */
 let lockY=0,locked=false;
-const anyOverlay=()=>["#veil","#callwrap","#endday","#hudwrap","#recapwrap","#mergewrap"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
+const anyOverlay=()=>["#veil","#callwrap","#endday","#hudwrap","#recapwrap","#mergewrap","#previewwrap"].some(id=>{const el=$(id);return el&&el.classList.contains("on")});
 function syncScrollLock(){
   const want=anyOverlay();
   if(want==locked)return;
@@ -5100,17 +5116,36 @@ const PLAYWIN={
  warm:["Advance one conversation to a next step","Close out one thing you owe"],
  cold:["Meet two owners you have never met","Get one decision-maker's name"],
  expand:["Ask one client for a referral","Surface one add-on that fits"]};
+/* one set of reasons, written once, so tomorrow's card and today's panel can never
+   disagree about why a play was chosen */
+function missionReasons(plan,m,when){
+  const why=[];
+  if(m.stale>=3)why.push(`You haven't worked ${PLAYNAME(m.id).toLowerCase()} in ${m.stale>=99?"a while":m.stale+" business days"}.`);
+  why.push(`${m.n} account${m.n==1?"":"s"} in the book fit it.`);
+  const seconds=plan.calls.filter(c=>attemptsOn(c.a)>0&&attemptsOn(c.a)<=5).length;
+  if(seconds)why.push(`${seconds} of ${when}'s calls are second attempts, where the odds are best.`);
+  if(plan.promises.length)why.push(`${plan.promises.length} thing${plan.promises.length==1?"":"s"} you booked yourself come first.`);
+  if(m.office)why.push("It's an office day, so this runs on the phone.");
+  return why;
+}
+/* what the day is actually made of, in the units he thinks in */
+function missionShape(plan){
+  const out=[];
+  const meets=plan.promises.filter(r=>r.block==="meet").length;
+  if(meets)out.push(["\u{1F91D}",meets+" meeting"+(meets==1?"":"s")]);
+  if(plan.stops.length)out.push(["\u{1F697}",plan.stops.length+" field visit"+(plan.stops.length==1?"":"s")]);
+  if(plan.calls.length)out.push(["\u{1F4DE}",plan.calls.length+" call"+(plan.calls.length==1?"":"s")]);
+  const coi=plan.stops.filter(c=>c.plays.indexOf("coi")>=0).length;
+  if(coi)out.push(["\u{1F4BC}",coi+" CPA or bank introduction"+(coi==1?"":"s")]);
+  const owed=plan.promises.filter(r=>r.block!=="meet").length;
+  if(owed)out.push(["\u{2705}",owed+" thing"+(owed==1?"":"s")+" you owe"]);
+  return out;
+}
 function missionHtml(d){
   const el=$("#mission");if(!el)return;
   const plan=missionPlan(d),m=plan.mission;
   if(!m||!isActive(d)){el.className="off";el.innerHTML="";return}
-  const why=[];
-  if(m.stale>=3)why.push(`You haven't worked ${PLAYNAME(m.id).toLowerCase()} in ${m.stale>=99?"a while":m.stale+" days"}.`);
-  why.push(`${m.n} account${m.n==1?"":"s"} in the book fit it today.`);
-  const seconds=plan.calls.filter(c=>attemptsOn(c.a)>0&&attemptsOn(c.a)<=5).length;
-  if(seconds)why.push(`${seconds} of today's calls are second attempts, where the odds are best.`);
-  if(plan.promises.length)why.push(`${plan.promises.length} thing${plan.promises.length==1?"":"s"} you booked yourself come first.`);
-  if(m.office)why.push("It's an office day, so this runs on the phone.");
+  const why=missionReasons(plan,m,"today");
   const win=PLAYWIN[m.id]||[];
   el.className="";
   el.innerHTML=`<div class="msn">
@@ -5207,6 +5242,9 @@ function deckCards(){
   const followCards=()=>rows.filter(r=>r.block==="follow"&&r.a.skip!==iso(today())).sort(byTime).forEach(r=>push("follow","follow",r.a,r));
   if(office){callCards();followCards();fieldCards()}else{fieldCards();callCards();followCards()}
   push("end","end",null,null);
+  /* The last thing he sees. Not another task — the shape of tomorrow, so that the drive
+     home is when he decides to print the PEO leave-behind rather than the morning. */
+  if(isActive(d)&&nextWorkday(d))push("tmrw","end",null,null);
   /* Card keys drive focus, the flip registry, position memory and advance-after-verdict.
      Two cards sharing a key means all four target the wrong one, so the deck is deduped
      by key on the way out. Genuinely different work on one account keeps different keys
@@ -5407,6 +5445,16 @@ function deckFlip(c){
   };
   if(MOTION_OK()){el.classList.add("flipout");setTimeout(swap,90)}else swap();
 }
+/* the next day he would actually work — Friday's card should not offer Saturday */
+function nextWorkday(d){
+  for(let i=1;i<=5;i++){
+    const nx=addDays(d,i);
+    if(!isWeekend(nx))return nx;
+  }
+  return null;
+}
+/* he starts thinking about tomorrow on the way home, not at his desk */
+const PREPHOUR=16;
 function deckFace(c){
   if(c.type==="route")return routeFace(c);
   if(c.a&&SWIPE[c.type]&&c.type!=="start"&&deckFlipped.has(c.key))return briefFace(c);
@@ -5429,6 +5477,24 @@ function deckFace(c){
       <div class="why">${huddleGist(a)}</div>
       <div class="last">Walk out with names and the rest of the day builds itself.</div>
     </div>`;
+  if(c.type==="tmrw"){
+    const nx=nextWorkday(activeD());
+    const plan=missionPlan(nx),m=plan.mission;
+    const late=new Date().getHours()>=PREPHOUR;
+    const why=m?missionReasons(plan,m,"tomorrow").slice(0,3):[];
+    return `<div class="cc" ${K} role="group" aria-label="Tomorrow">
+      <div class="cwhy"><span>${esc(fmtFull(nx))}</span></div>
+      <div class="co" style="font-size:20px">${late?"Ready for tomorrow?":"Tomorrow"}</div>
+      ${m?`<div class="tmmission">${esc(PLAYNAME(m.id))}</div>
+        <div class="tmsec">Why tomorrow</div>
+        <ul class="tmlist">${why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+        <div class="tmsec">The plan</div>
+        <ul class="tmlist plain">${missionShape(plan).map(([ic,t])=>
+          `<li><i>${ic}</i>${esc(t)}</li>`).join("")}</ul>`
+       :`<div class="why">Nothing lined up yet &mdash; tomorrow builds itself overnight.</div>`}
+      <button class="threadchip" data-tmrw="1">Preview &rsaquo;</button>
+    </div>`;
+  }
   if(c.type==="end"){
     const got=touchesOn(activeD()),tgt=+D.cfg.touchTarget||40;
     return `<div class="cc" ${K} role="group" aria-label="End of day">
@@ -5588,6 +5654,45 @@ function mergeQueueOpen(){
   const pairs=dupePairs();
   if(!pairs.length){toast("No duplicate names left.");return}
   mgAt=0;mergeView(pairs[0][0],pairs[0][1],pairs);
+}
+/* Read-only BY CONSTRUCTION rather than by disabling things: the preview is its own
+   layer built from plain rows, so there is no swipe bound to it, no verdict to give and
+   no control that could log anything. Nothing to switch off means nothing left switched on
+   by mistake. */
+let previewOn=false;
+function previewView(){
+  const nx=nextWorkday(activeD());
+  if(!nx){toast("Nothing after today this week.");return}
+  const plan=missionPlan(nx),m=plan.mission;
+  const row=(nm,town,why)=>`<div class="pvr"><span>${esc(nm)}</span><s>${esc([town,why].filter(Boolean).join(" \u00b7 "))}</s></div>`;
+  const group=(title,items)=>items.length
+    ? `<div class="pvsec">${esc(title)} <b>${items.length}</b></div>${items.join("")}`:"";
+  const meets=plan.promises.filter(r=>r.block==="meet")
+    .map(r=>row(r.a.name,r.a.city,r.lead&&r.lead.at?fmtTime(r.lead.at):"meeting"));
+  const owed=plan.promises.filter(r=>r.block!=="meet")
+    .map(r=>row(r.a.name,r.a.city,(r.lead&&r.lead.why)||"you owe them"));
+  const stops=plan.stops.map(c=>row(c.a.name,c.a.city,PLAYNAME(c.plays[0])));
+  const calls=plan.calls.map(c=>row(c.a.name,c.a.city,PLAYNAME(c.plays[0])));
+  $("#previewwrap").innerHTML=`<div class="pvin">
+    <div class="rchead"><div><h2>${esc(fmtFull(nx))}</h2>
+      <s>${m?esc(PLAYNAME(m.id)):"no mission yet"}</s></div>
+      <button class="rcx" data-previewx="1" aria-label="Back to today">&times;</button></div>
+    <div class="pvban">Preview &mdash; this plan will be recalculated overnight.
+      Nothing here can be logged, completed or edited.</div>
+    ${m?`<div class="tmsec">Why tomorrow</div>
+      <ul class="tmlist">${missionReasons(plan,m,"tomorrow").map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+      <div class="tmsec">The plan</div>
+      <ul class="tmlist plain">${missionShape(plan).map(([ic,t])=>`<li><i>${ic}</i>${esc(t)}</li>`).join("")}</ul>`:""}
+    ${group("Meetings",meets)}${group("You owe",owed)}${group("Field",stops)}${group("Calls",calls)}
+    <div class="pvfoot">Tomorrow is rebuilt from scratch each morning, so this is a forecast,
+      not a commitment. What you book yourself will always survive it.</div>
+  </div>`;
+  previewOn=true;
+  $("#previewwrap").classList.add("on");syncScrollLock();
+}
+function previewClose(){
+  const el=$("#previewwrap");if(el)el.classList.remove("on");
+  previewOn=false;syncScrollLock();
 }
 function recapView(dISO){
   recapDay=dISO||activeISO();
@@ -8794,6 +8899,8 @@ tap("mergego",()=>{
   if(mgQueue)mergeNext();else mergeClose();
 });
 tap("mergeq",()=>mergeQueueOpen());
+tap("tmrw",()=>previewView());
+tap("previewx",()=>previewClose());
 tap("prov",t=>{
   const [aid,v,ctx]=String(t.dataset.prov).split("|");
   const a=acct(aid);if(!a)return;
